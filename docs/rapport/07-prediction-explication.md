@@ -687,7 +687,7 @@ Mettre en commun les trois horizons (72 scores) stabiliserait la borne à 3 mois
 
 Quatre nouvelles versions de modèles sont produites, pour l'absentéisme, la charge, l'effectif et la masse salariale ; les versions 1 ne sont pas modifiées. Chaque version 2 reprend le modèle de la version 1 et ajoute un champ `conformal` : méthode, fenêtres, quantiles signés et couvertures mesurées. L'inférence TypeScript utilise ces quantiles quand ils existent, et sinon exactement les bornes de la version 1 ; un modèle dont les quantiles excluraient la prévision est refusé. La parité Python ↔ TypeScript est vérifiée sur les jeux golden régénérés (20 tests Python et 113 tests TypeScript réussis le 04/10/2026). Sous chaque prévision, une ligne rappelle la couverture mesurée, par exemple : « Fourchette calibrée : sur les 26 derniers mois de test, 93 % des valeurs observées y sont tombées (cible 80 %). »
 
-**Ces versions sont versionnées dans le dépôt, mais pas encore enregistrées ni promues sur la base de démonstration** (au 04/10/2026, avant la passe finale). D'ici leur promotion, les écrans affichent les fourchettes de la version 1, sans phrase de couverture. Les commandes d'enregistrement, de promotion et de retour arrière figurent dans le bilan ([RESULTATS_IA_CONFORME.md](../RESULTATS_IA_CONFORME.md), § 6).
+**Ces versions sont versionnées dans le dépôt, mais pas encore enregistrées ni promues sur la base de démonstration** (au 04/10/2026). D'ici leur promotion, les écrans affichent les fourchettes de la version 1, sans phrase de couverture. Les commandes d'enregistrement, de promotion et de retour arrière figurent dans le bilan ([RESULTATS_IA_CONFORME.md](../RESULTATS_IA_CONFORME.md), § 6).
 
 ### 7.16.5 Limites
 
