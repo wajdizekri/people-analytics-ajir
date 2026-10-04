@@ -1,0 +1,263 @@
+{
+ "defects": 32533,
+ "full": {
+  "by_type": [
+   {
+    "file": "absences.csv",
+    "defect_type": "ABSENCE_FIN_AVANT_DEBUT",
+    "expected_rule": "FIN_AVANT_DEBUT",
+    "injected": 642,
+    "flagged": 642,
+    "flagged_expected_rule": 642,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "REJET"
+    ]
+   },
+   {
+    "file": "absences.csv",
+    "defect_type": "DOUBLON",
+    "expected_rule": "DOUBLON",
+    "injected": 445,
+    "flagged": 445,
+    "flagged_expected_rule": 445,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "REJET"
+    ]
+   },
+   {
+    "file": "absences.csv",
+    "defect_type": "MATRICULE_INCONNU",
+    "expected_rule": "MATRICULE_INCONNU",
+    "injected": 243,
+    "flagged": 243,
+    "flagged_expected_rule": 243,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "REJET"
+    ]
+   },
+   {
+    "file": "attendance.csv",
+    "defect_type": "DOUBLON",
+    "expected_rule": "POINTAGE_DUPLIQUE",
+    "injected": 7739,
+    "flagged": 7739,
+    "flagged_expected_rule": 7739,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "REJET"
+    ]
+   },
+   {
+    "file": "attendance.csv",
+    "defect_type": "MATRICULE_INCONNU",
+    "expected_rule": "MATRICULE_INCONNU",
+    "injected": 4605,
+    "flagged": 4605,
+    "flagged_expected_rule": 4605,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "REJET"
+    ]
+   },
+   {
+    "file": "attendance.csv",
+    "defect_type": "POINTAGE_SANS_SORTIE",
+    "expected_rule": "POINTAGE_SANS_SORTIE",
+    "injected": 17085,
+    "flagged": 17085,
+    "flagged_expected_rule": 17085,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "AVERTISSEMENT"
+    ]
+   },
+   {
+    "file": "payroll.csv",
+    "defect_type": "DOUBLON",
+    "expected_rule": "DOUBLON",
+    "injected": 650,
+    "flagged": 650,
+    "flagged_expected_rule": 650,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "REJET"
+    ]
+   },
+   {
+    "file": "payroll.csv",
+    "defect_type": "MATRICULE_INCONNU",
+    "expected_rule": "MATRICULE_INCONNU",
+    "injected": 425,
+    "flagged": 425,
+    "flagged_expected_rule": 425,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "REJET"
+    ]
+   },
+   {
+    "file": "payroll.csv",
+    "defect_type": "SALAIRE_SOUS_SMIG",
+    "expected_rule": "SALAIRE_SOUS_SMIG",
+    "injected": 699,
+    "flagged": 699,
+    "flagged_expected_rule": 699,
+    "detection_rate": 1.0,
+    "other_rules": [],
+    "severity": [
+     "REJET"
+    ]
+   }
+  ],
+  "flagged_lines": 32533,
+  "false_flags": []
+ },
+ "table_capped": [
+  {
+   "file": "absences.csv",
+   "rule": "DOUBLON",
+   "rows": 445,
+   "with_line": 445,
+   "matching_defect": 445,
+   "injected_total": 445
+  },
+  {
+   "file": "absences.csv",
+   "rule": "FIN_AVANT_DEBUT",
+   "rows": 642,
+   "with_line": 642,
+   "matching_defect": 642,
+   "injected_total": 642
+  },
+  {
+   "file": "absences.csv",
+   "rule": "MATRICULE_INCONNU",
+   "rows": 243,
+   "with_line": 243,
+   "matching_defect": 243,
+   "injected_total": 243
+  },
+  {
+   "file": "attendance.csv",
+   "rule": "MATRICULE_INCONNU",
+   "rows": 1000,
+   "with_line": 1000,
+   "matching_defect": 1000,
+   "injected_total": 4605
+  },
+  {
+   "file": "attendance.csv",
+   "rule": "POINTAGE_DUPLIQUE",
+   "rows": 1000,
+   "with_line": 1000,
+   "matching_defect": 1000,
+   "injected_total": 7739
+  },
+  {
+   "file": "attendance.csv",
+   "rule": "POINTAGE_SANS_SORTIE",
+   "rows": 1000,
+   "with_line": 1000,
+   "matching_defect": 1000,
+   "injected_total": 17085
+  },
+  {
+   "file": "payroll.csv",
+   "rule": "DOUBLON",
+   "rows": 650,
+   "with_line": 650,
+   "matching_defect": 650,
+   "injected_total": 650
+  },
+  {
+   "file": "payroll.csv",
+   "rule": "MATRICULE_INCONNU",
+   "rows": 425,
+   "with_line": 425,
+   "matching_defect": 425,
+   "injected_total": 425
+  },
+  {
+   "file": "payroll.csv",
+   "rule": "PAIE_INCOMPLETE",
+   "rows": 17,
+   "with_line": 0,
+   "matching_defect": 0,
+   "injected_total": 0
+  },
+  {
+   "file": "payroll.csv",
+   "rule": "SALAIRE_SOUS_SMIG",
+   "rows": 699,
+   "with_line": 699,
+   "matching_defect": 699,
+   "injected_total": 699
+  }
+ ],
+ "table_rows": 6121,
+ "import": {
+  "status": "OK",
+  "qualityScore": 0.981,
+  "rowsOk": 1738703,
+  "rowsRejected": 15448
+ },
+ "score": {
+  "files": 10,
+  "row_score": 0.9952340045666508,
+  "completeness": 0.9857262804366079,
+  "score": 0.9810283134855148,
+  "reported_score": 0.981,
+  "loss_by_rule_points": {
+   "absences.csv:FIN_AVANT_DEBUT": 0.09286313536031475,
+   "payroll.csv:SALAIRE_SOUS_SMIG": 0.08079337008911544,
+   "payroll.csv:DOUBLON": 0.0751297432874464,
+   "absences.csv:DOUBLON": 0.06436774958775711,
+   "attendance.csv:POINTAGE_DUPLIQUE": 0.04963713388685248,
+   "payroll.csv:MATRICULE_INCONNU": 0.04912329368794573,
+   "absences.csv:MATRICULE_INCONNU": 0.035149130673764,
+   "attendance.csv:MATRICULE_INCONNU": 0.029535986761720593
+  },
+  "loss_completeness_points": 1.4205691081136038,
+  "clean_row_score_expected": 1.0
+ },
+ "payroll_incomplete": {
+  "missing": 17,
+  "by_cause": {
+   "SALAIRE_SOUS_SMIG": 11,
+   "MATRICULE_INCONNU": 6
+  }
+ },
+ "payroll_ratio_check": {
+  "ratio": 2.0,
+  "clean_rows": 84743,
+  "clean_flagged": 0,
+  "clean_max_ratio": 1.32813212294248,
+  "smig_defects": 699,
+  "smig_flagged": 699
+ },
+ "clean_import": {
+  "status": "OK",
+  "qualityScore": 1,
+  "rowsRejected": 0,
+  "rules": {},
+  "quality": {
+   "score": 1,
+   "threshold": 0.95,
+   "rowScore": 1,
+   "payrollMonth": "2026-08",
+   "activeCount": 1191,
+   "activeWithoutPayroll": 0
+  }
+ }
+}

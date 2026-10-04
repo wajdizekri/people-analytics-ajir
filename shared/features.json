@@ -1,0 +1,53 @@
+{
+  "fsv": "v1",
+  "horizon_months": 6,
+  "note": "Ordre = ordre des colonnes dans feature_snapshot.values_json et dans le modèle. Toute modification => nouvelle fsv + backfill.",
+  "groups": {
+    "CARRIERE": { "label_rh": "Carrière et contrat", "label_manager": "Évolution de carrière", "actionable": false },
+    "REMUNERATION": { "label_rh": "Rémunération", "label_manager": "Rémunération", "actionable": true },
+    "TEMPS_TRAVAIL": { "label_rh": "Temps de travail", "label_manager": "Charge de travail", "actionable": true },
+    "ABSENCES": { "label_rh": "Absences (hors santé)", "label_manager": "Assiduité", "actionable": false },
+    "FORMATION_EVAL": { "label_rh": "Formation et évaluation", "label_manager": "Développement des compétences", "actionable": true },
+    "EQUIPE": { "label_rh": "Équipe", "label_manager": "Contexte d'équipe", "actionable": false }
+  },
+  "features": [
+    { "name": "tenure_months", "group": "CARRIERE", "impute": 0, "unit": "mois", "label": "ancienneté de {v} mois" },
+    { "name": "contract_cdd", "group": "CARRIERE", "impute": 0, "unit": "0/1", "label": "contrat à durée déterminée" },
+    { "name": "grade_level", "group": "CARRIERE", "impute": 1, "unit": "niveau", "label": "grade de niveau {v}" },
+    { "name": "months_since_promotion", "group": "CARRIERE", "impute": 36, "unit": "mois", "cap": 120, "label": "{v} mois sans promotion" },
+    { "name": "job_change_12m", "group": "CARRIERE", "impute": 0, "unit": "0/1", "label": "changement de poste dans les 12 derniers mois" },
+
+    { "name": "compa_ratio", "group": "REMUNERATION", "impute": 1, "unit": "ratio", "label": "salaire à {pct} de la médiane du poste" },
+    { "name": "raise_pct_12m", "group": "REMUNERATION", "impute": 0, "unit": "ratio", "label": "augmentation de {pct} sur 12 mois" },
+    { "name": "months_since_raise", "group": "REMUNERATION", "impute": 12, "unit": "mois", "cap": 60, "label": "{v} mois sans augmentation" },
+
+    { "name": "overtime_h_avg_3m", "group": "TEMPS_TRAVAIL", "impute": 0, "unit": "h/mois", "label": "{v} h supplémentaires par mois en moyenne" },
+    { "name": "overtime_trend_6m", "group": "TEMPS_TRAVAIL", "impute": 0, "unit": "h/mois²", "label": "heures supplémentaires en évolution de {v} h/mois" },
+    { "name": "late_count_3m", "group": "TEMPS_TRAVAIL", "impute": 0, "unit": "nombre", "label": "{v} retards sur 3 mois" },
+    { "name": "arrival_std_min_3m", "group": "TEMPS_TRAVAIL", "impute": 0, "unit": "min", "label": "horaires d'arrivée irréguliers (écart-type {v} min)" },
+    { "name": "no_badge_days_3m", "group": "TEMPS_TRAVAIL", "impute": 0, "unit": "jours", "label": "{v} jours ouvrés sans pointage ni absence déclarée sur 3 mois" },
+
+    { "name": "absence_rate_3m", "group": "ABSENCES", "impute": 0, "unit": "ratio", "label": "taux d'absence hors santé de {pct} sur 3 mois" },
+    { "name": "absence_rate_12m", "group": "ABSENCES", "impute": 0, "unit": "ratio", "label": "taux d'absence hors santé de {pct} sur 12 mois" },
+    { "name": "short_episodes_12m", "group": "ABSENCES", "impute": 0, "unit": "nombre", "label": "{v} absences courtes sur 12 mois" },
+    { "name": "bradford_12m", "group": "ABSENCES", "impute": 0, "unit": "score", "label": "facteur de Bradford de {v} sur 12 mois" },
+
+    { "name": "training_hours_12m", "group": "FORMATION_EVAL", "impute": 0, "unit": "h", "label": "{v} h de formation sur 12 mois" },
+    { "name": "mandatory_training_overdue", "group": "FORMATION_EVAL", "impute": 0, "unit": "0/1", "label": "formation obligatoire en retard" },
+    { "name": "last_eval_score", "group": "FORMATION_EVAL", "impute": 3, "unit": "note /5", "label": "dernière évaluation {v}/5" },
+    { "name": "eval_delta", "group": "FORMATION_EVAL", "impute": 0, "unit": "points", "label": "évaluation en évolution de {v} point(s)" },
+    { "name": "eval_missing", "group": "FORMATION_EVAL", "impute": 0, "unit": "0/1", "label": "aucune évaluation disponible" },
+
+    { "name": "team_exit_rate_6m", "group": "EQUIPE", "impute": 0, "unit": "ratio", "label": "{pct} de départs volontaires dans l'équipe sur 6 mois" },
+    { "name": "manager_change_12m", "group": "EQUIPE", "impute": 0, "unit": "0/1", "label": "changement de manager dans les 12 derniers mois" },
+    { "name": "team_size", "group": "EQUIPE", "impute": 8, "unit": "personnes", "label": "équipe de {v} personnes" }
+  ],
+  "b0_rules": [
+    { "feature": "compa_ratio", "op": "<", "value": 0.9, "points": 2 },
+    { "feature": "absence_rate_3m", "op": ">", "value": 0.04, "points": 1 },
+    { "feature": "short_episodes_12m", "op": ">=", "value": 3, "points": 1 },
+    { "feature": "mandatory_training_overdue", "op": ">=", "value": 1, "points": 1 },
+    { "feature": "overtime_h_avg_3m", "op": ">", "value": 20, "points": 1 },
+    { "feature": "months_since_promotion", "op": ">", "value": 48, "points": 1 }
+  ]
+}

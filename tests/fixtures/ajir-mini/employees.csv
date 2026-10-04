@@ -1,0 +1,17 @@
+matricule;last_name;first_name;sex;birth_date;hire_date;department_code;job_family;job_title;grade;manager_matricule;governorate;marital_status
+E001;Ben Salah;Karim;M;1970-04-12;2015-01-05;DIR;Direction;Directeur général;G8;;Tunis;Marié
+E002;Trabelsi;Sami;M;1982-09-03;2018-03-01;INF;Informatique;Chef de projet;G6;E001;Ariana;Marié
+E003;Jaziri;Amel;F;1992-01-20;2020-06-15;INF;Informatique;Développeuse;G3;E002;Tunis;Célibataire
+E004;Mansour;Hedi;M;1990-07-07;2021-09-01;INF;Informatique;Développeur;G4;E002;Ben Arous;Marié
+E005;Gharbi;Leila;F;1985-11-30;2019-02-01;COM;Commercial;Responsable commerciale;G5;E001;Sousse;Mariée
+E006;Hammami;Youssef;M;1999-05-14;2025-11-03;COM;Commercial;Technicien commercial;G2;E005;Tunis;Célibataire
+E007;Saidi;Nour;F;1998-02-02;2022-01-10;COM;Commercial;Chargée de clientèle;G9;E005;Nabeul;Célibataire
+E008;Khelifi;Omar;M;1988-12-12;2023-05-02;COM;Commercial;Commercial;G3;E999;Sfax;Marié
+E009;Bouzid;Rim;F;1991-03-03;2019-09-01;INF;Informatique;Analyste;G4;E010;Tunis;Mariée
+E010;Chebbi;Anis;M;1987-08-08;2017-04-01;INF;Informatique;Architecte;G5;E009;Tunis;Marié
+E003;Jaziri;Amel;F;1992-01-20;2020-06-15;INF;Informatique;Développeuse;G3;E002;Tunis;Célibataire
+E011;;Salma;F;1995-01-01;2024-01-15;COM;Commercial;Assistante;G2;E005;Tunis;Célibataire
+E012;Ferchichi;Ali;M;1993-06-06;2024-02-30;COM;Commercial;Commercial;G2;E005;Tunis;Marié
+E013;Mejri;Ines;F;1994-04-04;2024-03-01;XXX;Commercial;Commerciale;G2;E005;Tunis;Célibataire
+E014;Dridi;Walid;X;1996-06-06;2024-04-01;COM;Commercial;Commercial;G2;E005;Tunis;Célibataire
+E015;Zouari;Mehdi;M;1990-01-01

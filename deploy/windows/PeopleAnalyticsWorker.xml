@@ -1,0 +1,47 @@
+<!--
+  Service Windows « worker » (WinSW 2.12) : équivalent de « npm run worker » (tsx src/worker/index.ts),
+  lancé directement par node.exe :
+    - sans npm.cmd ni cmd.exe, dont l'invite « Terminer le programme de commandes (O/N) ? » bloquerait l'arrêt propre ;
+    - avec l'option env-file de Node : le worker ne lit pas .env tout seul (contrairement à Next.js).
+  Le worker est le seul écrivain des résultats de calcul : file app_job (imports, recalculs) et batch mensuel
+  le 10 à 02:00 (Africa/Tunis). Installation : WinSW-x64.exe copié en PeopleAnalyticsWorker.exe à côté de ce fichier.
+-->
+<service>
+  <id>PeopleAnalyticsWorker</id>
+  <name>People Analytics AJIR - Worker</name>
+  <description>Module People Analytics AJIR : worker de calcul (imports, variables, scoring, anomalies, batch mensuel).</description>
+
+  <executable>C:\Program Files\nodejs\node.exe</executable>
+  <arguments>--env-file=.env --import tsx src\worker\index.ts</arguments>
+  <workingdirectory>C:\PeopleAnalytics\app</workingdirectory>
+
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+
+  <!--
+    Arrêt : Ctrl+C → le worker termine le job en cours, arrête le cron et ferme la base.
+    Au-delà de ce délai le processus est tué ; le job interrompu est repris au redémarrage (heartbeat périmé).
+  -->
+  <stoptimeout>120 sec</stoptimeout>
+
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="2 min"/>
+  <resetfailure>1 hour</resetfailure>
+
+  <!-- Journaux pino (JSON) : PeopleAnalyticsWorker.out.log / .err.log, rotation 10 Mo x 8 fichiers. -->
+  <logpath>C:\PeopleAnalytics\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+
+  <!--
+  <serviceaccount>
+    <domain>.</domain>
+    <user>svc-peopleanalytics</user>
+    <password>A_RENSEIGNER</password>
+    <allowservicelogon>true</allowservicelogon>
+  </serviceaccount>
+  -->
+</service>

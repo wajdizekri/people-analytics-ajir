@@ -1,0 +1,53 @@
+{
+  "phase": "apres",
+  "headed": false,
+  "date": "2026-10-02T13:39:11.856Z",
+  "runs": [
+    {
+      "theme": "clair",
+      "width": 1440,
+      "console": [],
+      "pageErrors": [],
+      "csp": [],
+      "formInteractiveMs": 8429,
+      "threeRequestMs": 8517,
+      "constellation": "3d",
+      "sceneReadyMs": 11168,
+      "constellationReason": "webgl"
+    },
+    {
+      "theme": "clair",
+      "width": 390,
+      "console": [],
+      "pageErrors": [],
+      "csp": [],
+      "formInteractiveMs": 21823,
+      "constellation": "static",
+      "sceneReadyMs": 22506,
+      "constellationReason": "ecran-etroit"
+    },
+    {
+      "theme": "sombre",
+      "width": 1440,
+      "console": [],
+      "pageErrors": [],
+      "csp": [],
+      "threeRequestMs": 8504,
+      "formInteractiveMs": 8611,
+      "constellation": "3d",
+      "sceneReadyMs": 9891,
+      "constellationReason": "webgl"
+    },
+    {
+      "theme": "sombre",
+      "width": 390,
+      "console": [],
+      "pageErrors": [],
+      "csp": [],
+      "formInteractiveMs": 6719,
+      "constellation": "static",
+      "sceneReadyMs": 6864,
+      "constellationReason": "ecran-etroit"
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+/* Impression et PDF via le navigateur : contenu seul, thème clair, sans éléments d'interface.
+   Importé par PrintHeader et PrintButton ; à importer aussi dans la mise en page de l'application pour couvrir toutes les pages. */
+
+@page {
+  size: A4;
+  margin: 14mm 12mm 16mm;
+
+  @bottom-left {
+    content: "People Analytics · AJIR — Document interne, confidentiel";
+    font: 8pt "Segoe UI", system-ui, sans-serif;
+    color: #475569;
+  }
+  @bottom-right {
+    content: "Page " counter(page) " sur " counter(pages);
+    font: 8pt "Segoe UI", system-ui, sans-serif;
+    color: #475569;
+  }
+}
+
+@media print {
+  /* Jetons du thème clair, même si data-theme="dark" (spécificité supérieure à [data-theme="dark"]) */
+  :root,
+  :root[data-theme] {
+    color-scheme: light;
+    --pa-canvas: #ffffff;
+    --pa-surface: #ffffff;
+    --pa-surface-2: #f8fafc;
+    --pa-surface-3: #eef2f7;
+    --pa-fg: #0f172a;
+    --pa-heading: #002c52;
+    --pa-fg-muted: #475569;
+    --pa-fg-subtle: #5b6678;
+    --pa-line: #cbd5e1;
+    --pa-line-strong: #64748b;
+    --pa-primary: #1e56a3;
+    --pa-primary-hover: #164383;
+    --pa-primary-fg: #ffffff;
+    --pa-primary-soft: #eef4fb;
+    --pa-link: #1e56a3;
+    --pa-accent: #f09219;
+    --pa-accent-fg: #002c52;
+    --pa-danger: #b91c1c;
+    --pa-danger-soft: #fef2f2;
+    --pa-warning: #92400e;
+    --pa-warning-soft: #fffbeb;
+    --pa-success: #047857;
+    --pa-success-soft: #ecfdf5;
+    --pa-info: #1e56a3;
+    --pa-info-soft: #eef4fb;
+    --pa-focus: #1e56a3;
+    --pa-nav: #002c52;
+    --pa-shadow-card: none;
+    --pa-shadow-pop: none;
+    /* Pastilles et légendes HTML des graphiques (cssChartColor) : retour à la couleur claire (repli de var()). Une ligne par variable --pa-chart-* du bloc [data-theme="dark"] de globals.css (contrôlé par tests/export/print-theme.test.ts). */
+    --pa-chart-b91c1c: initial;
+    --pa-chart-d97706: initial;
+    --pa-chart-b45309: initial;
+    --pa-chart-15803d: initial;
+    --pa-chart-1e56a3: initial;
+    --pa-chart-5b6b82: initial;
+    --pa-chart-6b7a90: initial;
+    --pa-chart-7c8aa0: initial;
+    --pa-chart-c25e00: initial;
+    --pa-chart-0e7c6b: initial;
+    --pa-chart-990066: initial;
+    --pa-chart-6d4fc2: initial;
+    --pa-chart-8a6a00: initial;
+    --pa-chart-475569: initial;
+    --pa-chart-2e8bc0: initial;
+    --pa-chart-0f172a: initial;
+    --pa-chart-334155: initial;
+    --pa-chart-64748b: initial;
+    --pa-chart-94a3b8: initial;
+    --pa-chart-cbd5e1: initial;
+    --pa-chart-e2e8f0: initial;
+    --pa-chart-e5e9f0: initial;
+    --pa-chart-c3ccd8: initial;
+    --pa-chart-ffffff: initial;
+    --pa-chart-93006a: initial;
+    --pa-chart-8a4ada: initial;
+    --pa-chart-1ba0aa: initial;
+    --pa-chart-4987ff: initial;
+    --pa-chart-a76088: initial;
+    --pa-chart-7c8aa1: initial;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  *,
+  ::before,
+  ::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* Interface : menu latéral, en-tête de l'application, lien d'évitement, toasts et calques fixes, dialogues,
+     formulaires et boutons d'action, tout élément présenté en bouton (classe propre à buttonClass) : liens,
+     boutons de pagination désactivés (span), résumés de volets dépliables (summary) */
+  .on-navy,
+  header:not(#contenu header),
+  a[href="#contenu"],
+  .fixed,
+  dialog,
+  #contenu form,
+  #contenu button,
+  #contenu [class~="active:translate-y-px"] {
+    display: none !important;
+  }
+
+  /* Contenu en pleine largeur */
+  #contenu {
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+  #contenu > * {
+    max-width: none !important;
+  }
+
+  /* Zones à défilement déroulées : tout le contenu est imprimé */
+  #contenu .overflow-auto,
+  #contenu .overflow-x-auto,
+  #contenu .overflow-y-auto,
+  #contenu .overflow-hidden,
+  #contenu [class*="max-h-"] {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+  #contenu .sticky {
+    position: static !important;
+  }
+  thead {
+    display: table-header-group;
+  }
+
+  /* Cartes, indicateurs, graphiques et lignes de tableau jamais coupés entre deux pages */
+  #contenu .rounded-card,
+  #contenu figure,
+  #contenu [role="img"],
+  #contenu .echarts-for-react,
+  tr,
+  img,
+  canvas {
+    break-inside: avoid;
+  }
+  #contenu .rounded-card,
+  #contenu .shadow-sm {
+    box-shadow: none !important;
+  }
+
+  /* Graphiques dessinés à la largeur de l'écran : ramenés à la largeur de la page */
+  #contenu .echarts-for-react,
+  #contenu .echarts-for-react > div {
+    max-width: 100% !important;
+  }
+  #contenu .echarts-for-react canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  #contenu a {
+    text-decoration: none !important;
+  }
+}

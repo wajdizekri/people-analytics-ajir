@@ -1,0 +1,1 @@
+ALTER TABLE `import_rejection` ADD `severity` text DEFAULT 'REJET' NOT NULL;

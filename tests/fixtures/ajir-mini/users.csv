@@ -1,0 +1,7 @@
+login;matricule;role;email;active
+admin;;ADMIN;admin@atlas.tn;1
+rh.sonia;;RH;sonia@atlas.tn;1
+mgr.sami;E002;MANAGER;sami@atlas.tn;1
+mgr.leila;E005;MANAGER;;0
+mgr.x;E999;MANAGER;;1
+mgr.y;;MANAGER;;1

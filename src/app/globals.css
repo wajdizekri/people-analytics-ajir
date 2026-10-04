@@ -1,0 +1,276 @@
+@import "tailwindcss";
+
+/* Mode sombre piloté par l'attribut data-theme posé sur <html> (clair | sombre ; « système » résolu par script avant affichage) */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  --font-sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: Consolas, "Cascadia Mono", ui-monospace, monospace;
+}
+
+/* Charte ArabSoft : l'échelle « sky » devient le bleu ArabSoft (logo #1E56A3, marine #002C52),
+   ce qui rebrande d'un coup liens, boutons et états actifs existants. Accents : orange et magenta AJIR. */
+@theme {
+  --color-sky-50: #eef4fb;
+  --color-sky-100: #dce8f6;
+  --color-sky-200: #bcd3ee;
+  --color-sky-300: #8fb4e0;
+  --color-sky-400: #5b8fcf;
+  --color-sky-500: #3572bd;
+  --color-sky-600: #2663b0;
+  --color-sky-700: #1f5aa8;
+  --color-sky-800: #1e56a3;
+  --color-sky-900: #164383;
+  --color-sky-950: #002c52;
+
+  --color-brand-navy: #002c52;
+  --color-brand-navy-soft: #0b3a66;
+  --color-brand-blue: #1e56a3;
+  --color-brand-orange: #f09219;
+  --color-brand-orange-dark: #a85f00;
+  --color-brand-magenta: #990066;
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+/* Hors couche Tailwind : l'emporte sur les utilitaires focus:outline-none (focus toujours visible, WCAG 2.4.7) */
+:focus-visible {
+  outline: 2px solid var(--pa-focus);
+  outline-offset: 2px;
+}
+
+/* Sur fond marine (menu, bandeau de connexion) : contour orange, contrasté */
+.on-navy :focus-visible {
+  outline-color: #f09219;
+}
+
+/* Cible du lien d'évitement et conteneurs focalisés par script : pas de cadre autour de toute la zone */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* Texte indicatif lisible (contraste ≥ 4,5:1 sur fond blanc) */
+::placeholder {
+  color: var(--pa-fg-subtle);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Boîte de confirmation (ConfirmDialog) : fond assombri ; la page derrière ne défile pas */
+.confirm-dialog::backdrop {
+  background: rgb(0 44 82 / 0.45);
+}
+[data-theme="dark"] .confirm-dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+/* ===================== Design system : jetons sémantiques =====================
+   Toujours utiliser ces jetons (bg-surface, text-fg, border-line…) plutôt que des couleurs fixes (bg-white, text-slate-900),
+   pour que le mode sombre fonctionne. Voir docs/qa/DESIGN_SYSTEM.md. */
+:root {
+  color-scheme: light;
+  --pa-canvas: #f3f5f8;
+  --pa-surface: #ffffff;
+  --pa-surface-2: #f8fafc;
+  --pa-surface-3: #eef2f7;
+  --pa-fg: #0f172a;
+  --pa-heading: #002c52;
+  --pa-fg-muted: #475569;
+  --pa-fg-subtle: #5b6678;
+  --pa-line: #e2e8f0;
+  --pa-line-strong: #64748b;
+  --pa-primary: #1e56a3;
+  --pa-primary-hover: #164383;
+  --pa-primary-fg: #ffffff;
+  --pa-primary-soft: #eef4fb;
+  --pa-link: #1e56a3;
+  --pa-accent: #f09219;
+  --pa-accent-fg: #002c52;
+  --pa-danger: #b91c1c;
+  --pa-danger-soft: #fef2f2;
+  --pa-danger-solid: #b91c1c;
+  --pa-danger-solid-hover: #991b1b;
+  --pa-warning: #92400e;
+  --pa-warning-soft: #fffbeb;
+  --pa-success: #047857;
+  --pa-success-soft: #ecfdf5;
+  --pa-info: #1e56a3;
+  --pa-info-soft: #eef4fb;
+  --pa-focus: #1e56a3;
+  --pa-nav: #002c52;
+  --pa-shadow-card: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.08);
+  --pa-shadow-pop: 0 10px 30px -10px rgb(15 23 42 / 0.25);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --pa-canvas: #0b1220;
+  --pa-surface: #111a2b;
+  --pa-surface-2: #16223a;
+  --pa-surface-3: #1d2b47;
+  --pa-fg: #e6edf7;
+  --pa-heading: #f1f5fb;
+  --pa-fg-muted: #b4c0d3;
+  --pa-fg-subtle: #94a3b8;
+  --pa-line: #26354f;
+  --pa-line-strong: #7b8aa3;
+  --pa-primary: #3572bd;
+  --pa-primary-hover: #2663b0;
+  --pa-primary-fg: #ffffff;
+  --pa-primary-soft: #10233d;
+  --pa-link: #8fb4e0;
+  --pa-accent: #f09219;
+  --pa-accent-fg: #0b1220;
+  --pa-danger: #fca5a5;
+  --pa-danger-soft: #3b1219;
+  --pa-danger-solid: #dc2626;
+  --pa-danger-solid-hover: #b91c1c;
+  --pa-warning: #fcd34d;
+  --pa-warning-soft: #3a2a06;
+  --pa-success: #6ee7b7;
+  --pa-success-soft: #0f2e1d;
+  --pa-info: #8fb4e0;
+  --pa-info-soft: #10233d;
+  --pa-focus: #f09219;
+  --pa-nav: #070d18;
+  --pa-shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3);
+  --pa-shadow-pop: 0 10px 30px -10px rgb(0 0 0 / 0.6);
+}
+
+/* Couleurs des graphiques en HTML (pastilles, légendes) : cssChartColor(hex) → var(--pa-chart-<hex>, hex). Valeurs = DARK_COLORS (charts/theme.ts). */
+[data-theme="dark"] {
+  --pa-chart-b91c1c: #f87171;
+  --pa-chart-d97706: #fbbf24;
+  --pa-chart-b45309: #fbbf24;
+  --pa-chart-15803d: #4ade80;
+  --pa-chart-1e56a3: #5b8fcf;
+  --pa-chart-5b6b82: #94a3b8;
+  --pa-chart-6b7a90: #8b9ab0;
+  --pa-chart-7c8aa0: #6f7f99;
+  --pa-chart-c25e00: #fb923c;
+  --pa-chart-0e7c6b: #2dd4bf;
+  --pa-chart-990066: #f472b6;
+  --pa-chart-6d4fc2: #a78bfa;
+  --pa-chart-8a6a00: #c9a227;
+  --pa-chart-475569: #a3b1c6;
+  --pa-chart-2e8bc0: #7cc4ef;
+  --pa-chart-0f172a: #e6edf7;
+  --pa-chart-334155: #cbd5e1;
+  --pa-chart-64748b: #94a3b8;
+  --pa-chart-94a3b8: #5d6e8a;
+  --pa-chart-cbd5e1: #3a4a66;
+  --pa-chart-e2e8f0: #26354f;
+  --pa-chart-e5e9f0: #26354f;
+  --pa-chart-c3ccd8: #4b5b78;
+  --pa-chart-ffffff: #111a2b;
+  --pa-chart-93006a: #c21d7d;
+  --pa-chart-8a4ada: #8550d6;
+  --pa-chart-1ba0aa: #04aaa0;
+  --pa-chart-4987ff: #0f60fa;
+  --pa-chart-a76088: #a86b9f;
+  --pa-chart-7c8aa1: #65696f;
+}
+
+@theme inline {
+  --color-canvas: var(--pa-canvas);
+  --color-surface: var(--pa-surface);
+  --color-surface-2: var(--pa-surface-2);
+  --color-surface-3: var(--pa-surface-3);
+  --color-fg: var(--pa-fg);
+  --color-heading: var(--pa-heading);
+  --color-fg-muted: var(--pa-fg-muted);
+  --color-fg-subtle: var(--pa-fg-subtle);
+  --color-line: var(--pa-line);
+  --color-line-strong: var(--pa-line-strong);
+  --color-primary: var(--pa-primary);
+  --color-primary-hover: var(--pa-primary-hover);
+  --color-primary-fg: var(--pa-primary-fg);
+  --color-primary-soft: var(--pa-primary-soft);
+  --color-link: var(--pa-link);
+  --color-accent: var(--pa-accent);
+  --color-accent-fg: var(--pa-accent-fg);
+  --color-danger: var(--pa-danger);
+  --color-danger-soft: var(--pa-danger-soft);
+  --color-danger-solid: var(--pa-danger-solid);
+  --color-danger-solid-hover: var(--pa-danger-solid-hover);
+  --color-warning: var(--pa-warning);
+  --color-warning-soft: var(--pa-warning-soft);
+  --color-success: var(--pa-success);
+  --color-success-soft: var(--pa-success-soft);
+  --color-info: var(--pa-info);
+  --color-info-soft: var(--pa-info-soft);
+  --color-nav: var(--pa-nav);
+  --shadow-card: var(--pa-shadow-card);
+  --shadow-pop: var(--pa-shadow-pop);
+  --radius-card: 0.75rem;
+  --radius-control: 0.5rem;
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Mouvement : apparitions en fondu + léger glissement (toasts, menus, dialogues). Neutralisé par prefers-reduced-motion (plus haut). */
+@theme {
+  --animate-pop-in: pa-pop-in 150ms cubic-bezier(0.2, 0, 0, 1);
+  --animate-fade-in: pa-fade-in 200ms cubic-bezier(0.2, 0, 0, 1);
+  --animate-toast-in: pa-toast-in 200ms cubic-bezier(0.2, 0, 0, 1);
+  --animate-toast-out: pa-toast-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  --animate-dialog-in: pa-dialog-in 200ms cubic-bezier(0.2, 0, 0, 1);
+
+  @keyframes pa-pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+  }
+  @keyframes pa-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes pa-toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes pa-toast-out {
+    to {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+  }
+  @keyframes pa-dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+}
+
+/* Fond assombri des dialogues : fondu */
+dialog[open]::backdrop {
+  animation: pa-fade-in 200ms ease-out;
+}
+
+/* Changement de thème : pas de transition parasite le temps de la bascule (classe posée par setTheme) */
+.pa-theme-switching,
+.pa-theme-switching *,
+.pa-theme-switching *::before,
+.pa-theme-switching *::after {
+  transition: none !important;
+}

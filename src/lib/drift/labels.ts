@@ -1,0 +1,30 @@
+// Libellés courts des variables de shared/features.json pour les tableaux de dérive (sans donnée individuelle)
+export const FEATURE_SHORT_LABELS: Record<string, string> = {
+  tenure_months: "Ancienneté (mois)",
+  contract_cdd: "Contrat CDD",
+  grade_level: "Niveau de grade",
+  months_since_promotion: "Mois depuis la dernière promotion",
+  job_change_12m: "Changement de poste sur 12 mois",
+  compa_ratio: "Compa-ratio (salaire / médiane du poste)",
+  raise_pct_12m: "Augmentation sur 12 mois",
+  months_since_raise: "Mois depuis la dernière augmentation",
+  overtime_h_avg_3m: "Heures sup. par mois (moyenne 3 mois)",
+  overtime_trend_6m: "Tendance des heures sup. (6 mois)",
+  late_count_3m: "Retards sur 3 mois",
+  arrival_std_min_3m: "Irrégularité des arrivées (3 mois)",
+  no_badge_days_3m: "Jours sans pointage ni absence (3 mois)",
+  absence_rate_3m: "Taux d'absence hors santé (3 mois)",
+  absence_rate_12m: "Taux d'absence hors santé (12 mois)",
+  short_episodes_12m: "Absences courtes sur 12 mois",
+  bradford_12m: "Facteur de Bradford (12 mois)",
+  training_hours_12m: "Heures de formation sur 12 mois",
+  mandatory_training_overdue: "Formation obligatoire en retard",
+  last_eval_score: "Dernière évaluation (/5)",
+  eval_delta: "Évolution de l'évaluation",
+  eval_missing: "Évaluation absente",
+  team_exit_rate_6m: "Départs volontaires dans l'équipe (6 mois)",
+  manager_change_12m: "Changement de manager sur 12 mois",
+  team_size: "Taille de l'équipe",
+};
+
+export const featureShortLabel = (name: string) => FEATURE_SHORT_LABELS[name] ?? name;

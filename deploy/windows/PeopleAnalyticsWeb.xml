@@ -1,0 +1,49 @@
+<!--
+  Service Windows « web » (WinSW 2.12) : serveur Next.js en production, écoute locale uniquement,
+  exposé en HTTPS par Caddy (deploy/caddy/Caddyfile).
+  Installation : copier WinSW-x64.exe en C:\PeopleAnalytics\services\PeopleAnalyticsWeb.exe à côté de ce fichier,
+  puis « PeopleAnalyticsWeb.exe install » (voir docs/INSTALLATION.md). Adapter les chemins si l'arborescence diffère.
+  Variables applicatives (DATABASE_PATH, APP_URL...) : lues par Next.js dans C:\PeopleAnalytics\app\.env.
+-->
+<service>
+  <id>PeopleAnalyticsWeb</id>
+  <name>People Analytics AJIR - Web</name>
+  <description>Module People Analytics AJIR : interface web et API (Next.js), 127.0.0.1:3000 derrière le reverse proxy HTTPS.</description>
+
+  <executable>C:\Program Files\nodejs\node.exe</executable>
+  <arguments>node_modules\next\dist\bin\next start --hostname 127.0.0.1 --port 3000</arguments>
+  <workingdirectory>C:\PeopleAnalytics\app</workingdirectory>
+  <env name="NODE_ENV" value="production"/>
+  <!-- Seulement si le build a été produit avec un dossier de sortie spécifique (next.config.ts) : -->
+  <!-- <env name="NEXT_DIST_DIR" value=".next"/> -->
+
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+
+  <!-- Arrêt : WinSW envoie Ctrl+C (arrêt propre de Next.js), puis tue le processus après ce délai. -->
+  <stoptimeout>30 sec</stoptimeout>
+
+  <!-- Redémarrage automatique en cas d'arrêt anormal ; compteur remis à zéro après 1 h sans incident. -->
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="2 min"/>
+  <resetfailure>1 hour</resetfailure>
+
+  <!-- Journaux : PeopleAnalyticsWeb.out.log / .err.log / .wrapper.log, rotation par taille (10 Mo x 8 fichiers). -->
+  <logpath>C:\PeopleAnalytics\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+
+  <!--
+    Compte d'exécution : compte local dédié (même compte que le worker et la tâche de sauvegarde).
+    Préférer « PeopleAnalyticsWeb.exe install /p » ou services.msc pour ne pas laisser de mot de passe dans ce fichier.
+  <serviceaccount>
+    <domain>.</domain>
+    <user>svc-peopleanalytics</user>
+    <password>A_RENSEIGNER</password>
+    <allowservicelogon>true</allowservicelogon>
+  </serviceaccount>
+  -->
+</service>

@@ -1,0 +1,160 @@
+{
+  "outil": "@axe-core/playwright, règles wcag2a, wcag2aa, wcag21a, wcag21aa",
+  "date": "2026-10-02",
+  "resultats": [
+    {
+      "page": "console",
+      "role": "admin",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "console",
+      "role": "admin",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "utilisateurs",
+      "role": "admin",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "utilisateurs",
+      "role": "admin",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "audit",
+      "role": "admin",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "audit",
+      "role": "admin",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "parametres",
+      "role": "admin",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "parametres",
+      "role": "admin",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "interdit",
+      "role": "admin",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "interdit",
+      "role": "admin",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "introuvable",
+      "role": "admin",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "introuvable-app",
+      "role": "admin",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "alertes",
+      "role": "rh",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "alertes",
+      "role": "rh",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "alerte-detail",
+      "role": "rh",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "alerte-detail",
+      "role": "rh",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "droit-acces-salarie",
+      "role": "rh",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "droit-acces-salarie",
+      "role": "rh",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "compte",
+      "role": "manager",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "compte",
+      "role": "manager",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "aide",
+      "role": "manager",
+      "theme": "clair",
+      "largeur": 1440,
+      "violations": 0
+    },
+    {
+      "page": "aide",
+      "role": "manager",
+      "theme": "sombre",
+      "largeur": 1440,
+      "violations": 0
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+# People Analytics AJIR - reverse proxy HTTPS (Caddy 2.7 ou plus récent, windows amd64)
+# Copier en C:\PeopleAnalytics\caddy\Caddyfile ; valider avant tout démarrage ou rechargement :
+#   caddy.exe validate --config C:\PeopleAnalytics\caddy\Caddyfile --adapter caddyfile
+# À adapter : nom DNS du site, chemins des certificats, port interne (3000 = PeopleAnalyticsWeb.xml).
+# Chemins Windows écrits avec des « / ».
+
+{
+	# Aucun certificat public (ACME) : certificat de la PKI interne du client, ou autorité interne de Caddy.
+	# Ne pas tenter d'installer la racine de l'autorité interne dans le magasin Windows du serveur.
+	skip_install_trust
+
+	# Si IIS (AJIR) occupe déjà les ports 80/443 : décommenter, et publier le site sur un autre port
+	# (ex. « people-analytics.client.local:8443 » ci-dessous).
+	# http_port 8080
+	# https_port 8443
+
+	# API d'administration de Caddy : boucle locale uniquement (valeur par défaut), utilisée par « caddy reload ».
+	admin localhost:2019
+
+	# Journal de fonctionnement de Caddy
+	log {
+		output file C:/PeopleAnalytics/logs/caddy.log {
+			roll_size 10MiB
+			roll_keep 8
+		}
+	}
+}
+
+people-analytics.client.local {
+	# Option A (recommandée) : certificat serveur délivré par la PKI interne du client, format PEM
+	# (chaîne complète dans le .crt). Clé privée lisible par le seul compte du service proxy.
+	tls C:/PeopleAnalytics/caddy/certs/people-analytics.crt C:/PeopleAnalytics/caddy/certs/people-analytics.key
+
+	# Option B : autorité interne de Caddy (remplace la ligne ci-dessus). Sa racine
+	# (C:/PeopleAnalytics/caddy/data/caddy/pki/authorities/local/root.crt) doit être déployée par GPO sur les postes.
+	# tls internal
+
+	# Les imports passent par l'API (9 Mo maximum côté application).
+	request_body {
+		max_size 20MB
+	}
+
+	# En-têtes de sécurité. « defer » : appliqués après la réponse de Next.js, qu'ils remplacent
+	# (next.config.ts pose déjà nosniff, SAMEORIGIN et same-origin : mêmes valeurs, sans doublon).
+	header {
+		defer
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy "same-origin"
+		# Next.js (App Router, sans nonce) injecte des scripts en ligne ; ECharts et React des styles en ligne.
+		# Si AJIR doit afficher le module dans une iframe, ajouter son origine à frame-ancestors et retirer X-Frame-Options.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+		-Server
+		-X-Powered-By
+	}
+
+	# Next.js écoute sur la boucle locale uniquement. Caddy transmet Host, X-Forwarded-For/-Proto/-Host
+	# (contrôle d'origine des mutations, adresse IP des sessions, liens d'activation).
+	reverse_proxy 127.0.0.1:3000
+
+	# Journal d'accès : 30 jours. Le jeton d'activation (?token=) et le Referer sont retirés ;
+	# Caddy masque déjà les en-têtes Cookie et Authorization.
+	log {
+		output file C:/PeopleAnalytics/logs/caddy-access.log {
+			roll_size 10MiB
+			roll_keep 10
+			roll_keep_for 720h
+		}
+		format filter {
+			wrap json
+			fields {
+				request>uri query {
+					replace token REDACTED
+				}
+				request>headers>Referer delete
+			}
+		}
+	}
+}

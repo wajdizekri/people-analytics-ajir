@@ -1,0 +1,6 @@
+matricule;training_code;title;mandatory;start_date;end_date;due_date;hours;status
+E003;SST-2026;Santé et sécurité au travail;1;2026-01-15;2026-01-15;2026-01-31;7;TERMINEE
+E002;MGMT-01;Management d'équipe;0;2026-01-19;2026-01-20;;14;TERMINEE
+E004;SST-2026;Santé et sécurité au travail;1;;;2026-01-31;7;PLANIFIEE
+E005;NEGO-02;Négociation commerciale;0;2026-02-12;2026-02-10;;7;TERMINEE
+E007;SST-2026;Santé et sécurité au travail;1;;;2026-02-28;7;REPORTEE

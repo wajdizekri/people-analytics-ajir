@@ -1,0 +1,601 @@
+{
+  "name": "charge_medium_s1",
+  "db": "data/ml-charge_medium_s1.db",
+  "run_date": "2026-09-30",
+  "data_hash": "f9ae90f63c346966ace4a39c34e22e1bbba73fe5791ba96c621da4785354c724",
+  "months": [
+    "2020-09",
+    "2026-08"
+  ],
+  "test_origins": [
+    "2024-08",
+    "2026-07"
+  ],
+  "rows": {
+    "EQUIPE": 25608,
+    "DEPARTEMENT": 1320
+  },
+  "groups_last_origin": {
+    "EQUIPE": 154,
+    "DEPARTEMENT": 8
+  },
+  "forecast": {
+    "EQUIPE": {
+      "1": {
+        "n": 3729,
+        "groups": 179,
+        "mean_I": 7.9265,
+        "mae": {
+          "RIDGE": 2.2599,
+          "NAIF_SAISONNIER": 3.9418,
+          "MOYENNE_MOBILE_3": 2.3712,
+          "DERNIER_MOIS": 2.4259
+        },
+        "skill_vs_best_baseline": 0.046947,
+        "best_baseline": "MOYENNE_MOBILE_3",
+        "delta_vs_best": [
+          -0.11132,
+          -0.14917,
+          -0.075838
+        ],
+        "delta_vs_seasonal": [
+          -1.6819,
+          -1.8794,
+          -1.5163
+        ],
+        "coverage": 0.80021,
+        "coverage_below": 0.10432,
+        "coverage_above": 0.095468,
+        "mean_width": 7.7322,
+        "alphas": [
+          30.0,
+          100.0,
+          300.0,
+          1000.0
+        ]
+      },
+      "2": {
+        "n": 3574,
+        "groups": 177,
+        "mean_I": 7.9455,
+        "mae": {
+          "RIDGE": 2.5587,
+          "NAIF_SAISONNIER": 3.9512,
+          "MOYENNE_MOBILE_3": 2.6889,
+          "DERNIER_MOIS": 2.824
+        },
+        "skill_vs_best_baseline": 0.048408,
+        "best_baseline": "MOYENNE_MOBILE_3",
+        "delta_vs_best": [
+          -0.13016,
+          -0.18012,
+          -0.082804
+        ],
+        "delta_vs_seasonal": [
+          -1.3924,
+          -1.546,
+          -1.2443
+        ],
+        "coverage": 0.79575,
+        "coverage_below": 0.10632,
+        "coverage_above": 0.097929,
+        "mean_width": 8.801,
+        "alphas": [
+          0.3,
+          300.0,
+          1000.0
+        ]
+      },
+      "3": {
+        "n": 3418,
+        "groups": 176,
+        "mean_I": 7.9835,
+        "mae": {
+          "RIDGE": 2.779,
+          "NAIF_SAISONNIER": 3.9669,
+          "MOYENNE_MOBILE_3": 2.9625,
+          "DERNIER_MOIS": 3.0714
+        },
+        "skill_vs_best_baseline": 0.061958,
+        "best_baseline": "MOYENNE_MOBILE_3",
+        "delta_vs_best": [
+          -0.18355,
+          -0.24397,
+          -0.12706
+        ],
+        "delta_vs_seasonal": [
+          -1.1879,
+          -1.3272,
+          -1.0524
+        ],
+        "coverage": 0.79374,
+        "coverage_below": 0.10971,
+        "coverage_above": 0.096548,
+        "mean_width": 9.5229,
+        "alphas": [
+          300.0,
+          1000.0
+        ]
+      },
+      "all": {
+        "n": 10721,
+        "groups": 179,
+        "mean_I": 7.951,
+        "mae": {
+          "RIDGE": 2.525,
+          "NAIF_SAISONNIER": 3.9529,
+          "MOYENNE_MOBILE_3": 2.6656,
+          "DERNIER_MOIS": 2.7644
+        },
+        "skill_vs_best_baseline": 0.052757,
+        "best_baseline": "MOYENNE_MOBILE_3",
+        "delta_vs_best": [
+          -0.14063,
+          -0.18537,
+          -0.10011
+        ],
+        "delta_vs_seasonal": [
+          -1.4279,
+          -1.5953,
+          -1.29
+        ],
+        "coverage": 0.79666,
+        "coverage_below": 0.10671,
+        "coverage_above": 0.096633,
+        "mean_width": 8.6594,
+        "alphas": [
+          0.3,
+          30.0,
+          100.0,
+          300.0,
+          1000.0
+        ]
+      }
+    },
+    "DEPARTEMENT": {
+      "1": {
+        "n": 192,
+        "groups": 8,
+        "mean_I": 7.5509,
+        "mae": {
+          "RIDGE": 0.63997,
+          "NAIF_SAISONNIER": 1.1007,
+          "MOYENNE_MOBILE_3": 0.63795,
+          "DERNIER_MOIS": 0.62955
+        },
+        "skill_vs_best_baseline": -0.016559,
+        "best_baseline": "DERNIER_MOIS",
+        "delta_vs_best": [
+          0.010425,
+          -0.059928,
+          0.080258
+        ],
+        "delta_vs_seasonal": [
+          -0.46069,
+          -0.62411,
+          -0.32274
+        ],
+        "coverage": 0.78646,
+        "coverage_below": 0.098958,
+        "coverage_above": 0.11458,
+        "mean_width": 2.1493,
+        "alphas": [
+          100.0,
+          300.0
+        ]
+      },
+      "2": {
+        "n": 184,
+        "groups": 8,
+        "mean_I": 7.5699,
+        "mae": {
+          "RIDGE": 0.75233,
+          "NAIF_SAISONNIER": 1.0854,
+          "MOYENNE_MOBILE_3": 0.78741,
+          "DERNIER_MOIS": 0.74765
+        },
+        "skill_vs_best_baseline": -0.0062623,
+        "best_baseline": "DERNIER_MOIS",
+        "delta_vs_best": [
+          0.004682,
+          -0.070322,
+          0.081904
+        ],
+        "delta_vs_seasonal": [
+          -0.33304,
+          -0.50149,
+          -0.18346
+        ],
+        "coverage": 0.80435,
+        "coverage_below": 0.1087,
+        "coverage_above": 0.086957,
+        "mean_width": 2.5776,
+        "alphas": [
+          30.0,
+          100.0,
+          300.0
+        ]
+      },
+      "3": {
+        "n": 176,
+        "groups": 8,
+        "mean_I": 7.6111,
+        "mae": {
+          "RIDGE": 0.83399,
+          "NAIF_SAISONNIER": 1.0905,
+          "MOYENNE_MOBILE_3": 0.85058,
+          "DERNIER_MOIS": 0.8375
+        },
+        "skill_vs_best_baseline": 0.0042007,
+        "best_baseline": "DERNIER_MOIS",
+        "delta_vs_best": [
+          -0.0035181,
+          -0.10121,
+          0.093611
+        ],
+        "delta_vs_seasonal": [
+          -0.2565,
+          -0.40689,
+          -0.13544
+        ],
+        "coverage": 0.76705,
+        "coverage_below": 0.11932,
+        "coverage_above": 0.11364,
+        "mean_width": 2.7603,
+        "alphas": [
+          100.0,
+          300.0,
+          1000.0
+        ]
+      },
+      "all": {
+        "n": 552,
+        "groups": 8,
+        "mean_I": 7.5764,
+        "mae": {
+          "RIDGE": 0.73929,
+          "NAIF_SAISONNIER": 1.0923,
+          "MOYENNE_MOBILE_3": 0.75557,
+          "DERNIER_MOIS": 0.73522
+        },
+        "skill_vs_best_baseline": -0.0055289,
+        "best_baseline": "DERNIER_MOIS",
+        "delta_vs_best": [
+          0.004065,
+          -0.066704,
+          0.075529
+        ],
+        "delta_vs_seasonal": [
+          -0.35304,
+          -0.51082,
+          -0.2191
+        ],
+        "coverage": 0.78623,
+        "coverage_below": 0.1087,
+        "coverage_above": 0.10507,
+        "mean_width": 2.4868,
+        "alphas": [
+          30.0,
+          100.0,
+          300.0,
+          1000.0
+        ]
+      }
+    }
+  },
+  "ablations": {
+    "EQUIPE": {
+      "sans_calendrier_tunisien": {
+        "1": {
+          "mae": 2.2475,
+          "coverage": 0.79995
+        },
+        "2": {
+          "mae": 2.5545,
+          "coverage": 0.79351
+        },
+        "3": {
+          "mae": 2.7721,
+          "coverage": 0.79315
+        },
+        "all": {
+          "mae": 2.5171,
+          "coverage": 0.79563
+        }
+      },
+      "sans_effectif_departs": {
+        "1": {
+          "mae": 2.2624,
+          "coverage": 0.7978
+        },
+        "2": {
+          "mae": 2.5586,
+          "coverage": 0.79547
+        },
+        "3": {
+          "mae": 2.7795,
+          "coverage": 0.79345
+        },
+        "all": {
+          "mae": 2.526,
+          "coverage": 0.79563
+        }
+      },
+      "sans_saisonnalite": {
+        "1": {
+          "mae": 2.2518,
+          "coverage": 0.79807
+        },
+        "2": {
+          "mae": 2.5661,
+          "coverage": 0.79127
+        },
+        "3": {
+          "mae": 2.7999,
+          "coverage": 0.78906
+        },
+        "all": {
+          "mae": 2.5313,
+          "coverage": 0.79293
+        }
+      }
+    },
+    "DEPARTEMENT": {
+      "sans_calendrier_tunisien": {
+        "1": {
+          "mae": 0.63687,
+          "coverage": 0.76562
+        },
+        "2": {
+          "mae": 0.73373,
+          "coverage": 0.80435
+        },
+        "3": {
+          "mae": 0.84008,
+          "coverage": 0.76136
+        },
+        "all": {
+          "mae": 0.73395,
+          "coverage": 0.77717
+        }
+      },
+      "sans_effectif_departs": {
+        "1": {
+          "mae": 0.63828,
+          "coverage": 0.79167
+        },
+        "2": {
+          "mae": 0.73808,
+          "coverage": 0.79891
+        },
+        "3": {
+          "mae": 0.81661,
+          "coverage": 0.76136
+        },
+        "all": {
+          "mae": 0.72841,
+          "coverage": 0.78442
+        }
+      },
+      "sans_saisonnalite": {
+        "1": {
+          "mae": 0.63098,
+          "coverage": 0.79167
+        },
+        "2": {
+          "mae": 0.77803,
+          "coverage": 0.77174
+        },
+        "3": {
+          "mae": 0.84735,
+          "coverage": 0.75
+        },
+        "all": {
+          "mae": 0.74898,
+          "coverage": 0.77174
+        }
+      }
+    }
+  },
+  "tension": {
+    "threshold_h": 14.3,
+    "quantile": 0.85,
+    "EQUIPE": {
+      "RIDGE": {
+        "n": 10721,
+        "prevalence": 0.13152,
+        "flagged_share": 0.081989,
+        "precision": 0.72241,
+        "recall": 0.45035
+      },
+      "RIDGE_BORNE_BASSE": {
+        "n": 10721,
+        "prevalence": 0.13152,
+        "flagged_share": 0.0080216,
+        "precision": 0.88372,
+        "recall": 0.053901
+      },
+      "MOYENNE_MOBILE_3": {
+        "n": 10721,
+        "prevalence": 0.13152,
+        "flagged_share": 0.11072,
+        "precision": 0.59983,
+        "recall": 0.50496
+      },
+      "NAIF_SAISONNIER": {
+        "n": 10721,
+        "prevalence": 0.13152,
+        "flagged_share": 0.1221,
+        "precision": 0.38044,
+        "recall": 0.35319
+      }
+    },
+    "DEPARTEMENT": {
+      "RIDGE": {
+        "n": 552,
+        "prevalence": 0.0,
+        "flagged_share": 0.0,
+        "precision": null,
+        "recall": null
+      },
+      "RIDGE_BORNE_BASSE": {
+        "n": 552,
+        "prevalence": 0.0,
+        "flagged_share": 0.0,
+        "precision": null,
+        "recall": null
+      },
+      "MOYENNE_MOBILE_3": {
+        "n": 552,
+        "prevalence": 0.0,
+        "flagged_share": 0.0,
+        "precision": null,
+        "recall": null
+      },
+      "NAIF_SAISONNIER": {
+        "n": 552,
+        "prevalence": 0.0,
+        "flagged_share": 0.0,
+        "precision": null,
+        "recall": null
+      }
+    }
+  },
+  "rule": {
+    "months": [
+      "2021-09",
+      "2026-02"
+    ],
+    "person_months": 63417,
+    "base_rate": 0.031932,
+    "grid": [
+      {
+        "threshold_h": 15.0,
+        "months": 2,
+        "flagged_share": 0.096457,
+        "rate_flagged": 0.10332,
+        "rate_others": 0.024311,
+        "lift": 3.2356,
+        "persistence": 0.70644,
+        "flagged_with_risk_share": 0.29966,
+        "rate_flagged_risk": 0.13202,
+        "rate_flagged_norisk": 0.091036,
+        "rate_risk_only": 0.044712
+      },
+      {
+        "threshold_h": 15.0,
+        "months": 3,
+        "flagged_share": 0.067111,
+        "rate_flagged": 0.13111,
+        "rate_others": 0.024797,
+        "lift": 4.1059,
+        "persistence": 0.74904,
+        "flagged_with_risk_share": 0.32942,
+        "rate_flagged_risk": 0.15478,
+        "rate_flagged_norisk": 0.11948,
+        "rate_risk_only": 0.045332
+      },
+      {
+        "threshold_h": 15.0,
+        "months": 4,
+        "flagged_share": 0.049356,
+        "rate_flagged": 0.15463,
+        "rate_others": 0.025561,
+        "lift": 4.8426,
+        "persistence": 0.77475,
+        "flagged_with_risk_share": 0.33387,
+        "rate_flagged_risk": 0.18756,
+        "rate_flagged_norisk": 0.13813,
+        "rate_risk_only": 0.045833
+      },
+      {
+        "threshold_h": 20.0,
+        "months": 2,
+        "flagged_share": 0.049624,
+        "rate_flagged": 0.13028,
+        "rate_others": 0.026796,
+        "lift": 4.0801,
+        "persistence": 0.61763,
+        "flagged_with_risk_share": 0.34223,
+        "rate_flagged_risk": 0.13649,
+        "rate_flagged_norisk": 0.12705,
+        "rate_risk_only": 0.051108
+      },
+      {
+        "threshold_h": 20.0,
+        "months": 3,
+        "flagged_share": 0.029819,
+        "rate_flagged": 0.16552,
+        "rate_others": 0.027826,
+        "lift": 5.1836,
+        "persistence": 0.65964,
+        "flagged_with_risk_share": 0.35008,
+        "rate_flagged_risk": 0.17069,
+        "rate_flagged_norisk": 0.16273,
+        "rate_risk_only": 0.052389,
+        "lift_ci95": [
+          4.3871,
+          6.0863
+        ],
+        "flagged_last_month": 23,
+        "active_last_month": 1175
+      },
+      {
+        "threshold_h": 20.0,
+        "months": 4,
+        "flagged_share": 0.019127,
+        "rate_flagged": 0.20528,
+        "rate_others": 0.028551,
+        "lift": 6.4286,
+        "persistence": 0.67625,
+        "flagged_with_risk_share": 0.35532,
+        "rate_flagged_risk": 0.22274,
+        "rate_flagged_norisk": 0.19565,
+        "rate_risk_only": 0.052869
+      },
+      {
+        "threshold_h": 25.0,
+        "months": 2,
+        "flagged_share": 0.022155,
+        "rate_flagged": 0.16228,
+        "rate_others": 0.028978,
+        "lift": 5.0821,
+        "persistence": 0.4866,
+        "flagged_with_risk_share": 0.32669,
+        "rate_flagged_risk": 0.16993,
+        "rate_flagged_norisk": 0.15856,
+        "rate_risk_only": 0.054781
+      },
+      {
+        "threshold_h": 25.0,
+        "months": 3,
+        "flagged_share": 0.010549,
+        "rate_flagged": 0.21375,
+        "rate_others": 0.029993,
+        "lift": 6.6941,
+        "persistence": 0.50989,
+        "flagged_with_risk_share": 0.32287,
+        "rate_flagged_risk": 0.19907,
+        "rate_flagged_norisk": 0.22075,
+        "rate_risk_only": 0.056861
+      },
+      {
+        "threshold_h": 25.0,
+        "months": 4,
+        "flagged_share": 0.0052825,
+        "rate_flagged": 0.28657,
+        "rate_others": 0.030579,
+        "lift": 8.9744,
+        "persistence": 0.51524,
+        "flagged_with_risk_share": 0.35522,
+        "rate_flagged_risk": 0.26891,
+        "rate_flagged_norisk": 0.2963,
+        "rate_risk_only": 0.057382
+      }
+    ],
+    "champion": [
+      "b0-v1",
+      "B0"
+    ]
+  }
+}

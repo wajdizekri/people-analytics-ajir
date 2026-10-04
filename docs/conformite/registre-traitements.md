@@ -1,0 +1,30 @@
+# Registre des traitements — fiche « People Analytics & Predictive Turnover »
+
+Fiche type à reporter dans le registre des traitements de l'entreprise cliente et à réutiliser pour la déclaration auprès de l'INPDP (loi organique n° 2004-63, art. 7 et 8). Élément de l'**analyse de conformité** du traitement ; les champs entre crochets sont à compléter par le responsable du traitement.
+
+| Rubrique | Contenu |
+|---|---|
+| Nom du traitement | Analyse des données RH et estimation du risque de départ volontaire (module People Analytics d'AJIR) |
+| Date de création / de mise à jour de la fiche | [date de mise en service] / 30/09/2026 (version 1) |
+| Responsable du traitement | [raison sociale, adresse, représentant légal] |
+| Contact pour l'exercice des droits | [service RH, adresse électronique, bureau] |
+| Juriste ou délégué à la protection des données | [nom, coordonnées] |
+| Éditeur du logiciel | ArabSoft (sous-traitant seulement s'il accède aux données, notamment pour un réentraînement du modèle ; clause de sous-traitance à prévoir) |
+| Finalités | 1. Aide à la décision RH en matière de rétention : estimation mensuelle, par salarié, de l'exposition au risque de démission à 6 mois, avec facteurs explicatifs et actions favorables proposées. 2. Suivi collectif des indicateurs RH (effectifs, turnover, absentéisme, formation, charge de travail, masse salariale). 3. Pilotage d'équipe par les managers, dans un périmètre limité. |
+| Finalités exclues | Décision automatique ; évaluation de la performance ; sanction ; licenciement ; fixation de la rémunération ; détection de fraude ou d'abus d'absence ; surveillance de l'activité |
+| Base juridique | [à qualifier par le juriste : consentement ou exception légale ; l'exception de l'article 16 pour les données « nécessaires au fonctionnement du travail » n'est pas certaine pour une estimation prédictive] |
+| Catégories de personnes | Salariés en poste ; salariés sortis dont l'historique est conservé ; utilisateurs de l'outil (RH, managers, administrateur) |
+| Catégories de données | Identification (matricule, nom, prénom) ; caractéristiques personnelles importées mais **exclues des calculs individuels** (sexe, date de naissance, gouvernorat, situation familiale) ; vie professionnelle (poste, département, grade, manager, contrats, carrière, sortie) ; rémunération mensuelle ; pointages ; absences par catégorie ; formations ; évaluations ; données produites (variables, estimations, facteurs, recommandations, alertes, interventions) ; comptes et journal d'audit |
+| Données sensibles | Catégories d'absence « maladie » et « maternité » (données de santé, art. 14 et 62 à 65) : importées comme catégorie seulement, sans motif médical, **jamais utilisées dans un calcul individuel** ; utilisées uniquement dans des totaux d'absentéisme |
+| Source des données | Exports mensuels du progiciel AJIR (CSV), déposés par l'administrateur de l'outil |
+| Destinataires internes | RH (toutes données) ; managers (niveau de risque et catégories de facteurs de leur hiérarchie, sans rémunération ni probabilité ; indicateurs masqués sous 5 personnes) ; administrateur de l'outil (aucune donnée RH nominative ; dans les rejets d'import, le matricule seul reste visible pour permettre la correction dans AJIR, sans montant, sans valeur brute sensible et, pour les absences, sans date, catégorie ni durée — arbitrage du 30/09/2026) |
+| Destinataires externes | Aucun en fonctionnement courant ; consultant de l'éditeur pour un réentraînement, sur autorisation écrite, panel identifié par un numéro interne |
+| Transferts hors de Tunisie | Aucun prévu par le module ; [à confirmer selon l'hébergement et le consultant] |
+| Durées de conservation | Données sources : [durée fixée par le client, notamment pour les salariés sortis] ; estimations, facteurs, risques individuels : 24 mois hors calcul publié ; exports AJIR déposés : 90 jours ; sessions : 10 heures ; sauvegardes : 30 jours ; journal d'audit : conservé en ligne (ajout seul), archivé chiffré hors ligne au-delà de 12 mois. Purge : `scripts/retention.ts` (simulation par défaut, `--apply`) |
+| Droits des personnes | Accès (copie complète JSON ou CSV zippé), opposition au traitement prédictif (suspension immédiate), rectification (dans AJIR, suivie dans l'outil) : écran « Droits des personnes », réponse sous un mois ; [procédure](procedure-exercice-des-droits.md) |
+| Information des personnes | [Note d'information](note-information.md) remise à chaque salarié et présentée aux instances représentatives avant la mise en service |
+| Mesures de sécurité | Installation sur site ; HTTPS ; mots de passe argon2id ; sessions opaques révocables, expiration glissante (2 h d'inactivité, 10 h au plus), sessions expirées purgées ; verrouillage après échecs ; autorisation vérifiée côté serveur à chaque accès ; vues filtrées par rôle en liste blanche ; séparation des tâches (administrateur sans donnée RH, rejets d'import masqués : matricule seul, rien sur les absences) ; journal d'audit en ajout seul des lectures sensibles, exports, simulations et refus ; sauvegardes quotidiennes vérifiées ; contrôles de qualité à l'import |
+| Analyse d'impact | [AIPD simplifiée](aipd.md), version 1 du 30/09/2026, à valider |
+| Déclaration INPDP | [numéro, date de dépôt, date d'acceptation ou d'opposition de l'Instance — à compléter] |
+| Archives du journal d'audit | [date, empreinte sha256, lieu de conservation de chaque archive annuelle] |
+| Historique de la fiche | v1 (30/09/2026) : création |

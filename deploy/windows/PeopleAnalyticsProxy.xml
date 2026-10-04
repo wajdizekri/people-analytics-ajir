@@ -1,0 +1,31 @@
+<!--
+  Service Windows « proxy » (WinSW 2.12) : Caddy 2 en reverse proxy HTTPS devant le service web.
+  caddy.exe (windows amd64) et le Caddyfile dans C:\PeopleAnalytics\caddy ; WinSW-x64.exe copié en PeopleAnalyticsProxy.exe.
+  Rechargement de la configuration sans coupure : voir docs/EXPLOITATION.md (commande caddy reload).
+-->
+<service>
+  <id>PeopleAnalyticsProxy</id>
+  <name>People Analytics AJIR - Proxy HTTPS</name>
+  <description>Reverse proxy HTTPS (Caddy) du module People Analytics AJIR.</description>
+
+  <executable>C:\PeopleAnalytics\caddy\caddy.exe</executable>
+  <arguments>run --config C:\PeopleAnalytics\caddy\Caddyfile --adapter caddyfile</arguments>
+  <workingdirectory>C:\PeopleAnalytics\caddy</workingdirectory>
+  <!-- Stockage de Caddy (autorité interne si « tls internal », verrous) : hors du profil utilisateur. -->
+  <env name="XDG_DATA_HOME" value="C:\PeopleAnalytics\caddy\data"/>
+  <env name="XDG_CONFIG_HOME" value="C:\PeopleAnalytics\caddy\config"/>
+
+  <startmode>Automatic</startmode>
+  <stoptimeout>15 sec</stoptimeout>
+
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="30 sec"/>
+  <onfailure action="restart" delay="2 min"/>
+  <resetfailure>1 hour</resetfailure>
+
+  <logpath>C:\PeopleAnalytics\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+</service>

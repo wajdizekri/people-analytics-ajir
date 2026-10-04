@@ -1,0 +1,78 @@
+{
+  "_doc": "Requêtes d'état de la projection des effectifs et de la masse salariale, exécutées telles quelles par TypeScript (state.ts) et Python (ml/workforce/state.py) : parité de l'état garantie par construction. {{ws}} = membres (début du premier CDI/CDD, comme agg_kpi_monthly) ; {{deptAt:X}} = département à la date X reconstitué depuis les MUTATION (même règle que refreshAggregates).",
+  "fragments": {
+    "ws": [
+      "WITH ws AS (",
+      "  SELECT e.*, CASE WHEN NOT EXISTS (SELECT 1 FROM contract c WHERE c.employee_id = e.id) THEN e.hire_date",
+      "    ELSE MAX(e.hire_date, (SELECT MIN(c.start_date) FROM contract c WHERE c.employee_id = e.id AND c.type IN ('CDI','CDD'))) END AS work_start",
+      "  FROM employee e)"
+    ],
+    "deptAt": [
+      "COALESCE(",
+      "  (SELECT COALESCE(dn.id, e.department_id) FROM career_event ce LEFT JOIN department dn ON dn.code = ce.new_value",
+      "    WHERE ce.employee_id = e.id AND ce.type = 'MUTATION' AND ce.date <= {d} ORDER BY ce.date DESC, ce.id DESC LIMIT 1),",
+      "  (SELECT COALESCE(dq.id, e.department_id) FROM career_event ce LEFT JOIN department dq ON dq.code = ce.old_value",
+      "    WHERE ce.employee_id = e.id AND ce.type = 'MUTATION' AND ce.date > {d} ORDER BY ce.date, ce.id LIMIT 1),",
+      "  e.department_id)"
+    ]
+  },
+  "queries": {
+    "departments": ["SELECT id, code, name FROM department ORDER BY id"],
+    "members": [
+      "{{ws}}",
+      "SELECT e.id AS id, {{deptAt:@asOf}} AS department_id, e.grade AS grade, e.job_title AS job_title, e.work_start AS work_start,",
+      "  (SELECT p.base_salary FROM payroll_monthly p WHERE p.employee_id = e.id AND p.month <= @m0 ORDER BY p.month DESC LIMIT 1) AS base,",
+      "  (SELECT c.type FROM contract c WHERE c.employee_id = e.id AND c.start_date <= @asOf ORDER BY c.start_date DESC, c.id DESC LIMIT 1) AS contract_type,",
+      "  (SELECT c.end_date FROM contract c WHERE c.employee_id = e.id AND c.start_date <= @asOf ORDER BY c.start_date DESC, c.id DESC LIMIT 1) AS contract_end,",
+      "  (SELECT MIN(x.exit_date) FROM exit_event x WHERE x.employee_id = e.id AND x.exit_date > @asOf AND x.recorded_at <= @asOf) AS known_exit,",
+      "  CASE WHEN e.birth_date IS NULL THEN NULL ELSE date(e.birth_date, @retAge, @retLag) END AS retire_date",
+      "FROM ws e",
+      "WHERE e.work_start IS NOT NULL AND e.hire_date <= @asOf AND e.work_start <= @asOf AND (e.exit_date IS NULL OR e.exit_date > @asOf)",
+      "ORDER BY e.id"
+    ],
+    "exits": [
+      "{{ws}}",
+      "SELECT {{deptAt:x.exit_date}} AS department_id, x.reason AS reason, COUNT(*) AS n",
+      "FROM exit_event x JOIN ws e ON e.id = x.employee_id",
+      "WHERE e.work_start IS NOT NULL AND e.work_start <= x.exit_date AND x.exit_date BETWEEN @fromDate AND @toDate",
+      "GROUP BY 1, 2 ORDER BY 1, 2"
+    ],
+    "aggregates": [
+      "SELECT month, department_id, headcount, entries, payroll_mass FROM agg_kpi_monthly",
+      "WHERE month BETWEEN @from AND @to ORDER BY month, department_id"
+    ],
+    "cdd": [
+      "{{ws}}",
+      "SELECT COUNT(*) AS ends,",
+      "  COALESCE(SUM(EXISTS (SELECT 1 FROM exit_event x WHERE x.employee_id = c.employee_id AND x.reason = 'FIN_CDD' AND x.exit_date = c.end_date)), 0) AS exits",
+      "FROM contract c JOIN ws e ON e.id = c.employee_id",
+      "WHERE c.type = 'CDD' AND c.end_date BETWEEN @fromDate AND @toDate",
+      "  AND NOT EXISTS (SELECT 1 FROM contract n WHERE n.employee_id = c.employee_id AND n.start_date > c.start_date AND n.start_date <= c.end_date)",
+      "  AND e.work_start IS NOT NULL AND e.work_start <= c.end_date AND (e.exit_date IS NULL OR e.exit_date >= c.end_date)"
+    ],
+    "retirement": [
+      "{{ws}}",
+      "SELECT COUNT(*) AS reached, COALESCE(SUM(EXISTS (SELECT 1 FROM exit_event x WHERE x.employee_id = e.id AND x.reason = 'RETRAITE')), 0) AS retired",
+      "FROM ws e",
+      "WHERE e.work_start IS NOT NULL AND e.birth_date IS NOT NULL AND date(e.birth_date, @retAge) BETWEEN @fromDate AND @toDate",
+      "  AND e.work_start <= date(e.birth_date, @retAge) AND (e.exit_date IS NULL OR e.exit_date >= date(e.birth_date, @retAge))"
+    ],
+    "baseMass": [
+      "{{ws}}, mo AS (SELECT DISTINCT month, date(month || '-01', '+1 month', '-1 day') AS end_date FROM agg_kpi_monthly WHERE month BETWEEN @from AND @to)",
+      "SELECT mo.month AS month, {{deptAt:mo.end_date}} AS department_id,",
+      "  SUM((SELECT p.base_salary FROM payroll_monthly p WHERE p.employee_id = e.id AND p.month <= mo.month ORDER BY p.month DESC LIMIT 1)) AS base",
+      "FROM mo JOIN ws e ON e.work_start IS NOT NULL AND e.hire_date <= mo.end_date AND e.work_start <= mo.end_date",
+      "  AND (e.exit_date IS NULL OR e.exit_date > mo.end_date)",
+      "GROUP BY 1, 2 ORDER BY 1, 2"
+    ],
+    "salaryGrowth": [
+      "{{ws}}",
+      "SELECT p1.month AS month, SUM(p1.base_salary) AS cur, SUM(p0.base_salary) AS prev",
+      "FROM payroll_monthly p1",
+      "JOIN payroll_monthly p0 ON p0.employee_id = p1.employee_id AND p0.month = strftime('%Y-%m', p1.month || '-01', '-1 month')",
+      "JOIN ws e ON e.id = p1.employee_id AND e.work_start IS NOT NULL AND e.work_start <= (p0.month || '-01')",
+      "WHERE p1.month BETWEEN @from AND @to",
+      "GROUP BY p1.month ORDER BY p1.month"
+    ]
+  }
+}

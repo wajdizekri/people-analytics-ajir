@@ -1,0 +1,73 @@
+{
+  "version": "b0-v1",
+  "kind": "B0",
+  "fsv": "v1",
+  "features": [
+    "tenure_months",
+    "contract_cdd",
+    "grade_level",
+    "months_since_promotion",
+    "job_change_12m",
+    "compa_ratio",
+    "raise_pct_12m",
+    "months_since_raise",
+    "overtime_h_avg_3m",
+    "overtime_trend_6m",
+    "late_count_3m",
+    "arrival_std_min_3m",
+    "no_badge_days_3m",
+    "absence_rate_3m",
+    "absence_rate_12m",
+    "short_episodes_12m",
+    "bradford_12m",
+    "training_hours_12m",
+    "mandatory_training_overdue",
+    "last_eval_score",
+    "eval_delta",
+    "eval_missing",
+    "team_exit_rate_6m",
+    "manager_change_12m",
+    "team_size"
+  ],
+  "rules": [
+    {
+      "feature": "compa_ratio",
+      "op": "<",
+      "value": 0.9,
+      "points": 2
+    },
+    {
+      "feature": "absence_rate_3m",
+      "op": ">",
+      "value": 0.04,
+      "points": 1
+    },
+    {
+      "feature": "short_episodes_12m",
+      "op": ">=",
+      "value": 3,
+      "points": 1
+    },
+    {
+      "feature": "mandatory_training_overdue",
+      "op": ">=",
+      "value": 1,
+      "points": 1
+    },
+    {
+      "feature": "overtime_h_avg_3m",
+      "op": ">",
+      "value": 20,
+      "points": 1
+    },
+    {
+      "feature": "months_since_promotion",
+      "op": ">",
+      "value": 48,
+      "points": 1
+    }
+  ],
+  "trained_at": null,
+  "metrics": {},
+  "note": "Score à règles (points), repli du produit. Règles = b0_rules de shared/features.json. Jamais présenté comme une probabilité."
+}

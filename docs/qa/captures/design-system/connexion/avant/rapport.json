@@ -1,0 +1,56 @@
+{
+  "phase": "avant",
+  "headed": false,
+  "date": "2026-10-02T10:32:53.728Z",
+  "runs": [
+    {
+      "theme": "clair",
+      "width": 1440,
+      "console": [],
+      "pageErrors": [],
+      "csp": []
+    },
+    {
+      "theme": "clair",
+      "width": 390,
+      "console": [],
+      "pageErrors": [],
+      "csp": []
+    },
+    {
+      "theme": "sombre",
+      "width": 1440,
+      "console": [],
+      "pageErrors": [
+        "TypeError: Cannot read properties of null (reading 'dataset')",
+        "TypeError: Cannot read properties of null (reading 'dataset')"
+      ],
+      "csp": []
+    },
+    {
+      "theme": "sombre",
+      "width": 390,
+      "console": [
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+        "[error] Refused to execute script from 'http://localhost:3000/_next/static/development/_clientMiddlewareManifest.js' because its MIME type ('application/json') is not executable, and strict MIME type checking is enabled.",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed",
+        "[error] ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed"
+      ],
+      "pageErrors": [
+        "TypeError: Cannot read properties of null (reading 'dataset')",
+        "TypeError: Cannot read properties of null (reading 'dataset')",
+        "Error: ./src/app/(app)/dashboard/page.tsx:559:7\nError: Expression expected\n  557 |         </Card>\n  558 |       )}\n> 559 |     </>\n      |       ^\n  560 |   );\n  561 | }\n  562 |\n\nParsing ecmascript source code failed\n\n"
+      ],
+      "csp": []
+    }
+  ]
+}
