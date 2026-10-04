@@ -10,7 +10,7 @@ import { EChart } from "@/components/charts/echart";
 import { SEMANTIC } from "@/components/charts/theme";
 import { OnThisPage } from "@/components/ux/on-this-page";
 import { pageContext } from "@/lib/dal/context";
-import { getDrift, type DriftVariable } from "@/lib/dal/drift";
+import { getDrift, type DriftDto, type DriftVariable } from "@/lib/dal/drift";
 import type { DriftStatus, PsiBin } from "@/lib/drift/psi";
 import { FEATURES } from "@/lib/features/spec";
 
@@ -27,24 +27,48 @@ const STATE: Record<DriftStatus, { tone: "bon" | "attention" | "critique"; label
     tone: "critique",
     label: "Dérive forte",
     light: "Feu rouge",
-    action: "Vérifier dans AJIR que ces données sont saisies et exportées comme avant. Un changement réel justifie de réentraîner le modèle.",
+    action: "Vérifier dans AJIR que ces données sont saisies et exportées comme avant. Le réentraînement dépend ensuite des démissions observées / prévues.",
   },
   MODEREE: { tone: "attention", label: "À surveiller", light: "Feu orange", action: "Surveiller au prochain calcul mensuel. Aucune action immédiate." },
   STABLE: { tone: "bon", label: "Stable", light: "Feu vert", action: "Aucune action." },
 };
 
-const ADVICE = {
-  REENTRAINER: { tone: "critique", label: "Action recommandée", title: "Envisager un réentraînement du modèle" },
-  SURVEILLER: { tone: "attention", label: "À surveiller", title: "Dérive à surveiller" },
-  RAS: { tone: "bon", label: "Données stables", title: "Aucune dérive notable" },
-} as const;
+type Verdict = { tone: "critique" | "attention" | "bon"; label: string; title: string; todo: string };
 
-const TODO = {
-  REENTRAINER:
-    "Que faire : vérifier d'abord dans AJIR que ces données sont saisies comme avant. Si le changement est réel, faire réentraîner le modèle, puis mettre en service la nouvelle version depuis la console d'administration.",
-  SURVEILLER: "Que faire : rien d'urgent ; revenir sur cette page après le prochain calcul mensuel.",
-  RAS: "Que faire : rien ; le modèle travaille sur des données comparables à celles de son apprentissage.",
-} as const;
+// Rouge seulement si les démissions observées / prévues sortent de la cible ; une dérive des variables seule reste ambre
+function verdictOf(d: DriftDto, hasStrong: boolean): Verdict {
+  const cal = d.calibration.status;
+  if (d.recommendation.level === "REENTRAINER")
+    return {
+      tone: "critique",
+      label: "Action recommandée",
+      title: "Envisager un réentraînement du modèle",
+      todo:
+        d.view === "ADMIN"
+          ? "Que faire : demandez un réentraînement à l'équipe technique. La mise en service se fait hors de l'interface, par une procédure tracée."
+          : "Que faire : prévenez l'administrateur de l'outil.",
+    };
+  if (d.recommendation.level === "RAS")
+    return {
+      tone: "bon",
+      label: "Données stables",
+      title: "Aucune dérive notable",
+      todo: "Que faire : rien ; le modèle travaille sur des données comparables à celles de son apprentissage.",
+    };
+  return {
+    tone: "attention",
+    label: "À surveiller",
+    title:
+      cal === "DANS_LA_CIBLE"
+        ? "Certaines variables ont changé depuis l'entraînement ; le classement reste fiable (démissions observées / prévues dans la cible)"
+        : cal === "HORS_CIBLE"
+          ? "Démissions éloignées du taux de la période de référence"
+          : "Certaines variables ont changé depuis l'entraînement ; démissions observées / prévues pas encore mesurées",
+    todo: hasStrong
+      ? "Que faire : vérifiez dans AJIR que ces données sont saisies comme avant. Revenez après le prochain calcul mensuel."
+      : "Que faire : rien d'urgent ; revenez sur cette page après le prochain calcul mensuel.",
+  };
+}
 
 // Valeur d'une classe dans l'unité de la variable (ratio affiché en %)
 function value(v: number, unit: string | undefined): string {
@@ -163,11 +187,11 @@ export default async function DriftPage() {
   const ctx = await pageContext(["RH", "ADMIN"]);
   const d = getDrift(ctx);
   const cal = d.calibration;
-  const advice = ADVICE[d.recommendation.level];
   const scored = d.variables.filter((v): v is Scored => v.psi != null && v.status != null);
   const sorted = [...scored].sort((a, b) => b.psi - a.psi);
   const strong = sorted.filter((v) => v.status === "FORTE");
   const moderate = sorted.filter((v) => v.status === "MODEREE");
+  const advice = verdictOf(d, strong.length > 0);
   const stable = sorted.filter((v) => v.status === "STABLE");
   const unscored = d.variables.filter((v) => v.psi == null || v.status == null);
   const refPeriod = d.reference ? `${formatMonth(d.reference.from.slice(0, 7))} – ${formatMonth(d.reference.to.slice(0, 7))}` : null;
@@ -188,6 +212,8 @@ export default async function DriftPage() {
   if (cal.status === "HORS_CIBLE" && oe != null)
     points.push(`Démissions observées égales à ${formatRatio(oe)} fois le niveau prévu sur les ${cal.recentCohorts} dernières cohortes (cible : ${target}).`);
   if (moderate.length) points.push(`${variables(moderate.length)} à surveiller : ${names(moderate)}.`);
+  if (cal.status === "DANS_LA_CIBLE" && oe != null && (strong.length || moderate.length))
+    points.push(`Démissions observées égales à ${formatRatio(oe)} fois le niveau prévu, dans la cible (${target}).`);
   if (!computable) points.push("Il faut deux mois de variables calculées : la comparaison se fera après le prochain calcul mensuel.");
   else if (!points.length) points.push("Toutes les variables sont stables et les démissions observées restent proches des prévisions.");
 
@@ -214,7 +240,7 @@ export default async function DriftPage() {
       />
       {computable ? (
         <StatusSummary tone={advice.tone} label={advice.label} title={`${advice.title}.`} points={points} ariaLabel="Verdict sur la dérive des données">
-          <p className="mt-3 rounded-control border border-line bg-surface-2 px-3 py-2 text-sm font-medium text-fg">{TODO[d.recommendation.level]}</p>
+          <p className="mt-3 rounded-control border border-line bg-surface-2 px-3 py-2 text-sm font-medium text-fg">{advice.todo}</p>
         </StatusSummary>
       ) : (
         <StatusSummary tone="neutre" label="En attente de données" title="Dérive non calculable pour l'instant." points={points} ariaLabel="Verdict sur la dérive des données" />
@@ -380,7 +406,7 @@ export default async function DriftPage() {
                       : "Taux de démission observé et prévu par cohorte"
                   }
                   subtitle={`Taux de démission à 6 mois (%) par cohorte mensuelle · titre : moyenne des ${cal.recentCohorts} dernières cohortes${
-                    cal.source === "PROBABILITE" ? "" : " · prévu : taux de la période de référence"
+                    cal.source === "PROBABILITE" ? "" : " · prévu : taux de référence"
                   }`}
                 >
                   <EChart

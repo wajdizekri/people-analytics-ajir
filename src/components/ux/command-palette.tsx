@@ -393,7 +393,7 @@ export function CommandPaletteDialog({ role, onClose }: { role: Role; onClose: (
           </div>
         )}
 
-        <p id={`${uid}-help`} className="sr-only border-t border-line px-4 py-2 text-xs text-fg-subtle sm:not-sr-only">
+        <p id={`${uid}-help`} className="border-t border-line px-4 py-2 text-xs text-fg-subtle max-sm:sr-only">
           Flèches haut et bas pour parcourir, Entrée pour ouvrir, Échap pour fermer.
         </p>
         <p role="status" aria-live="polite" className="sr-only">

@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { SessionUser } from "@/lib/auth/session";
+import { SUPERSEDED_COMMENT } from "@/lib/engine/recommendations";
 import type { SeedResult } from "../../scripts/seed-dev-ui";
 import { cleanupDb, db, setupSeededDb } from "./setup";
 
@@ -66,9 +67,24 @@ describe("pages de pilotage", () => {
     for (const f of ["contrat", "age", "anciennete"]) expect(dash).toContain(`name="${f}"`);
     const list = html(await p.employees(sp({ niveau: "ELEVE" })));
     expect(list).toContain("Probabilité à 6 mois");
-    const detail = html(await p.detail({ params: Promise.resolve({ id: String(inScopeScored()) }) }));
+    const id = inScopeScored();
+    const detail = html(await p.detail({ params: Promise.resolve({ id: String(id) }) }));
     for (const s of ["Faits</h2>", "Estimation</h2>", "Suggestions</h2>", "Estimation, pas une certitude. Facteurs associés, pas des causes.", "Absences pour raison de santé", "TND", "Probabilité à 6 mois"])
       expect(detail).toContain(s);
+    // Repère sur la probabilité (horizon = calcul + 6 mois) et bulle de définition
+    expect(detail).toMatch(/Sur 100 collaborateurs avec cette estimation, environ \d+ part(ent)? d&#x27;ici fin [a-zéû]+ \d{4} et \d+ restent\./);
+    expect(detail).toContain("Définition : Probabilité à 6 mois");
+    // Suggestions : « Pourquoi » chiffré (facteur déclencheur à la hausse) et « Que faire »
+    const trigger = db()
+      .prepare(
+        `SELECT f.phrase_rh AS phrase FROM recommendation r JOIN prediction p ON p.run_id = ? AND p.employee_id = r.employee_id
+         JOIN prediction_factor f ON f.prediction_id = p.id AND f.group_code = r.trigger_group AND f.direction = 'HAUSSE' AND f.rank <= 5
+         WHERE r.employee_id = ? AND r.status = 'PROPOSEE' LIMIT 1`,
+      )
+      .get(seed.currentRunId, id) as { phrase: string } | undefined;
+    expect(trigger).toBeDefined();
+    expect(detail).toContain(`Pourquoi :</span> ${trigger!.phrase.replace(/'/g, "&#x27;")} (calcul du `);
+    expect(detail).toContain("Que faire :</span>");
     // Résumé en tête (niveau + facteurs principaux), sens des facteurs en mots, courbe des niveaux avec tableau de données
     expect(detail).toContain("En bref");
     expect(detail).toMatch(/Risque (Élevé|Moyen|Faible) —/);
@@ -97,8 +113,22 @@ describe("pages de pilotage", () => {
     expect(list).not.toContain("Probabilité");
     const detail = html(await p.detail({ params: Promise.resolve({ id: String(inScopeScored()) }) }));
     expect(detail).toContain("Catégories de facteurs associés");
-    expect(detail).toMatch(/Risque (Élevé|Moyen|Faible) —/);
-    for (const s of ["TND", "Probabilité", "risque moyen", "Absences pour raison de santé", "Congé annuel", "Fait monter le risque", "Marquer comme réalisée", "Rejeter avec motif"])
+    expect(detail).toMatch(/Risque (Élevé|Moyen|Faible) — (domaines? qui f(on|ai)t monter|aucun domaine)/);
+    expect(detail).toMatch(/Domaines qui font monter l&#x27;estimation|Aucun domaine ne fait nettement monter l&#x27;estimation\./);
+    expect(detail).toContain("Le niveau sert à choisir avec qui échanger en premier, jamais à juger une personne. Parlez-en avec la RH.");
+    for (const s of [
+      "TND",
+      "Probabilité",
+      "risque moyen",
+      "Absences pour raison de santé",
+      "Congé annuel",
+      "Fait monter le risque",
+      "Marquer comme réalisée",
+      "Rejeter avec motif",
+      "Pourquoi :",
+      "Sur 100 collaborateurs",
+      "Actions proposées pour ce collaborateur",
+    ])
       expect(detail).not.toContain(s);
     const abs = html(await p.absenteeism(sp()));
     expect(abs).not.toContain("Signaux individuels");
@@ -176,6 +206,31 @@ describe("pages de pilotage", () => {
     expect(recos).toMatch(/Pour qui[\s\S]*Pourquoi[\s\S]*Que faire/);
     expect(recos).toContain('href="/recommendations?statut=PROPOSEE"');
     expect(recos).toContain("Niveau de risque actuel");
+  });
+
+  it("recommandation remplacée par un nouveau calcul : « Remplacée », hors du taux d'adoption, sur la liste et la fiche", async () => {
+    const id = inScopeScored();
+    const reco = Number(
+      db()
+        .prepare(
+          "INSERT INTO recommendation (employee_id, action_code, trigger_group, status, comment, created_at, updated_at) VALUES (?, 'PLAN_FORMATION', 'FORMATION_EVAL', 'REJETEE', ?, '2026-08-01T08:00:00Z', '2026-09-30T08:00:00Z')",
+        )
+        .run(id, SUPERSEDED_COMMENT).lastInsertRowid,
+    );
+    try {
+      asRh();
+      const p = await pages();
+      const dept = (db().prepare("SELECT department_id AS d FROM employee WHERE id = ?").get(id) as { d: number }).d;
+      const recos = html(await p.recommendations(sp({ statut: "REJETEE", action: "PLAN_FORMATION", departement: String(dept) })));
+      expect(recos).toContain("1 remplacée par un nouveau calcul, hors du taux.");
+      expect(recos).toContain("Remplacée par un nouveau calcul le 30/09/2026, sans décision de la RH");
+      expect(recos).not.toContain(SUPERSEDED_COMMENT);
+      const detail = html(await p.detail({ params: Promise.resolve({ id: String(id) }) }));
+      expect(detail).toContain("Remplacée par un nouveau calcul du risque, sans décision de la RH.");
+      expect(detail).not.toContain(SUPERSEDED_COMMENT);
+    } finally {
+      db().prepare("DELETE FROM recommendation WHERE id = ?").run(reco);
+    }
   });
 
   it("fiche : opposition au traitement prédictif affichée à la RH seule, sans simulation", async () => {

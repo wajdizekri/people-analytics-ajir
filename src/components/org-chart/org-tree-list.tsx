@@ -13,7 +13,13 @@ type SearchResult = { keys: Set<string>; nodeHits: Set<string>; memberHits: Map<
 
 // Parcours au clavier des lignes dépliables (summary[data-tree]) : seules les lignes affichées sont dans le DOM (enfants rendus à l'ouverture).
 // Haut / bas : ligne précédente / suivante ; droite : déplier, puis premier enfant ; gauche : replier, puis parent ; Début / Fin.
-export function treeKeyTarget(key: string, current: HTMLElement, rows: HTMLElement[]): { focus?: HTMLElement; toggle?: { key: string; open: boolean } } | null {
+// Déplier une équipe (selectable) la sélectionne aussi, comme le clic ou Entrée.
+export function treeKeyTarget(
+  key: string,
+  current: HTMLElement,
+  rows: HTMLElement[],
+  selectable: (key: string) => boolean = () => false,
+): { focus?: HTMLElement; toggle?: { key: string; open: boolean }; select?: string } | null {
   const i = rows.indexOf(current);
   if (i < 0) return null;
   const details = current.parentElement as HTMLDetailsElement | null;
@@ -27,9 +33,11 @@ export function treeKeyTarget(key: string, current: HTMLElement, rows: HTMLEleme
       return { focus: rows[0] };
     case "End":
       return { focus: rows[rows.length - 1] };
-    case "ArrowRight":
-      if (!open) return { toggle: { key: current.dataset.tree!, open: true } };
+    case "ArrowRight": {
+      const row = current.dataset.tree!;
+      if (!open) return selectable(row) ? { toggle: { key: row, open: true }, select: row } : { toggle: { key: row, open: true } };
       return rows[i + 1] && details?.contains(rows[i + 1]) ? { focus: rows[i + 1] } : {};
+    }
     case "ArrowLeft": {
       if (open) return { toggle: { key: current.dataset.tree!, open: false } };
       const parent = details?.parentElement?.closest("details")?.querySelector<HTMLElement>(":scope > summary[data-tree]");
@@ -116,10 +124,11 @@ export function OrgTreeList({
   const onTreeKey = (e: KeyboardEvent<HTMLUListElement>) => {
     const target = e.target as HTMLElement;
     if (target.tagName !== "SUMMARY" || !target.dataset.tree) return;
-    const move = treeKeyTarget(e.key, target, Array.from(e.currentTarget.querySelectorAll<HTMLElement>("summary[data-tree]")));
+    const move = treeKeyTarget(e.key, target, Array.from(e.currentTarget.querySelectorAll<HTMLElement>("summary[data-tree]")), (k) => index.has(k));
     if (!move) return;
     e.preventDefault();
     if (move.toggle) setOpen(move.toggle.key, move.toggle.open);
+    if (move.select) onSelect(move.select, false);
     move.focus?.focus();
   };
 

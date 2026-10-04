@@ -94,7 +94,7 @@ function exportAlerts(ctx: AccessContext, raw: RawSearchParams): Part {
 const PRIORITY: Record<RiskLevel, string> = { ELEVE: "Haute", MOYEN: "Moyenne", FAIBLE: "Basse" };
 
 const recommendationColumns: ColumnDef<RecommendationRow>[] = [
-  { header: "Statut", value: (r) => RECO_STATUS_LABELS[r.status] },
+  { header: "Statut", value: (r) => RECO_STATUS_LABELS[r.superseded ? "REMPLACEE" : r.status] },
   { header: "Priorité", value: (r) => (r.status === "PROPOSEE" ? (r.level ? PRIORITY[r.level] : PRIORITY.FAIBLE) : null) },
   { header: "Émise le", type: "date", value: (r) => r.createdAt },
   { header: "Matricule", value: (r) => r.employee.matricule },

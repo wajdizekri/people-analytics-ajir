@@ -112,8 +112,9 @@ test.describe("Liste et fiche collaborateur — manager", () => {
     const estimation = zone(page, 2);
     await expect(estimation.getByText(/^Risque (Élevé|Moyen|Faible)$/).first()).toBeVisible();
     await expect(estimation.getByRole("heading", { name: "Catégories de facteurs associés" })).toBeVisible();
+    // Seules les catégories qui font monter l'estimation sont listées : la liste peut être vide
     const cats = await estimation.locator("ul > li").allInnerTexts();
-    expect(cats.length).toBeGreaterThan(0);
+    if (cats.length === 0) await expect(estimation).toContainText("Aucun domaine ne fait nettement monter l'estimation.");
     for (const c of cats) expect(c, `catégorie chiffrée : ${c}`).not.toMatch(/\d/);
     expect(cats.join("|")).not.toMatch(/Assiduité|Absence/i);
     if (championKind() === "B0") expect(cats.join("|")).not.toMatch(/Rémunération/i);

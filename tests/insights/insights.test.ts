@@ -374,14 +374,20 @@ describe("dérive des données", () => {
     expect(d.calibration.referenceRate).toBeCloseTo(2 / 112, 12);
     expect(d.calibration.recent!.oe).toBeCloseTo(112 / 96, 9);
     expect(d.calibration.status).toBe("DANS_LA_CIBLE");
+    expect(d.summary.FORTE).toBe(1);
+    expect(d.recommendation.level).toBe("SURVEILLER");
     setManifest({});
   });
 
-  it("recommandation : forte = réentraîner, modérée = surveiller, sinon rien", () => {
+  it("recommandation : réentraîner seulement si observé / prévu hors cible ; dérive des variables seule = surveiller", () => {
     const none = { source: null, status: null, oe: null } as const;
+    const inTarget = { source: "PROBABILITE", status: "DANS_LA_CIBLE", oe: 1.01 } as const;
     expect(retrainAdvice([{ label: "X", status: "STABLE" }], none).level).toBe("RAS");
+    expect(retrainAdvice([{ label: "X", status: "STABLE" }], inTarget).level).toBe("RAS");
     expect(retrainAdvice([{ label: "X", status: "MODEREE" }], none).level).toBe("SURVEILLER");
-    expect(retrainAdvice([{ label: "X", status: "FORTE" }], none).level).toBe("REENTRAINER");
+    expect(retrainAdvice([{ label: "X", status: "FORTE" }], none).level).toBe("SURVEILLER");
+    expect(retrainAdvice([{ label: "X", status: "FORTE" }], inTarget).level).toBe("SURVEILLER");
+    expect(retrainAdvice([{ label: "X", status: "FORTE" }], { source: "PROBABILITE", status: "HORS_CIBLE", oe: 0.52 }).level).toBe("REENTRAINER");
     expect(retrainAdvice([], { source: "PROBABILITE", status: "HORS_CIBLE", oe: 1.6 }).level).toBe("REENTRAINER");
     expect(retrainAdvice([], { source: "TAUX_REFERENCE", status: "HORS_CIBLE", oe: 1.6 }).level).toBe("SURVEILLER");
   });

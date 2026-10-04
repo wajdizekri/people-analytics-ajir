@@ -193,6 +193,30 @@ describe("tableaux d'administration : tri annoncé et filtres cohérents", () =>
   });
 });
 
+describe("création de compte refusée : saisie conservée", () => {
+  it("identifiant existant ou matricule inconnu : erreur sous le champ, valeurs renvoyées, jamais de mot de passe", async () => {
+    const { createUserAction } = await import("@/app/(app)/admin/users/actions");
+    as("admin");
+    const form = (values: Record<string, string>) => {
+      const f = new FormData();
+      for (const [k, v] of Object.entries(values)) f.set(k, v);
+      return f;
+    };
+    const taken = await createUserAction({}, form({ login: "mgr2", role: "RH", matricule: "", email: "mgr2@example.test", password: "Secret2026xx" }));
+    expect(taken).toEqual({
+      fieldErrors: { login: "Cet identifiant est déjà utilisé. Choisissez-en un autre." },
+      values: { login: "mgr2", role: "RH", matricule: "", email: "mgr2@example.test" },
+    });
+    expect(JSON.stringify(taken)).not.toContain("Secret2026xx");
+
+    const unknown = await createUserAction({}, form({ login: "nouveau.mgr", role: "MANAGER", matricule: "M99999999", email: "" }));
+    expect(unknown.error).toBeUndefined();
+    expect(unknown.fieldErrors?.matricule).toMatch(/^Aucun collaborateur ne porte ce matricule/);
+    expect(unknown.values).toMatchObject({ login: "nouveau.mgr", matricule: "M99999999" });
+    expect(getDb().sqlite.prepare("SELECT 1 FROM app_user WHERE login = 'nouveau.mgr'").get()).toBeUndefined();
+  });
+});
+
 describe("retours d'action : toasts", () => {
   it("announce : succès avec le message du serveur, erreur avec un titre court, rien sinon", async () => {
     const calls: [string, unknown][] = [];

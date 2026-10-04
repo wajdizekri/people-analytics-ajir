@@ -22,6 +22,7 @@ import {
   lcFirst,
 } from "./labels";
 import { RecommendationActions } from "./recommendation-forms";
+import { RECO_WHAT, recoWhy } from "./reco-text";
 
 type Action = (state: { ok?: string; error?: string }, form: FormData) => Promise<{ ok?: string; error?: string }>;
 type Level = "FAIBLE" | "MOYEN" | "ELEVE";
@@ -224,12 +225,17 @@ export function EmployeeSummary({ d, opposition = null, simulation = false }: { 
         : d.estimation.status === "OK"
           ? d.estimation.factors.slice(0, 3).map((f) => lcFirst(f.phrase))
           : [];
+    const summary =
+      d.view === "RH"
+        ? names.length > 0
+          ? `${names.length} ${plural(names.length, "facteur")} ${names.length > 1 ? "principaux" : "principal"} : ${joinFr(names)}`
+          : "aucun facteur ne fait nettement monter le risque"
+        : names.length > 0
+          ? `${names.length > 1 ? "domaines qui font" : "domaine qui fait"} monter l'estimation : ${joinFr(names)}`
+          : "aucun domaine ne fait nettement monter l'estimation";
     headline = (
       <>
-        Risque {LEVEL_LABELS[est.level]} —{" "}
-        {names.length > 0
-          ? `${names.length} ${plural(names.length, "facteur")} ${names.length > 1 ? "principaux" : "principal"} : ${joinFr(names)}`
-          : "aucun facteur ne fait nettement monter le risque"}
+        Risque {LEVEL_LABELS[est.level]} — {summary}
       </>
     );
     if (d.view === "RH" && d.estimation.status === "OK") {
@@ -574,6 +580,14 @@ function LevelTrend({ points, values }: { points: { asOf: string; level: Level }
   );
 }
 
+// Repère concret de la probabilité ; horizon = mois du calcul + 6 (calcul au 31/08/2026 → fin février 2027)
+function outOf100(prob6: number, asOf: string): string {
+  const n = Math.min(99, Math.max(1, Math.round(prob6 * 100)));
+  const m = Number(asOf.slice(5, 7)) + 5;
+  const ym = `${Number(asOf.slice(0, 4)) + Math.floor(m / 12)}-${String((m % 12) + 1).padStart(2, "0")}`;
+  return `Sur 100 collaborateurs avec cette estimation, environ ${n} ${n > 1 ? "partent" : "part"} d'ici fin ${fmt.month(ym)} et ${100 - n} restent.`;
+}
+
 function RhEstimation({ e }: { e: EstimationRh }) {
   if (e.status !== "OK") return <NoEstimate e={e} />;
   const max = Math.max(...e.factors.map((f) => Math.abs(f.contribution)), 1e-9);
@@ -583,17 +597,25 @@ function RhEstimation({ e }: { e: EstimationRh }) {
     <>
       <div className={panelCls}>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <RiskBadge level={e.level} />
+          <span className="inline-flex items-center gap-1">
+            <RiskBadge level={e.level} />
+            {e.level === "ELEVE" && <TermTip term="niveauEleve" role="RH" align="start" />}
+          </span>
           <span className="text-xs text-fg-muted">Calcul au {formatDate(e.asOf)}</span>
         </div>
         <LevelScale level={e.level} />
         {e.estimate.type === "PROBABILITE" ? (
-          <div className="mt-3">
-            <p className="text-xs font-medium text-fg-muted">Probabilité à 6 mois</p>
-            <p className="text-3xl font-semibold leading-tight tabular-nums text-heading">{formatProb(e.estimate.prob6)}</p>
-            <p className="text-sm text-fg-muted">
+          <div className="mt-3 grid grid-cols-[auto_1fr] items-center gap-x-1">
+            {/* Bulle après le chiffre dans le DOM, à côté du libellé à l'écran : le libellé reste suivi de sa valeur à la lecture */}
+            <p className="col-start-1 row-start-1 text-xs font-medium text-fg-muted">Probabilité à 6 mois</p>
+            <p className="col-span-2 row-start-2 text-3xl font-semibold leading-tight tabular-nums text-heading">{formatProb(e.estimate.prob6)}</p>
+            <span className="col-start-2 row-start-1">
+              <TermTip term="probabilite" role="RH" align="start" />
+            </span>
+            <p className="col-span-2 text-sm text-fg-muted">
               Probabilité estimée d&apos;un départ volontaire d&apos;ici 6 mois, soit {formatLiftWords(e.estimate.lift)} des collaborateurs évalués.
             </p>
+            <p className="col-span-2 mt-1 text-sm text-fg-muted">{outOf100(e.estimate.prob6, e.asOf)}</p>
           </div>
         ) : (
           <div className="mt-3">
@@ -681,10 +703,10 @@ function ManagerEstimation({ e }: { e: EstimationManager }) {
         title="Catégories de facteurs associés"
         icon="factors"
         aside={<TermTip term="facteursAssocies" role="MANAGER" align="end" />}
-        intro={e.factors.length > 0 && "Domaines qui pèsent le plus dans l'estimation, du plus au moins important. Le détail est réservé à la RH."}
+        intro={e.factors.length > 0 && "Domaines qui font monter l'estimation, du plus au moins important. Le détail est réservé à la RH."}
       >
         {e.factors.length === 0 ? (
-          <Empty>Aucun facteur disponible.</Empty>
+          <Empty>Aucun domaine ne fait nettement monter l&apos;estimation.</Empty>
         ) : (
           <ul className="space-y-2">
             {e.factors.map((f, i) => (
@@ -719,13 +741,14 @@ export function SuggestionsZone({
   className?: string;
 }) {
   const pending = d.recommendations.filter((r) => r.status === "PROPOSEE").length;
+  const est = d.view === "RH" ? d.estimation : null;
   return (
     <Zone
       n={3}
       hint={
         d.view === "RH"
           ? "Ce que vous pouvez faire : actions proposées par l'outil, à décider par la RH. Une aide à la décision, pas une obligation."
-          : "Actions proposées pour ce collaborateur. La décision revient à la RH."
+          : "Le niveau sert à choisir avec qui échanger en premier, jamais à juger une personne. Parlez-en avec la RH."
       }
       aside={pending > 0 && <StatusBadge tone="info">{d.view === "RH" ? `${pending} à décider` : `${pending} en attente`}</StatusBadge>}
       className={className}
@@ -736,14 +759,27 @@ export function SuggestionsZone({
         <ul className="grid items-start gap-3 @3xl:grid-cols-2">
           {d.view === "RH"
             ? d.recommendations.map((r) => (
-                <RecoCard key={r.id} actionCode={r.actionCode} triggerGroup={r.triggerGroup} triggerLabel={r.triggerLabel} status={r.status} createdAt={r.createdAt}>
+                <RecoCard
+                  key={r.id}
+                  actionCode={r.actionCode}
+                  triggerGroup={r.triggerGroup}
+                  triggerLabel={r.triggerLabel}
+                  status={r.status}
+                  superseded={r.superseded}
+                  createdAt={r.createdAt}
+                  why={rhWhy(r, est)}
+                >
                   {(r.interventionDate || r.comment || r.feedback) && (
                     <ul className="mt-2 space-y-0.5 rounded-md bg-surface-2 px-2.5 py-1.5 text-xs text-fg-muted ring-1 ring-inset ring-line">
                       {r.interventionDate && <li>Intervention réalisée le {formatDate(r.interventionDate)}.</li>}
-                      {r.comment && (
-                        <li>
-                          {r.status === "REJETEE" ? "Motif du rejet" : "Commentaire"} : {r.comment}
-                        </li>
+                      {r.superseded ? (
+                        <li>Remplacée par un nouveau calcul du risque, sans décision de la RH.</li>
+                      ) : (
+                        r.comment && (
+                          <li>
+                            {r.status === "REJETEE" ? "Motif du rejet" : "Commentaire"} : {r.comment}
+                          </li>
+                        )
                       )}
                       {r.feedback && <li>Pertinence : {FEEDBACK_LABELS[r.feedback]}.</li>}
                     </ul>
@@ -760,11 +796,56 @@ export function SuggestionsZone({
                 </RecoCard>
               ))
             : d.recommendations.map((r) => (
-                <RecoCard key={r.id} actionCode={r.actionCode} triggerGroup={r.triggerGroup} triggerLabel={r.triggerLabel} status={r.status} createdAt={r.createdAt} />
+                <RecoCard
+                  key={r.id}
+                  actionCode={r.actionCode}
+                  triggerGroup={r.triggerGroup}
+                  triggerLabel={r.triggerLabel}
+                  status={r.status}
+                  superseded={r.superseded}
+                  createdAt={r.createdAt}
+                />
               ))}
         </ul>
       )}
     </Zone>
+  );
+}
+
+const Lead = ({ children }: { children: string }) => <span className="font-semibold text-heading">{children}</span>;
+
+// Pourquoi, côté RH : phrase chiffrée du facteur déclencheur tant que la recommandation est ouverte ; pour l'entretien, les points à aborder
+function rhWhy(r: EmployeeDetailRh["recommendations"][number], est: EstimationRh | null): ReactNode {
+  const generic = (
+    <p>
+      <Lead>Pourquoi :</Lead> {recoWhy(r.triggerGroup, r.triggerLabel)}
+    </p>
+  );
+  if (r.status !== "PROPOSEE" || !est || est.status !== "OK") return generic;
+  const up = est.factors.filter((f) => f.direction === "HAUSSE" && f.phrase !== f.label);
+  const when = `calcul du ${formatDate(est.asOf)}`;
+  if (r.triggerGroup === "NIVEAU_ELEVE") {
+    if (up.length === 0) return generic;
+    return (
+      <>
+        <p>
+          <Lead>Pourquoi :</Lead> points à aborder, d&apos;après le {when}.
+        </p>
+        <ul className="list-disc space-y-0.5 pl-5">
+          {up.slice(0, 3).map((f) => (
+            <li key={f.group}>{f.phrase}</li>
+          ))}
+        </ul>
+      </>
+    );
+  }
+  const f = up.find((x) => x.group === r.triggerGroup);
+  return f ? (
+    <p>
+      <Lead>Pourquoi :</Lead> {f.phrase} ({when}).
+    </p>
+  ) : (
+    generic
   );
 }
 
@@ -773,18 +854,24 @@ function RecoCard({
   triggerGroup,
   triggerLabel,
   status,
+  superseded,
   createdAt,
+  why,
   children,
 }: {
   actionCode: string;
   triggerGroup: string;
   triggerLabel: string;
   status: string;
+  superseded: boolean;
   createdAt: string;
+  why?: ReactNode;
   children?: ReactNode;
 }) {
-  const tone = status === "REALISEE" ? "success" : status === "REJETEE" ? "neutral" : "info";
+  const shown = superseded ? "REMPLACEE" : status;
+  const tone = shown === "REALISEE" ? "success" : shown === "PROPOSEE" ? "info" : "neutral";
   const open = status === "PROPOSEE";
+  const what = RECO_WHAT[actionCode];
   return (
     <li
       className={`flex items-start gap-3 rounded-control p-3.5 ring-1 ring-inset transition-shadow ${open ? "bg-surface shadow-card ring-line hover:ring-line-strong" : "bg-surface-2 ring-line"}`}
@@ -795,11 +882,21 @@ function RecoCard({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-heading">{actionLabel(actionCode)}</span>
-          <StatusBadge tone={tone}>{RECO_STATUS_LABELS[status] ?? status}</StatusBadge>
+          <StatusBadge tone={tone}>{RECO_STATUS_LABELS[shown] ?? shown}</StatusBadge>
         </div>
         <p className="mt-0.5 text-xs text-fg-muted">
           Déclenchée par : {TRIGGER_LABELS[triggerGroup] ?? triggerLabel} · proposée le {formatDate(createdAt.slice(0, 10))}
         </p>
+        {(why || what) && (
+          <div className="mt-2 space-y-1 text-sm text-fg">
+            {why}
+            {what && (
+              <p>
+                <Lead>Que faire :</Lead> {what}
+              </p>
+            )}
+          </div>
+        )}
         {children}
       </div>
     </li>

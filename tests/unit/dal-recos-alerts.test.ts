@@ -8,7 +8,9 @@ import {
   recommendationListSchema,
   setRecommendationFeedback,
 } from "@/lib/dal/recommendations";
+import { getEmployeeDetail } from "@/lib/dal/employees";
 import { createAlert } from "@/lib/engine/alerts";
+import { SUPERSEDED_COMMENT } from "@/lib/engine/recommendations";
 import { auditOf, buildWorld, expectHttp, openDalDb, publishRun, REF } from "../fixtures/unit/dal-world";
 
 let db: ReturnType<typeof openDalDb>;
@@ -59,7 +61,7 @@ describe("recommandations : liste et KPI d'adoption", () => {
     expect(r.rows.map((x) => x.id)).toEqual([reco.t1Entretien, reco.t1Salaire, reco.m2Charge, reco.t3Rejected, reco.t2Done]);
     expect(r.rows.find((x) => x.id === reco.t1Entretien)).toMatchObject({ level: "ELEVE", employee: { id: w.e.T1, matricule: "T1" }, triggerLabel: "NIVEAU_ELEVE" });
     expect(r.rows.find((x) => x.id === reco.t2Done)).toMatchObject({ level: null, interventionDate: "2025-05-10", triggerLabel: "Formation et évaluation" });
-    expect(r.kpis).toEqual({ total: 5, proposed: 3, done: 1, rejected: 1, adoptionRate: 0.5, feedbackCount: 2, relevantRate: 0.5, interventions: 1 });
+    expect(r.kpis).toEqual({ total: 5, proposed: 3, done: 1, rejected: 1, superseded: 0, adoptionRate: 0.5, feedbackCount: 2, relevantRate: 0.5, interventions: 1 });
     expect(r.actions).toEqual(["CHARGE_TRAVAIL", "ENTRETIEN", "PLAN_FORMATION", "REVISION_SALARIALE"]);
   });
 
@@ -69,9 +71,27 @@ describe("recommandations : liste et KPI d'adoption", () => {
     expect(r.kpis).toMatchObject({ total: 2, done: 1, rejected: 1 });
     const com = listRecommendations(w.ctx.rh, q({ departement: String(w.dept.com) }));
     expect(com.rows.map((x) => x.id)).toEqual([reco.m2Charge]);
-    expect(com.kpis).toEqual({ total: 1, proposed: 1, done: 0, rejected: 0, adoptionRate: null, feedbackCount: 0, relevantRate: null, interventions: 0 });
+    expect(com.kpis).toEqual({ total: 1, proposed: 1, done: 0, rejected: 0, superseded: 0, adoptionRate: null, feedbackCount: 0, relevantRate: null, interventions: 0 });
     expect(listRecommendations(w.ctx.rh, q({ page: "50" }))).toMatchObject({ page: 1, pageCount: 1, total: 5 });
     expect(() => q({ action: "drop table" })).toThrow(ZodError);
+  });
+
+  it("remplacées par un nouveau calcul : hors des rejets et du taux d'adoption, comptées à part, signalées sur la liste et la fiche", () => {
+    const ins = db.sqlite.prepare("INSERT INTO recommendation (employee_id, action_code, trigger_group, status, comment, created_at) VALUES (?, ?, ?, 'REJETEE', ?, '2025-04-01T00:00:00Z')");
+    const sup = Number(ins.run(w.e.T3, "CHARGE_TRAVAIL", "TEMPS_TRAVAIL", SUPERSEDED_COMMENT).lastInsertRowid);
+    const near = Number(ins.run(w.e.T3, "ENTRETIEN", "NIVEAU_ELEVE", `${SUPERSEDED_COMMENT} (copie)`).lastInsertRowid);
+    try {
+      const r = listRecommendations(w.ctx.rh, q());
+      expect(r.kpis).toMatchObject({ total: 7, proposed: 3, done: 1, rejected: 2, superseded: 1, adoptionRate: 1 / 3 });
+      expect(r.rows.find((x) => x.id === sup)).toMatchObject({ status: "REJETEE", superseded: true });
+      expect(r.rows.find((x) => x.id === near)?.superseded).toBe(false);
+      expect(r.rows.find((x) => x.id === reco.t3Rejected)?.superseded).toBe(false);
+      const fiche = getEmployeeDetail(w.ctx.rh, w.e.T3, { source: "page" });
+      expect(fiche.recommendations.find((x) => x.id === sup)?.superseded).toBe(true);
+      expect(fiche.recommendations.find((x) => x.id === reco.t3Rejected)?.superseded).toBe(false);
+    } finally {
+      db.sqlite.prepare("DELETE FROM recommendation WHERE id IN (?, ?)").run(sup, near);
+    }
   });
 
   it("manager et admin : 403 audité", () => {

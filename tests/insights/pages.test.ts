@@ -71,6 +71,8 @@ describe("pages insights", () => {
     expect(i).toContain("Entretien de rétention");
     const d = text(html(await p.derive()));
     expect(d).toContain("Envisager un réentraînement du modèle");
+    expect(d).toContain("Que faire : prévenez l'administrateur de l'outil.");
+    expect(d).not.toContain("console d'administration");
     expect(d).toContain("Contrat CDD");
     expect(d).toContain("Taux de démission observé et prévu");
     expect(d).toContain("Feu tricolore par variable");
@@ -96,6 +98,7 @@ describe("pages insights", () => {
     const p = await pages();
     const d = text(html(await p.derive()));
     expect(d).toContain("Rapport observé / prévu des démissions");
+    expect(d).toContain("La mise en service se fait hors de l'interface, par une procédure tracée.");
     expect(d).toContain("Feu tricolore par variable");
     expect(d).not.toContain("Taux observé");
     expect(d).not.toMatch(/Nom[A-Z]/);

@@ -5,6 +5,7 @@ import { getSetting } from "@/lib/settings";
 import { audit } from "@/lib/audit";
 import featuresContract from "../../../shared/features.json";
 import { RH_ONLY_ACTIONS, managerVisibleGroup } from "@/lib/features/spec";
+import { SUPERSEDED_COMMENT } from "@/lib/engine/recommendations";
 import { canSeeEmployee, ensurePilotage, isGlobal, scopeFilter, type AccessContext } from "./context";
 import { forbidden, notFound } from "./errors";
 
@@ -318,6 +319,8 @@ type Reco = {
   actionCode: string;
   triggerGroup: string;
   status: "PROPOSEE" | "REALISEE" | "REJETEE";
+  // REJETEE par le recalcul du mois (SUPERSEDED_COMMENT), pas par une décision de la RH
+  superseded: boolean;
   feedback: "PERTINENTE" | "NON_PERTINENTE" | null;
   comment: string | null;
   createdAt: string;
@@ -367,7 +370,7 @@ export type EmployeeDetailManager = {
   evaluations: Evaluation[];
   careerEvents: CareerEvent[];
   estimation: EstimationManager;
-  recommendations: { id: number; actionCode: string; triggerGroup: string; triggerLabel: string; status: Reco["status"]; createdAt: string }[];
+  recommendations: { id: number; actionCode: string; triggerGroup: string; triggerLabel: string; status: Reco["status"]; superseded: boolean; createdAt: string }[];
 };
 export type EmployeeDetailRh = {
   view: "RH";
@@ -474,13 +477,16 @@ function loadDetail(employeeId: number): DetailRaw {
     history = [...byAsOf.values()].map(({ asOf, level, prob6, lift, kind }) => ({ asOf, level, prob6, lift, kind }));
   }
 
-  const recommendations = sqlite
-    .prepare(
-      `SELECT r.id, r.action_code AS actionCode, r.trigger_group AS triggerGroup, r.status, r.feedback, r.comment, r.created_at AS createdAt,
-        r.updated_at AS updatedAt, (SELECT MAX(i.date) FROM intervention i WHERE i.recommendation_id = r.id) AS interventionDate
-       FROM recommendation r WHERE r.employee_id = ? ORDER BY r.created_at DESC, r.id DESC`,
-    )
-    .all(employeeId) as Reco[];
+  const recommendations = (
+    sqlite
+      .prepare(
+        `SELECT r.id, r.action_code AS actionCode, r.trigger_group AS triggerGroup, r.status, (r.status = 'REJETEE' AND r.comment IS @superseded) AS superseded,
+          r.feedback, r.comment, r.created_at AS createdAt, r.updated_at AS updatedAt,
+          (SELECT MAX(i.date) FROM intervention i WHERE i.recommendation_id = r.id) AS interventionDate
+         FROM recommendation r WHERE r.employee_id = @id ORDER BY r.created_at DESC, r.id DESC`,
+      )
+      .all({ id: employeeId, superseded: SUPERSEDED_COMMENT }) as (Omit<Reco, "superseded"> & { superseded: number })[]
+  ).map((r) => ({ ...r, superseded: r.superseded === 1 }));
 
   return {
     referenceDate: ref,
@@ -550,8 +556,9 @@ export function toManagerDetailDto(raw: DetailRaw): EmployeeDetailManager {
       status: "OK",
       asOf: run.asOf,
       level: prediction.level,
+      // Seulement ce qui fait monter l'estimation, comme l'alerte de risque et « Quoi de neuf »
       factors: raw.factors
-        .filter((f) => managerVisibleGroup(f.group, run.modelKind))
+        .filter((f) => f.direction === "HAUSSE" && managerVisibleGroup(f.group, run.modelKind))
         .map((f) => ({ phrase: f.phraseManager ?? groupLabel(f.group, "MANAGER") })),
       history: raw.history.map((h) => ({ asOf: h.asOf, level: h.level })),
     };
@@ -587,6 +594,7 @@ export function toManagerDetailDto(raw: DetailRaw): EmployeeDetailManager {
         triggerGroup: r.triggerGroup,
         triggerLabel: groupLabel(r.triggerGroup, "MANAGER"),
         status: r.status,
+        superseded: r.superseded,
         createdAt: r.createdAt,
       })),
   };

@@ -16,7 +16,7 @@ const RIGHTS: Record<Role, { can: string[]; cannot: string[]; why: string }> = {
       "Régler les paramètres de calcul et de contrôle",
       "Consulter le journal d'audit et les refus d'accès",
       "Importer les exports AJIR et suivre les calculs",
-      "Suivre le modèle et mettre en service une nouvelle version",
+      "Suivre le modèle et sa fiabilité (mise en service par une procédure tracée, hors de l'interface)",
     ],
     cannot: ["Fiches collaborateurs, salaires et estimations individuelles", "Tableaux de bord RH, absentéisme et recommandations"],
     why: "L'administrateur gère l'outil sans voir les données des collaborateurs : c'est la séparation des tâches.",
@@ -70,6 +70,10 @@ export default async function AccountPage() {
   const ctx = await pageContext();
   const a = getAccount(ctx);
   const rights = RIGHTS[a.role];
+  const activity = a.activity.map((r) => ({
+    ...r,
+    text: describeAudit({ action: r.action, outcome: r.outcome, login: a.login, targetType: null, targetId: null, detail: null }, undefined, true),
+  }));
   const scope =
     a.role === "ADMIN"
       ? "Administration de l'outil, sans accès aux données RH nominatives"
@@ -189,26 +193,40 @@ export default async function AccountPage() {
                 Vos connexions et vos actions sensibles (consultations, modifications) apparaîtront ici.
               </EmptyState>
             ) : (
-              <div className="overflow-x-auto">
-                <table className={tableCls.table}>
-                  <caption className="sr-only">Vos 10 dernières actions enregistrées</caption>
-                  <thead className={tableCls.thead}>
-                    <tr>
-                      <th scope="col" className={tableCls.th}>Date et heure</th>
-                      <th scope="col" className={tableCls.th}>Action</th>
-                      <th scope="col" className={tableCls.th}>Résultat</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {a.activity.map((r) => (
-                      <tr key={r.id} className={tableCls.tr}>
-                        <td className={`${tableCls.td} whitespace-nowrap tabular-nums text-fg-muted`}>{fmt.dateTime(r.at)}</td>
-                        <td className={tableCls.td}>{describeAudit({ action: r.action, outcome: r.outcome, login: a.login, targetType: null, targetId: null, detail: null }, undefined, true)}</td>
-                        <td className={tableCls.td}><OutcomeBadge outcome={r.outcome} /></td>
+              // Panneau étroit (mobile, deux colonnes à 1024 px) : une ligne par action ; tableau dès 448 px de large
+              <div className="@container">
+                <ul aria-label="Vos 10 dernières actions enregistrées" className="divide-y divide-line @md:hidden">
+                  {activity.map((r) => (
+                    <li key={r.id} className="py-2.5">
+                      <p className="text-sm text-fg">{r.text}</p>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="text-xs tabular-nums text-fg-muted">{fmt.dateTime(r.at)}</span>
+                        <OutcomeBadge outcome={r.outcome} />
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+                <div className="hidden overflow-x-auto @md:block">
+                  <table className={tableCls.table}>
+                    <caption className="sr-only">Vos 10 dernières actions enregistrées</caption>
+                    <thead className={tableCls.thead}>
+                      <tr>
+                        <th scope="col" className={tableCls.th}>Date et heure</th>
+                        <th scope="col" className={tableCls.th}>Action</th>
+                        <th scope="col" className={tableCls.th}>Résultat</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {activity.map((r) => (
+                        <tr key={r.id} className={tableCls.tr}>
+                          <td className={`${tableCls.td} whitespace-nowrap tabular-nums text-fg-muted`}>{fmt.dateTime(r.at)}</td>
+                          <td className={tableCls.td}>{r.text}</td>
+                          <td className={tableCls.td}><OutcomeBadge outcome={r.outcome} /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </Panel>

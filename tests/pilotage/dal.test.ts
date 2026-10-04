@@ -278,7 +278,7 @@ describe("recommandations", () => {
 
   it("KPI d'adoption cohérents avec les statuts", () => {
     const l = listRecommendations(rhCtx(seed), recommendationListSchema.parse({}));
-    expect(l.kpis.total).toBe(l.kpis.proposed + l.kpis.done + l.kpis.rejected);
+    expect(l.kpis.total).toBe(l.kpis.proposed + l.kpis.done + l.kpis.rejected + l.kpis.superseded);
     expect(l.kpis.adoptionRate).toBeCloseTo(l.kpis.done / (l.kpis.done + l.kpis.rejected), 9);
     expect(l.kpis.interventions).toBe(l.kpis.done);
     const filtered = listRecommendations(rhCtx(seed), recommendationListSchema.parse({ statut: "PROPOSEE" }));

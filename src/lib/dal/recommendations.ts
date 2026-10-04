@@ -4,6 +4,7 @@ import { getDb } from "@/db/client";
 import { audit } from "@/lib/audit";
 import { canSeeEmployee, isGlobal, type AccessContext } from "./context";
 import { HttpError, forbidden, notFound } from "./errors";
+import { SUPERSEDED_COMMENT } from "@/lib/engine/recommendations";
 import { getPublishedRun, groupLabel, type RiskLevel } from "./employees";
 
 export const RECO_STATUSES = ["PROPOSEE", "REALISEE", "REJETEE"] as const;
@@ -30,17 +31,20 @@ export type RecommendationRow = {
   triggerGroup: string;
   triggerLabel: string;
   status: RecoStatus;
+  superseded: boolean;
   feedback: "PERTINENTE" | "NON_PERTINENTE" | null;
   comment: string | null;
   createdAt: string;
   updatedAt: string | null;
   interventionDate: string | null;
 };
+// rejected : rejets décidés par la RH ; superseded : remplacées par un nouveau calcul, hors du taux d'adoption
 export type AdoptionKpis = {
   total: number;
   proposed: number;
   done: number;
   rejected: number;
+  superseded: number;
   adoptionRate: number | null;
   feedbackCount: number;
   relevantRate: number | null;
@@ -49,6 +53,7 @@ export type AdoptionKpis = {
 export type RecommendationListDto = { rows: RecommendationRow[]; total: number; page: number; pageSize: number; pageCount: number; kpis: AdoptionKpis; actions: string[] };
 
 const PAGE_SIZE = 25;
+const SUPERSEDED_SQL = "(r.status = 'REJETEE' AND r.comment IS @superseded)";
 
 function requireGlobal(ctx: AccessContext, action: string, target?: { type: string; id?: number }) {
   if (isGlobal(ctx)) return;
@@ -61,7 +66,7 @@ export function listRecommendations(ctx: AccessContext, q: RecommendationListQue
   const { sqlite } = getDb();
   const run = getPublishedRun();
   const base: string[] = [];
-  const params: Record<string, unknown> = { runId: run?.id ?? -1 };
+  const params: Record<string, unknown> = { runId: run?.id ?? -1, superseded: SUPERSEDED_COMMENT };
   if (q.action) {
     base.push("r.action_code = @action");
     params.action = q.action;
@@ -75,11 +80,11 @@ export function listRecommendations(ctx: AccessContext, q: RecommendationListQue
   const k = sqlite
     .prepare(
       `SELECT COUNT(*) AS total, COALESCE(SUM(r.status = 'PROPOSEE'), 0) AS proposed, COALESCE(SUM(r.status = 'REALISEE'), 0) AS done,
-        COALESCE(SUM(r.status = 'REJETEE'), 0) AS rejected, COALESCE(SUM(r.feedback IS NOT NULL), 0) AS feedbackCount,
-        COALESCE(SUM(r.feedback = 'PERTINENTE'), 0) AS relevant
+        COALESCE(SUM(r.status = 'REJETEE' AND NOT ${SUPERSEDED_SQL}), 0) AS rejected, COALESCE(SUM(${SUPERSEDED_SQL}), 0) AS superseded,
+        COALESCE(SUM(r.feedback IS NOT NULL), 0) AS feedbackCount, COALESCE(SUM(r.feedback = 'PERTINENTE'), 0) AS relevant
        ${from} ${whereKpi}`,
     )
-    .get(params) as { total: number; proposed: number; done: number; rejected: number; feedbackCount: number; relevant: number };
+    .get(params) as { total: number; proposed: number; done: number; rejected: number; superseded: number; feedbackCount: number; relevant: number };
   const interventions = (
     sqlite.prepare(`SELECT COUNT(*) AS n FROM intervention i JOIN recommendation r ON r.id = i.recommendation_id JOIN employee e ON e.id = r.employee_id ${whereKpi}`).get(params) as {
       n: number;
@@ -90,6 +95,7 @@ export function listRecommendations(ctx: AccessContext, q: RecommendationListQue
     proposed: k.proposed,
     done: k.done,
     rejected: k.rejected,
+    superseded: k.superseded,
     adoptionRate: k.done + k.rejected > 0 ? k.done / (k.done + k.rejected) : null,
     feedbackCount: k.feedbackCount,
     relevantRate: k.feedbackCount > 0 ? k.relevant / k.feedbackCount : null,
@@ -109,7 +115,8 @@ export function listRecommendations(ctx: AccessContext, q: RecommendationListQue
     sqlite
       .prepare(
         `SELECT r.id, e.id AS employeeId, e.matricule, e.last_name || ' ' || e.first_name AS name, d.name AS department, p.level,
-          r.action_code AS actionCode, r.trigger_group AS triggerGroup, r.status, r.feedback, r.comment, r.created_at AS createdAt, r.updated_at AS updatedAt,
+          r.action_code AS actionCode, r.trigger_group AS triggerGroup, r.status, ${SUPERSEDED_SQL} AS superseded,
+          r.feedback, r.comment, r.created_at AS createdAt, r.updated_at AS updatedAt,
           (SELECT MAX(i.date) FROM intervention i WHERE i.recommendation_id = r.id) AS interventionDate
          ${from} LEFT JOIN department d ON d.id = e.department_id LEFT JOIN prediction p ON p.run_id = @runId AND p.employee_id = e.id
          ${whereList}
@@ -118,12 +125,18 @@ export function listRecommendations(ctx: AccessContext, q: RecommendationListQue
            CASE r.action_code WHEN 'ENTRETIEN' THEN 0 ELSE 1 END,
            r.created_at DESC, r.id DESC LIMIT @limit OFFSET @offset`,
       )
-      .all({ ...params, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }) as (Omit<RecommendationRow, "employee" | "triggerLabel"> & {
+      .all({ ...params, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }) as (Omit<RecommendationRow, "employee" | "triggerLabel" | "superseded"> & {
+      superseded: number;
       employeeId: number;
       matricule: string;
       name: string;
     })[]
-  ).map(({ employeeId, matricule, name, ...r }) => ({ ...r, employee: { id: employeeId, matricule, name }, triggerLabel: groupLabel(r.triggerGroup, "RH") }));
+  ).map(({ employeeId, matricule, name, superseded, ...r }) => ({
+    ...r,
+    superseded: superseded === 1,
+    employee: { id: employeeId, matricule, name },
+    triggerLabel: groupLabel(r.triggerGroup, "RH"),
+  }));
   const actions = (sqlite.prepare("SELECT DISTINCT action_code AS a FROM recommendation ORDER BY a").all() as { a: string }[]).map((r) => r.a);
   return { rows, total, page, pageSize: PAGE_SIZE, pageCount, kpis, actions };
 }

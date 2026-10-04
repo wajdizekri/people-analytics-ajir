@@ -61,7 +61,7 @@ export function UsersSkeleton() {
           <Skeleton className="h-10 w-full self-end lg:w-36" />
         </div>
       </div>
-      <SkeletonTable rows={8} columns={6} />
+      <SkeletonTable rows={8} columns={5} />
     </Busy>
   );
 }

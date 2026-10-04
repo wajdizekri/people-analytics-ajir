@@ -283,7 +283,6 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
                   <tr>
                     {sortTh("compte", "Compte")}
                     {sortTh("role", "Rôle")}
-                    <th scope="col" className={tableCls.th}>Collaborateur lié</th>
                     {sortTh("etat", "État")}
                     {sortTh("connexion", "Dernière connexion")}
                     <th scope="col" className={`${tableCls.th} lg:w-px`}>Actions</th>
@@ -304,7 +303,16 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
                             {u.id === ctx.userId && (
                               <span className="ml-1.5 rounded bg-accent/20 px-1 py-px text-[11px] font-medium text-fg">vous</span>
                             )}
-                            {u.email && <span className="block max-w-56 truncate text-xs text-fg-muted" title={u.email}>{u.email}</span>}
+                            {u.email && <span className="block max-w-56 truncate text-xs text-fg-muted lg:max-w-44" title={u.email}>{u.email}</span>}
+                            <span className="block text-xs text-fg-muted">
+                              {u.employee ? (
+                                <>
+                                  Lié à <span className="text-fg">{u.employee.name}</span> <span className="font-mono">{u.employee.matricule}</span>
+                                </>
+                              ) : (
+                                <span className="text-fg-subtle">Aucun collaborateur lié</span>
+                              )}
+                            </span>
                           </div>
                         </div>
                       </th>
@@ -313,26 +321,15 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
                         <RoleBadge role={u.role} />
                       </td>
                       <td role="cell" className={td}>
-                        <MobileLabel>Collaborateur lié</MobileLabel>
-                        {u.employee ? (
-                          <>
-                            <span className="text-fg">{u.employee.name}</span>
-                            <span className="ml-1 font-mono text-xs text-fg-muted lg:ml-0 lg:block">{u.employee.matricule}</span>
-                          </>
-                        ) : (
-                          <span className="text-fg-subtle">aucun</span>
-                        )}
-                      </td>
-                      <td role="cell" className={td}>
                         <MobileLabel>État</MobileLabel>
                         <StatusPill tone={STATES[u.state].tone}>{STATES[u.state].label}</StatusPill>
                         <StateDetail u={u} state={u.state} />
                       </td>
-                      <td role="cell" className={`${td} tabular-nums lg:whitespace-nowrap`}>
+                      <td role="cell" className={`${td} tabular-nums`}>
                         <MobileLabel>Dernière connexion</MobileLabel>
                         {u.lastLoginAt ? fmt.dateTime(u.lastLoginAt) : <span className="text-fg-subtle">jamais</span>}
                       </td>
-                      <td role="cell" className={`${td} pt-2 sm:col-span-2 lg:pt-2.5`}>
+                      <td role="cell" className={`${td} pt-2 sm:col-span-2 lg:pt-2.5 lg:[&>div>div:first-child]:flex-col`}>
                         <UserActions
                           id={u.id}
                           login={u.login}

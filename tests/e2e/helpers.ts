@@ -14,7 +14,7 @@ export const test = base.extend({
 export { expect };
 
 export const ROOT = path.resolve(__dirname, "..", "..");
-export const E2E_DB = path.join(ROOT, "data", "e2e.db");
+export const E2E_DB = process.env.E2E_DB ?? path.join(ROOT, "data", "e2e.db");
 export const AUTH_DIR = path.join(ROOT, "test-results", "e2e-auth");
 
 export type RoleKey = "admin" | "rh" | "manager";

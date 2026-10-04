@@ -76,8 +76,8 @@ describe("Transparence du modèle : rendu RH", () => {
     expect(s).toContain("Comment le risque de départ est estimé, avec quelle fiabilité et dans quelles limites. Modèle mis en service le 30/09/2026.");
     expect(s).toContain("Modèle dans ses cibles");
     expect(s).toContain("Régression logistique régularisée en service depuis le 30/09/2026 : 3,3 fois plus de démissions au niveau Élevé ; pourcentages justes en moyenne.");
-    // Le code du modèle n'apparaît que deux fois, avec son libellé : fiche technique puis historique des versions
-    expect(count(s, VERSION)).toBe(2);
+    // Le code du modèle n'apparaît qu'avec son libellé : fiche technique puis historique des versions (cartes sous 640 px et tableau)
+    expect(count(s, VERSION)).toBe(3);
     expect(s.indexOf(VERSION)).toBeGreaterThan(s.indexOf("Fiche technique du modèle en service"));
     expect(s).toMatch(new RegExp(`Version Modèle mis en service le 30/09/2026 ${VERSION}`));
     expect(s).toContain("Modèle mis en service le 29/09/2026 b0-v1 variables v1");
@@ -162,6 +162,16 @@ describe("Transparence du modèle : rendu RH", () => {
     expect(count(technical, "<details class=\"group/disc")).toBe(6);
     expect(longSentences(markup)).toEqual([]);
   });
+
+  it("historique des versions : cartes sous 640 px, tableau au-delà", () => {
+    const history = markup.slice(markup.indexOf("Historique des versions</h3>"));
+    expect(history).toMatch(/<ul aria-label="Historique des versions de modèle" class="[^"]*\bsm:hidden\b/);
+    expect(history).toMatch(/<div class="[^"]*\bhidden\b[^"]*\bsm:block\b[^"]*" tabindex="0" role="region" aria-label="Historique des versions de modèle \(zone défilante\)"/);
+    const cards = text(history.slice(history.indexOf("<ul"), history.indexOf("</ul>")));
+    expect(cards).toContain("Modèle mis en service le 29/09/2026 b0-v1 variables v1 Retiré Méthode B0");
+    expect(cards).toMatch(new RegExp(`${VERSION} variables v1 En service Méthode LOGREG Enregistrée \\d{2}/\\d{2}/\\d{4} Mise en service 30/09/2026`));
+    expect(cards).toMatch(/AUC \d,\d{2} Lift à la capacité \d,\d ×/);
+  });
 });
 
 describe("Transparence du modèle : rendu ADMIN", () => {
@@ -173,7 +183,7 @@ describe("Transparence du modèle : rendu ADMIN", () => {
     expect(s).toContain("14 ont démissionné dans les 6 mois suivants");
     expect(s).toContain("Sexe : risque estimé proche du réel dans chaque groupe");
     expect(s).toContain("Modifier la capacité dans Paramètres");
-    expect(count(s, VERSION)).toBe(2);
+    expect(count(s, VERSION)).toBe(3);
     // Aucun nom, matricule, lien vers une fiche ni montant
     const { sqlite } = getDb();
     const people = sqlite.prepare("SELECT matricule, last_name AS lastName FROM employee").all() as { matricule: string; lastName: string }[];

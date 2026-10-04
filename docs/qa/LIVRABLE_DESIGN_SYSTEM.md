@@ -204,7 +204,7 @@ Versions dans `package.json` : `three` ^0.186.1 et `@react-three/fiber` ^9.8.1 (
 - Build de production (`npx next build`) : 0 erreur, 0 avertissement, 42 pages.
 - E2E Playwright (`npm run test:e2e`) : 153 tests, 0 échec (passe complète 152/152 en 13,2 min, puis `auth.spec.ts` 15/15 après ajout du test « champs vides »).
 - Axe-core (43 pages en clair, 21 en sombre, 1 en menu réduit) : 0 violation (43/43 en clair, 21/21 en sombre, 1/1 menu réduit).
-- Captures finales (`docs/qa/captures/design-system/final/`, 56 attendues selon VERIFICATION_FINALE.md) : {{CAPTURES}}.
+- Captures finales (`docs/qa/captures/design-system/final/`, 136 prévues) : 124 écrites en 11,6 min, 6 refus de rôle journalisés, 0 avertissement de stabilité, 0 erreur de page. Les 4 captures de la page de connexion ont été sautées par un bug du script (corrigé) : à refaire avec `ONLY=connexion`. Relecture : 18 défauts (1 majeur, 6 moyens, 11 mineurs), corrigés le 04/10 (voir § 7).
 
 ### 6.2 Connexion
 - [x] Élément 3D discret avec Three.js et React Three Fiber. Preuve : `constellation-scene.tsx` ; capture `captures/design-system/connexion/apres/login-clair-1440.png`.
@@ -228,7 +228,7 @@ Versions dans `package.json` : `three` ^0.186.1 et `@react-three/fiber` ^9.8.1 (
 - [x] Mode sombre et clair. Preuve : `theme-script.ts`, `theme.tsx`, `darkOption` ; `design-system.test.ts` ; captures `coeur/menu-theme-sombre.png` et `coeur/dashboard-390-sombre.png` ; axe sombre 0 violation (43/43 en clair, 21/21 en sombre, 1/1 menu réduit).
 
 ### 6.4 Responsive, accessibilité, réutilisation
-- [x] Responsive à 390 px. Preuve : `DataTable` en cartes, `ActionBar` en colonne, filtres repliés, libellés de graphiques sur deux lignes ; E2E 390 px (`auth.spec.ts`, `navigation.spec.ts`) ; captures {{CAPTURES}}.
+- [x] Responsive à 390 px. Preuve : `DataTable` en cartes, `ActionBar` en colonne, filtres repliés, libellés de graphiques sur deux lignes ; E2E 390 px (`auth.spec.ts`, `navigation.spec.ts`) ; 22 captures pleine page à exactement 390 px de large (aucun débordement horizontal).
 - [x] WCAG AA. Preuve : contrastes calculés ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) § 7), focus visible global, cibles de 40 px ; `a11y.spec.ts` : 0 violation (43/43 en clair, 21/21 en sombre, 1/1 menu réduit).
 - [x] Composants réutilisables. Preuve : `@/components/ui` et `@/components/ux`, catalogue de [DEMANDES_COMPOSANTS.md](DEMANDES_COMPOSANTS.md).
 
@@ -242,13 +242,17 @@ Versions dans `package.json` : `three` ^0.186.1 et `@react-three/fiber` ^9.8.1 (
 
 Par priorité.
 
-1. **Vérification en cours** : build, E2E, axe et captures (sans erreur ni avertissement, 153 tests, 0 échec (passe complète 152/152 en 13,2 min, puis `auth.spec.ts` 15/15 après ajout du test « champs vides »), 0 violation (43/43 en clair, 21/21 en sombre, 1/1 menu réduit), {{CAPTURES}}). Hypothèses E2E à confirmer au premier passage : [VERIFICATION_FINALE.md](VERIFICATION_FINALE.md), section « Specs E2E du chantier visuels ».
-2. **Rendu jamais vu au navigateur pendant les vagues 40 et e9** (Playwright interdit) : menu réduit, sommaire collant, bulles « ? » à 390 px, barre de filtres, grille de la fiche, flèches de l'organigramme, squelette du what-if.
+1. **Défauts vus sur les captures du 04/10**, corrigés avant le build + E2E final sur le main fusionné (5 fonctions IA de 1a) :
+   - majeur : en impression, les en-têtes des DataTable disparaissaient (`#contenu button` masqué dans print.css) ;
+   - moyens : libellés coupés sans « … » à 390 px (transparence, interventions) ; aide de la palette Ctrl+K collée au bord ; bouton « Désactiver » coupé dans /admin/users ; identifiant vidé après « déjà utilisé » ; chevauchement de libellés des prévisions à 390 px ; ligne de référence qui traverse les étiquettes ;
+   - mineurs (11) : flèche de variation seule sur sa ligne, graduations 0/30/60/90 à 390 px, pastille « Réussi » coupée (Mon compte, 390 px), tableau des versions coupé (390 px), arrondi titre/barres, sélection de l'organigramme en liste, borne du curseur des prévisions, contrastes sombres (légende de l'organigramme, fourchette).
+   - Confirmé sur les captures : « Moyenne », anneau des rôles en sombre, rail de 64 px et sa bulle, courbes sans points, barres ≤ 23 px arrondies, impression sombre repassée en clair, sélecteur de thème à 1440/1536 px, organigramme M12037, palette et toast, écrans de monitoring.
+2. **Rendu au navigateur** : menu réduit, sommaire collant, barre de filtres et grille de la fiche sont confirmés par les E2E et les captures du 04/10. Restent non capturés : bulles « ? » à 390 px, squelette du what-if, graphiques sous la ligne de flottaison des écrans de monitoring à 1440 px.
 3. **Branche 3D** : à 1 440 px, l'E2E accepte la 3D comme le repli (selon le WebGL du navigateur sans tête). Il ne prouve donc pas que la scène s'affiche : la preuve reste le rapport et les captures du 02/10. Le repli « appareil modeste » n'est couvert que par le test unitaire.
 4. **Fondu de la constellation à 700 ms**, hors de la plage 150–250 ms : assumé. C'est l'apparition d'un fond décoratif, pas une réponse à une action (la règle des 150–250 ms vise les retours d'interaction) ; un fondu plus court ferait « clignoter » le fond au chargement. Absent en mouvement réduit.
 5. ~~Champs requis de la connexion~~ : corrigé le 04/10. Le formulaire est en `noValidate` ; un champ vide affiche « Saisissez votre identifiant. » ou « Saisissez votre mot de passe. » sous le champ, avec le curseur dedans, sans envoi (aucun échec compté). Avant l'hydratation, le serveur renvoie le même message. E2E « champs vides » dans `auth.spec.ts`.
 6. ~~Docs à réaligner~~ : fait le 04/10 (palette et menu réduit dans DESIGN_SYSTEM.md § 7–8, `#recherche-entete` dans DEMANDES_COMPOSANTS.md, pastille des `KpiCard` dans BACKLOG_INTEGRATION.md, 21 pages sombres dans VERIFICATION_FINALE.md).
 7. **Non faits assumés (gravité 1 à 2)** : marge droite des lignes de référence à 390 px ; `ButtonLink` sans indicateur de navigation ; 3 actions par ligne sur `/admin/users` ; export CSV sans état en cours ; canevas de l'organigramme non parcourable au clavier (la vue Liste sert d'alternative) ; rampes de couleur en dur (organigramme, équipes) ; libellés de statut des recommandations non alignés entre écrans.
-8. **Dette technique** : déplacer `MARK` dans `charts/theme.ts`, les constantes de `builders.ts` en sont des copies. Vérifier les exports peut-être inutilisés de `monitoring/data-options.ts`.
+8. **Dette technique** : `MARK` est déplacé dans `charts/theme.ts` (a7, commit 1df4843). Reste à vérifier les exports peut-être inutilisés de `monitoring/data-options.ts`.
 9. **Hors périmètre UI** : message « Démarrage à froid » de `src/lib/scoring/cold-start.ts` en phrases de plus de 20 mots ; `caddy validate` et services WinSW à valider sur le serveur de recette.
 10. **Après la vérification** : commit des corrections et des captures par a7, relance du serveur de dev, message aux sessions encore ouvertes.

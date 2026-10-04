@@ -234,7 +234,7 @@ export function updateWorkforceRecommendation(ctx: AccessContext, id: number, in
   if (!cur || (cur.topic !== "EFFECTIF" && cur.topic !== "MASSE_SALARIALE")) throw notFound("Recommandation");
   sqlite
     .prepare(
-      `UPDATE insight_recommendation SET status = @status, comment = @comment, updated_by = @userId,
+      `UPDATE insight_recommendation SET status = @status, comment = COALESCE(@comment, comment), updated_by = @userId,
        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = @id`,
     )
     .run({ id, status: input.status, comment: input.comment ?? null, userId: ctx.userId });

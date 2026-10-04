@@ -15,6 +15,8 @@ const thumb =
 const rangeCls = `h-2 w-full cursor-pointer appearance-none rounded-full ${thumb}`;
 const legendCls = "flex flex-wrap items-center gap-2 text-sm font-semibold text-heading";
 const helpCls = "mt-0.5 text-xs text-fg-muted";
+// Borne haute du rythme des embauches, identique à la validation serveur (workforceScenarioSchema : 0 à 300)
+const HIRING_MAX = 300;
 const dec = (v: number, d = 1) => v.toLocaleString("fr-FR", { maximumFractionDigits: d });
 const num = (s: string | null | undefined) => {
   if (s == null || s.trim() === "") return null;
@@ -123,31 +125,31 @@ export function WorkforceScenarioForm({
           </legend>
           <p className={helpCls}>
             100 % = même rythme que sur les 12 derniers mois{baseHires12 != null ? `, soit environ ${dec(baseHires12, 0)} embauches par an` : ""}. Valeur
-            possible : de 0 à 300 %.
+            possible : de 0 à {HIRING_MAX} %.
           </p>
           <div className="mt-3 flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <input
                 type="range"
                 min={0}
-                max={200}
+                max={HIRING_MAX}
                 step={5}
-                value={Math.min(200, hiringPct)}
+                value={Math.min(HIRING_MAX, hiringPct)}
                 onChange={(e) => setHiring(e.target.value)}
                 aria-label="Rythme des embauches, en pourcentage du rythme actuel"
                 aria-valuetext={`${dec(hiringPct, 0)} % du rythme actuel`}
                 className={rangeCls}
-                style={fill(Math.min(200, hiringPct), 200)}
+                style={fill(Math.min(HIRING_MAX, hiringPct), HIRING_MAX)}
               />
               <div aria-hidden="true" className="relative mt-1 h-4 text-[11px] leading-4 text-fg-subtle">
                 <span className="absolute left-0">0 %</span>
-                <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap">100 % (actuel)</span>
-                <span className="absolute right-0">200 %</span>
+                <span className="absolute left-1/3 -translate-x-1/2 whitespace-nowrap">100 % (actuel)</span>
+                <span className="absolute right-0">{HIRING_MAX} %</span>
               </div>
             </div>
             <label className="inline-flex shrink-0 items-center gap-1 self-start text-sm text-fg">
               <span className="sr-only">Rythme des embauches (% du rythme des 12 derniers mois)</span>
-              <input name="embauches" type="number" inputMode="decimal" min={0} max={300} step={1} value={hiring} onChange={(e) => setHiring(e.target.value)} className={`${inputCls} w-20`} />
+              <input name="embauches" type="number" inputMode="decimal" min={0} max={HIRING_MAX} step={1} value={hiring} onChange={(e) => setHiring(e.target.value)} className={`${inputCls} w-20`} />
               %
             </label>
           </div>

@@ -19,6 +19,11 @@ describe("formulaire de scénario (/previsions)", () => {
     expect(m).toContain('id="wf-budget-aide"');
     expect(m).toContain("Valeur possible : de 0 à 300 %");
     expect(/<input[^>]*name="embauches"[^>]*>/.exec(m)?.[0]).toContain('step="1"');
+    // Curseur gradué jusqu'à la borne écrite et validée par le serveur (300 %), pas 200 %
+    const slider = /<input[^>]*type="range"[^>]*aria-label="Rythme des embauches[^>]*>/.exec(m)?.[0] ?? "";
+    expect(slider).toContain('max="300"');
+    expect(m).toMatch(/<span class="absolute right-0">300 %<\/span>/);
+    expect(m).not.toContain(">200 %<");
     expect(m).toContain("Recalculer la projection");
   });
 });

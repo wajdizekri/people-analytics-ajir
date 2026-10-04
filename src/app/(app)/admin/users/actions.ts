@@ -19,6 +19,9 @@ export type UserActionState = { ok?: string; error?: string; link?: ActivationLi
 
 const idSchema = z.coerce.number().int().positive();
 
+// Refus métier rattachés à un champ : message sous le champ, saisie conservée
+const FIELD_OF_CODE: Record<string, string> = { LOGIN_EXISTANT: "login", MATRICULE_INCONNU: "matricule", SALARIE_SORTI: "matricule" };
+
 async function activationUrl(token: string): Promise<string> {
   const configured = process.env.APP_URL?.replace(/\/+$/, "");
   if (configured) return `${configured}/activation?token=${token}`;
@@ -49,7 +52,13 @@ export async function createUserAction(_: CreateUserState, form: FormData): Prom
       for (const i of parsed.error.issues) fieldErrors[String(i.path[0] ?? "form")] ??= i.message;
       return { fieldErrors, values };
     }
-    const user = createUser(ctx, parsed.data);
+    let user: ReturnType<typeof createUser>;
+    try {
+      user = createUser(ctx, parsed.data);
+    } catch (err) {
+      if (err instanceof HttpError && FIELD_OF_CODE[err.code]) return { fieldErrors: { [FIELD_OF_CODE[err.code]]: err.message }, values };
+      throw err;
+    }
     const t = createActivationToken(ctx, user.id);
     refresh();
     return {

@@ -14,8 +14,9 @@ const { hash, verify } = require("@node-rs/argon2");
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SRC_DB = path.join(ROOT, "data", "app.db");
-const E2E_DB = path.join(ROOT, "data", "e2e.db");
-const DIST_DIR = ".next-e2e";
+// E2E_DB / E2E_DIST_DIR / E2E_PORT : seconde instance isolée quand un serveur E2E tourne déjà sur 3200
+const E2E_DB = process.env.E2E_DB ?? path.join(ROOT, "data", "e2e.db");
+const DIST_DIR = process.env.E2E_DIST_DIR ?? ".next-e2e";
 const PORT = process.env.E2E_PORT ?? "3200";
 const NEXT_BIN = require.resolve("next/dist/bin/next");
 const ARGON = { memoryCost: 19456, timeCost: 2, parallelism: 1 };

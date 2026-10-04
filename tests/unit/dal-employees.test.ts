@@ -300,6 +300,42 @@ describe("fiche collaborateur", () => {
     }
   });
 
+  it("manager : seules les catégories qui font monter l'estimation ; aucune à la hausse = liste vide ; RH garde le sens", () => {
+    const lr = publishRun(db.sqlite, "LOGREG", REF, [
+      {
+        employeeId: w.e.T1,
+        level: "FAIBLE",
+        prob6: 0.02,
+        lift: 0.4,
+        factors: [
+          { group: "CARRIERE", phraseManager: "Évolution de carrière" },
+          { group: "TEMPS_TRAVAIL", phraseManager: "Charge de travail" },
+          { group: "EQUIPE", phraseManager: "Contexte d'équipe" },
+        ],
+      },
+    ], { version: "logreg-sens" });
+    const down = db.sqlite.prepare("UPDATE prediction_factor SET direction = 'BAISSE' WHERE group_code = ? AND prediction_id = (SELECT id FROM prediction WHERE run_id = ?)");
+    try {
+      down.run("CARRIERE", lr);
+      down.run("EQUIPE", lr);
+      const m = getEmployeeDetail(w.ctx.mgr, w.e.T1, { source: "page" }) as EmployeeDetailManager;
+      if (m.estimation.status !== "OK") throw new Error(m.estimation.status);
+      expect(m.estimation.factors).toEqual([{ phrase: "Charge de travail" }]);
+      const r = getEmployeeDetail(w.ctx.rh, w.e.T1, { source: "page" }) as EmployeeDetailRh;
+      if (r.estimation.status !== "OK") throw new Error(r.estimation.status);
+      expect(r.estimation.factors.map((f) => [f.group, f.direction])).toEqual([
+        ["CARRIERE", "BAISSE"],
+        ["TEMPS_TRAVAIL", "HAUSSE"],
+        ["EQUIPE", "BAISSE"],
+      ]);
+      down.run("TEMPS_TRAVAIL", lr);
+      const none = getEmployeeDetail(w.ctx.mgr, w.e.T1, { source: "page" }) as EmployeeDetailManager;
+      expect(none.estimation.status === "OK" && none.estimation.factors).toEqual([]);
+    } finally {
+      setSetting(db.sqlite, "current_run_id", String(b0Run));
+    }
+  });
+
   it("non évalué et aucun run : états explicites pour les deux vues", () => {
     const rh = getEmployeeDetail(w.ctx.rh, w.e.T5, { source: "page" }) as EmployeeDetailRh;
     const mg = getEmployeeDetail(w.ctx.mgr, w.e.T5, { source: "page" }) as EmployeeDetailManager;

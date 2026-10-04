@@ -57,3 +57,6 @@ __pycache__/
 
 # journaux locaux
 *.log
+
+# fixtures de la campagne de sécurité (noms et salaires simulés, régénérées par gen-fixtures.cjs)
+/tests/security/.fixtures.json

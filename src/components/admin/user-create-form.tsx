@@ -18,7 +18,7 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 
 export function UserCreateForm() {
   const [state, action, pending] = useActionState<CreateUserState, FormData>(createUserAction, {});
-  const [role, setRole] = useState("RH");
+  const [role, setRole] = useState("");
   const fe = state.fieldErrors ?? {};
   // Résultat annoncé par un toast ; le détail (champ en erreur, lien d'activation à copier) reste sous le formulaire
   useActionToast(state, {
@@ -42,8 +42,9 @@ export function UserCreateForm() {
         </div>
         <div>
           <label htmlFor="nu-role" className={labelCls}>Rôle</label>
-          <select id="nu-role" name="role" value={role} onChange={(e) => setRole(e.target.value)} className={fieldCls(!!fe.role)}
+          <select id="nu-role" name="role" value={role} onChange={(e) => setRole(e.target.value)} required className={fieldCls(!!fe.role)}
             aria-invalid={!!fe.role} aria-describedby={fe.role ? "nu-role-err" : "nu-role-help"}>
+            <option value="" disabled>Choisir un rôle</option>
             <option value="RH">Responsable RH</option>
             <option value="MANAGER">Manager</option>
             <option value="ADMIN">Administrateur</option>
@@ -51,7 +52,7 @@ export function UserCreateForm() {
           {fe.role ? (
             <FieldError id="nu-role-err" message={fe.role} />
           ) : (
-            <p id="nu-role-help" className="mt-1 text-xs text-fg-muted">{ROLE_HELP[role]}</p>
+            <p id="nu-role-help" className="mt-1 text-xs text-fg-muted">{ROLE_HELP[role] ?? "Le rôle fixe ce que la personne pourra voir."}</p>
           )}
         </div>
         <div>

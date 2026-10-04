@@ -208,8 +208,9 @@ export function retrainAdvice(variables: Pick<DriftVariable, "label" | "status">
       .slice(0, 4)
       .map((v) => v.label.charAt(0).toLowerCase() + v.label.slice(1))
       .join(", ") + (vs.length > 4 ? ` et ${vs.length - 4} autre${vs.length > 5 ? "s" : ""}` : "");
+  // Réentraîner seulement si les démissions observées sortent de la cible du modèle : une dérive des variables seule reste à surveiller
   if (strong.length) {
-    level = "REENTRAINER";
+    level = "SURVEILLER";
     reasons.push(`${strong.length} variable${strong.length > 1 ? "s" : ""} en dérive forte (PSI ≥ ${dec(PSI_THRESHOLDS.strong)}) : ${names(strong)}.`);
   }
   if (cal.status === "HORS_CIBLE" && cal.oe != null) {

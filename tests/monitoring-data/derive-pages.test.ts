@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createElement, type ReactNode } from "react";
 import type { SessionUser } from "@/lib/auth/session";
+import { getDb } from "@/db/client";
 import { clearDriftCache } from "@/lib/dal/drift";
 import { SEMANTIC } from "@/components/charts/theme";
 import { createFixture, destroyFixture, type Fixture } from "../insights/fixture";
@@ -36,8 +37,11 @@ async function drift(role: "RH" | "ADMIN") {
 describe("Dérive des données", () => {
   it("RH : verdict, tuiles par état, indice par variable dans ses zones de seuil, variables groupées par état", async () => {
     const { s, charts: figs, markup } = await drift("RH");
-    expect(s).toContain("Envisager un réentraînement du modèle.");
+    expect(s).toContain("Action recommandée Envisager un réentraînement du modèle.");
     expect(s).toContain("1 variable a fortement changé : contrat CDD.");
+    expect(s).toContain("Démissions observées égales à 0,52 fois le niveau prévu");
+    expect(s).toContain("Que faire : prévenez l'administrateur de l'outil.");
+    expect(s).not.toContain("console d'administration");
     expect(inOrder(s, ["Variables en dérive forte Feu rouge 1", "Variables à surveiller Aucune 0", "Variables stables Feu vert 24 sur 25", "Démissions observées / prévues Hors cible 6 dernières cohortes 0,52"])).toBe(true);
     expect(s).not.toContain("logreg-test");
 
@@ -71,10 +75,30 @@ describe("Dérive des données", () => {
 
   it("ADMIN : rapport observé / prévu seulement, sans taux de démission ni nom", async () => {
     const { s, charts: figs, markup } = await drift("ADMIN");
+    expect(s).toContain("Action recommandée Envisager un réentraînement du modèle.");
+    expect(s).toContain("Démissions observées égales à 0,52 fois le niveau prévu sur les 6 dernières cohortes (cible : 0,80 à 1,25).");
+    expect(s).toContain("Que faire : demandez un réentraînement à l'équipe technique. La mise en service se fait hors de l'interface, par une procédure tracée.");
     expect(s).toContain("Rapport observé / prévu des démissions par cohorte mensuelle");
     expect(figs.map((c) => c.label.split(" :")[0])).toEqual(["Barres triées", "Courbe du rapport observé sur prévu par cohorte mensuelle, zone cible de 0,80 à 1,25."]);
     expect(s).not.toMatch(/Taux observé|Taux de démission|démissions observées pour/);
     expect(s).not.toMatch(/Nom[A-Z]|Prenom[A-Z]|TND/);
     expect(longSentences(markup)).toEqual([]);
+  });
+
+  it("RH : dérive des variables mais démissions observées / prévues dans la cible, verdict ambre sans réentraînement", async () => {
+    const sqlite = getDb().sqlite;
+    sqlite.prepare("UPDATE model_version SET status = 'CANDIDAT' WHERE id = ?").run(f.modelId);
+    clearDriftCache();
+    try {
+      const { s, markup } = await drift("RH");
+      expect(s).toContain("À surveiller Certaines variables ont changé depuis l'entraînement ; le classement reste fiable (démissions observées / prévues dans la cible).");
+      expect(s).toContain("Démissions observées égales à 1,17 fois le niveau prévu, dans la cible (0,80 à 1,25).");
+      expect(s).toContain("Que faire : vérifiez dans AJIR que ces données sont saisies comme avant.");
+      expect(s).not.toMatch(/Action recommandée|Envisager un réentraînement/);
+      expect(longSentences(markup)).toEqual([]);
+    } finally {
+      sqlite.prepare("UPDATE model_version SET status = 'CHAMPION' WHERE id = ?").run(f.modelId);
+      clearDriftCache();
+    }
   });
 });

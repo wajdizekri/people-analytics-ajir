@@ -175,6 +175,12 @@ describe("organigramme", () => {
     expect(treeKeyTarget("ArrowLeft", r, rows)).toEqual({ toggle: { key: "root", open: false } });
     expect(treeKeyTarget("ArrowLeft", c, rows)).toEqual({ focus: r });
     expect(treeKeyTarget("a", c, rows)).toBeNull();
+    // Déplier une équipe au clavier la sélectionne (comme le clic) ; la ligne « collaborateurs sans équipe » non
+    const teams = (k: string) => k !== "b";
+    expect(treeKeyTarget("ArrowRight", c, rows, teams)).toEqual({ toggle: { key: "a", open: true }, select: "a" });
+    expect(treeKeyTarget("ArrowRight", s, rows, teams)).toEqual({ toggle: { key: "b", open: true } });
+    expect(treeKeyTarget("ArrowRight", r, rows, teams)).toEqual({ focus: c });
+    expect(treeKeyTarget("ArrowLeft", r, rows, teams)).toEqual({ toggle: { key: "root", open: false } });
   });
 });
 

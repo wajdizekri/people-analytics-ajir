@@ -113,6 +113,31 @@
     display: none !important;
   }
 
+  /* En-têtes de tableau triables (DataTable, SortHeader) : libellé imprimé, sans la flèche de tri ;
+     les bulles « ? » (bouton aria-expanded) restent masquées */
+  #contenu th button:not([aria-expanded]) {
+    display: inline-flex !important;
+    min-height: 0 !important;
+  }
+  #contenu th button svg,
+  #contenu th[aria-sort] svg {
+    display: none !important;
+  }
+
+  /* Ligne qui ne porte que des bulles « ? » (légende « Non évalués ? · Lift moyen ? ») : masquée avec elles */
+  #contenu p:has(> span > span > button[aria-expanded]) {
+    display: none !important;
+  }
+
+  /* Bandeau « À traiter » : les pastilles (liens présentés en bouton) restent imprimées, sans chevron */
+  #contenu nav[aria-label="À traiter"] a {
+    display: inline-flex !important;
+    min-height: 0 !important;
+  }
+  #contenu nav[aria-label="À traiter"] a > svg:last-child {
+    display: none !important;
+  }
+
   /* Contenu en pleine largeur */
   #contenu {
     padding: 0 !important;

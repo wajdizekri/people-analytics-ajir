@@ -14,7 +14,8 @@ export const CAREER_LABELS: Record<string, string> = {
   CHANGEMENT_POSTE: "Changement de poste",
 };
 export const TRAINING_STATUS_LABELS: Record<string, string> = { PLANIFIEE: "Planifiée", EN_COURS: "En cours", TERMINEE: "Terminée", ABANDONNEE: "Abandonnée" };
-export const RECO_STATUS_LABELS: Record<string, string> = { PROPOSEE: "Proposée", REALISEE: "Réalisée", REJETEE: "Rejetée" };
+// REMPLACEE : affichage seulement (REJETEE en base, remplacée par un nouveau calcul)
+export const RECO_STATUS_LABELS: Record<string, string> = { PROPOSEE: "Proposée", REALISEE: "Réalisée", REJETEE: "Rejetée", REMPLACEE: "Remplacée" };
 export const FEEDBACK_LABELS: Record<string, string> = { PERTINENTE: "Pertinente", NON_PERTINENTE: "Non pertinente" };
 export const ACTION_LABELS: Record<string, string> = {
   ENTRETIEN: "Entretien de rétention",

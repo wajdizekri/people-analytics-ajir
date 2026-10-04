@@ -461,7 +461,7 @@ async function runShot(ctx, s) {
     await ready(page, s.id);
     const where = new URL(page.url()).pathname;
     const status = resp?.status() ?? 0;
-    if (status === 403 || where === "/interdit" || where === "/login") {
+    if (status === 403 || where === "/interdit" || (where === "/login" && s.path !== "/login")) {
       const why = status === 403 ? "réponse 403" : `redirigée vers ${where}`;
       refused.set(deny, why);
       skipped.push(`${s.id} : ${why}`);

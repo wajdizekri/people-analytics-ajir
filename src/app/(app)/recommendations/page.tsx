@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge, ButtonLink, EmptyState, Initials, KpiTile, PageHeader, RiskBadge, cardCls, fmt } from "@/components/ui";
 import { ActiveFilters, FilterForm, Pagination, buildHref } from "@/components/pilotage/filters";
 import { FEEDBACK_LABELS, RECO_STATUS_LABELS, actionLabel, formatDate, formatRate, todayTunis } from "@/components/pilotage/labels";
+import { RECO_WHAT, recoWhy } from "@/components/pilotage/reco-text";
 import { decideRecommendationAction } from "@/app/(app)/employees/[id]/actions";
 import { pageContext } from "@/lib/dal/context";
 import { departmentOptions, parseQuery } from "@/lib/dal/employees";
@@ -11,28 +12,14 @@ import { RecoDecision } from "./reco-decision";
 
 export const metadata = { title: "Recommandations — People Analytics AJIR" };
 
-const STATUS_TONE = { PROPOSEE: "sky", REALISEE: "emerald", REJETEE: "slate" } as const;
+const STATUS_TONE = { PROPOSEE: "sky", REALISEE: "emerald", REJETEE: "slate", REMPLACEE: "slate" } as const;
 const STATUS_ICON: Record<keyof typeof STATUS_TONE, string> = {
   PROPOSEE: "M8 4.5V8l2.2 1.4 M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0",
   REALISEE: "m3.5 8.5 3 3 6-7",
   REJETEE: "m4.5 4.5 7 7 m0-7-7 7",
+  REMPLACEE: "M13 8a5 5 0 1 1-1.5-3.6 M13 2.5v3h-3",
 };
-const STATUS_FILTER_LABELS: Record<string, string> = { PROPOSEE: "Proposée (en attente de décision)", REALISEE: "Réalisée", REJETEE: "Rejetée" };
-
-// Pourquoi : facteur déclencheur en phrase (facteurs associés, jamais des causes)
-const WHY: Record<string, string> = {
-  NIVEAU_ELEVE: "Classé au niveau de risque Élevé lors du calcul : un échange individuel est recommandé.",
-  REMUNERATION: "La rémunération fait partie des principaux facteurs associés à son niveau de risque.",
-  TEMPS_TRAVAIL: "Le temps de travail (heures supplémentaires, horaires) fait partie des principaux facteurs associés à son niveau de risque.",
-  FORMATION_EVAL: "La formation et l'évaluation font partie des principaux facteurs associés à son niveau de risque.",
-};
-// Quoi faire : l'action proposée, en une phrase
-const WHAT: Record<string, string> = {
-  ENTRETIEN: "Proposer un entretien pour comprendre ses attentes et ses perspectives.",
-  REVISION_SALARIALE: "Comparer sa rémunération à celle de postes équivalents et étudier un ajustement.",
-  CHARGE_TRAVAIL: "Faire le point avec son manager sur la charge de travail et les heures supplémentaires.",
-  PLAN_FORMATION: "Proposer une formation ou un parcours de développement adapté.",
-};
+const STATUS_FILTER_LABELS: Record<string, string> = { PROPOSEE: "Proposée (en attente de décision)", REALISEE: "Réalisée", REJETEE: "Rejetée ou remplacée" };
 // Priorité d'affichage selon le niveau de risque actuel (estimation, à confirmer par un échange)
 const PRIORITY = {
   ELEVE: { rank: 0, label: "Priorité haute", tone: "red", bar: "border-l-danger" },
@@ -82,6 +69,7 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
   const parts = [
     { key: "done", label: "Réalisées", n: k.done, cls: "bg-success" },
     { key: "rejected", label: "Rejetées", n: k.rejected, cls: "bg-line-strong" },
+    ...(k.superseded > 0 ? [{ key: "superseded", label: "Remplacées par un nouveau calcul", n: k.superseded, cls: "bg-fg-subtle" }] : []),
     { key: "proposed", label: "En attente de décision", n: k.proposed, cls: "bg-primary" },
   ];
 
@@ -111,7 +99,8 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
           Où en sont les {fmt.int(k.total)} recommandations ?
         </h2>
         <p className="mt-1 text-sm text-fg-muted">
-          {fmt.int(k.done)} réalisée{k.done > 1 ? "s" : ""}, {fmt.int(k.rejected)} rejetée{k.rejected > 1 ? "s" : ""} et{" "}
+          {fmt.int(k.done)} réalisée{k.done > 1 ? "s" : ""}, {fmt.int(k.rejected)} rejetée{k.rejected > 1 ? "s" : ""}
+          {k.superseded > 0 && `, ${fmt.int(k.superseded)} remplacée${k.superseded > 1 ? "s" : ""} par un nouveau calcul`} et{" "}
           <strong className="text-heading">{fmt.int(k.proposed)} en attente de décision</strong>
           .
         </p>
@@ -131,8 +120,8 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
           </div>
         )}
         <p className="mt-2 text-xs text-fg-muted">
-          Taux d&apos;adoption = recommandations réalisées ÷ recommandations décidées (réalisées ou rejetées). Celles remplacées par un nouveau calcul comptent comme
-          rejetées.
+          Taux d&apos;adoption = recommandations réalisées ÷ recommandations décidées par la RH (réalisées ou rejetées).
+          {k.superseded > 0 && ` ${fmt.int(k.superseded)} remplacée${k.superseded > 1 ? "s" : ""} par un nouveau calcul, hors du taux.`}
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
           <KpiTile
@@ -212,7 +201,7 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     {r.status === "PROPOSEE" && <Badge tone={p.tone}>{p.label}</Badge>}
-                    <StatusBadge status={r.status} />
+                    <StatusBadge status={r.superseded ? "REMPLACEE" : r.status} />
                     <span className="text-xs text-fg-muted">
                       Émise le <span className="tabular-nums">{formatDate(r.createdAt.slice(0, 10))}</span>
                     </span>
@@ -237,20 +226,21 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
                     </div>
                     <div className="min-w-0">
                       <Label>Pourquoi</Label>
-                      <p className="mt-1 text-sm text-fg">{WHY[r.triggerGroup] ?? `Facteur associé à son niveau de risque : ${r.triggerLabel}.`}</p>
+                      <p className="mt-1 text-sm text-fg">{recoWhy(r.triggerGroup, r.triggerLabel)}</p>
                     </div>
                     <div className="min-w-0">
                       <Label>Que faire</Label>
                       <p className="mt-1 text-sm font-semibold text-heading">{actionLabel(r.actionCode)}</p>
-                      {WHAT[r.actionCode] && <p className="text-sm text-fg-muted">{WHAT[r.actionCode]}</p>}
+                      {RECO_WHAT[r.actionCode] && <p className="text-sm text-fg-muted">{RECO_WHAT[r.actionCode]}</p>}
                     </div>
                   </div>
                   {r.status !== "PROPOSEE" && (
                     <p className="mt-3 text-xs text-fg-muted">
-                      {r.status === "REALISEE" ? "Réalisée" : "Rejetée"}
+                      {r.status === "REALISEE" ? "Réalisée" : r.superseded ? "Remplacée par un nouveau calcul" : "Rejetée"}
                       {r.updatedAt ? ` le ${formatDate(r.updatedAt.slice(0, 10))}` : ""}
+                      {r.superseded && ", sans décision de la RH"}
                       {r.interventionDate && <> · Intervention le {formatDate(r.interventionDate)}</>}
-                      {r.comment && (
+                      {r.comment && !r.superseded && (
                         <>
                           {" "}
                           · {r.status === "REJETEE" ? "Motif" : "Commentaire"} : <span className="italic">{r.comment}</span>

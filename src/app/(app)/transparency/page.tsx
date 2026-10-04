@@ -915,45 +915,79 @@ function Technical({ c, t }: { c: ChampionDTO; t: TransparencyDTO }) {
   );
 }
 
+const promotion = (v: TransparencyDTO["versions"][number]) => (v.promotedAt ? `${fmt.date(v.promotedAt)}${v.promotedBy ? ` · ${v.promotedBy}` : ""}` : "—");
+const liftText = (v: TransparencyDTO["versions"][number]) => (v.liftAtK != null ? times(v.liftAtK) : "—");
+
 function Versions({ t }: { t: TransparencyDTO }) {
   return (
     <Card title="Historique des versions" headingLevel={3}>
       {t.versions.length === 0 ? (
         <EmptyState title="Aucune version enregistrée">Les versions apparaissent ici après leur enregistrement par la procédure outillée.</EmptyState>
       ) : (
-        <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Historique des versions de modèle (zone défilante)">
-          <table className={tableCls.table}>
-            <caption className="sr-only">Historique des versions de modèle</caption>
-            <thead className={tableCls.thead}>
-              <tr>
-                <th scope="col" className={tableCls.th}>Version</th>
-                <th scope="col" className={tableCls.th}>Méthode</th>
-                <th scope="col" className={tableCls.th}>Statut</th>
-                <th scope="col" className={tableCls.th}>Enregistrée</th>
-                <th scope="col" className={tableCls.th}>Mise en service</th>
-                <th scope="col" className={`${tableCls.th} text-right`}>AUC</th>
-                <th scope="col" className={`${tableCls.th} text-right`}>Lift à la capacité</th>
-              </tr>
-            </thead>
-            <tbody>
-              {t.versions.map((v) => (
-                <tr key={v.id} className={tableCls.tr}>
-                  <td className={tableCls.td}>
+        <>
+          {/* Sous 640 px : une carte par version ; à partir de 640 px : tableau */}
+          <ul aria-label="Historique des versions de modèle" className="divide-y divide-line sm:hidden">
+            {t.versions.map((v) => (
+              <li key={v.id} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex items-start justify-between gap-3 text-sm">
+                  <div className="min-w-0 break-words">
                     <VersionCell version={v.version} promotedAt={v.promotedAt} extra={`variables ${v.fsv}`} />
-                  </td>
-                  <td className={tableCls.td}>{v.kind}</td>
-                  <td className={tableCls.td}>
-                    <StatusBadge tone={STATUS[v.status].tone}>{STATUS[v.status].label}</StatusBadge>
-                  </td>
-                  <td className={`${tableCls.td} whitespace-nowrap`}>{fmt.date(v.createdAt)}</td>
-                  <td className={`${tableCls.td} whitespace-nowrap`}>{v.promotedAt ? `${fmt.date(v.promotedAt)}${v.promotedBy ? ` · ${v.promotedBy}` : ""}` : "—"}</td>
-                  <td className={`${tableCls.td} ${tableCls.num}`}>{dec(v.auc)}</td>
-                  <td className={`${tableCls.td} ${tableCls.num}`}>{v.liftAtK != null ? times(v.liftAtK) : "—"}</td>
+                  </div>
+                  <StatusBadge tone={STATUS[v.status].tone}>{STATUS[v.status].label}</StatusBadge>
+                </div>
+                <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
+                  {(
+                    [
+                      ["Méthode", v.kind],
+                      ["Enregistrée", fmt.date(v.createdAt)],
+                      ["Mise en service", promotion(v)],
+                      ["AUC", dec(v.auc)],
+                      ["Lift à la capacité", liftText(v)],
+                    ] as const
+                  ).map(([k, val]) => (
+                    <div key={k} className="contents">
+                      <dt className="text-fg-muted">{k}</dt>
+                      <dd className="break-words text-right tabular-nums text-fg">{val}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <div className="relative hidden overflow-x-auto sm:block" tabIndex={0} role="region" aria-label="Historique des versions de modèle (zone défilante)">
+            <table className={tableCls.table}>
+              <caption className="sr-only">Historique des versions de modèle</caption>
+              <thead className={tableCls.thead}>
+                <tr>
+                  <th scope="col" className={tableCls.th}>Version</th>
+                  <th scope="col" className={tableCls.th}>Méthode</th>
+                  <th scope="col" className={tableCls.th}>Statut</th>
+                  <th scope="col" className={tableCls.th}>Enregistrée</th>
+                  <th scope="col" className={tableCls.th}>Mise en service</th>
+                  <th scope="col" className={`${tableCls.th} text-right`}>AUC</th>
+                  <th scope="col" className={`${tableCls.th} text-right`}>Lift à la capacité</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {t.versions.map((v) => (
+                  <tr key={v.id} className={tableCls.tr}>
+                    <td className={tableCls.td}>
+                      <VersionCell version={v.version} promotedAt={v.promotedAt} extra={`variables ${v.fsv}`} />
+                    </td>
+                    <td className={tableCls.td}>{v.kind}</td>
+                    <td className={tableCls.td}>
+                      <StatusBadge tone={STATUS[v.status].tone}>{STATUS[v.status].label}</StatusBadge>
+                    </td>
+                    <td className={`${tableCls.td} whitespace-nowrap`}>{fmt.date(v.createdAt)}</td>
+                    <td className={`${tableCls.td} whitespace-nowrap`}>{promotion(v)}</td>
+                    <td className={`${tableCls.td} ${tableCls.num}`}>{dec(v.auc)}</td>
+                    <td className={`${tableCls.td} ${tableCls.num}`}>{liftText(v)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       <p className="mt-3 text-xs text-fg-muted">La mise en service d&apos;un modèle se fait hors de l&apos;interface, par une procédure outillée et tracée.</p>
     </Card>
