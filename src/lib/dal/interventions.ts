@@ -87,7 +87,7 @@ export type InterventionsDto = {
 
 type ActionRaw = { interventionId: number | null; recommendationId: number | null; employeeId: number; date: string; actionCode: string; triggerGroup: string | null };
 
-const ACTIONS_SQL = `
+export const ACTIONS_SQL = `
   SELECT i.id AS interventionId, i.recommendation_id AS recommendationId, i.employee_id AS employeeId, i.date, i.action_code AS actionCode, r.trigger_group AS triggerGroup
   FROM intervention i LEFT JOIN recommendation r ON r.id = i.recommendation_id
   UNION ALL

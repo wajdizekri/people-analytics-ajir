@@ -12,6 +12,8 @@ import { clientIp } from "@/lib/auth/session";
 import { pageContext } from "@/lib/dal/context";
 import { parseQuery } from "@/lib/dal/employees";
 import { getInterventions, interventionsQuerySchema, type ActionStats, type EffectMeasure, type LevelChange } from "@/lib/dal/interventions";
+import { getMatchedComparison } from "@/lib/dal/intervention-impact";
+import { MatchedComparison } from "./matched-comparison";
 
 export const metadata = { title: "Interventions — People Analytics AJIR" };
 
@@ -95,6 +97,7 @@ export default async function InterventionsPage({ searchParams }: { searchParams
   const d = getInterventions(ctx, q, { source: "page", ip: clientIp(await headers()) });
   const t = d.totals;
   const w = d.windowMonths;
+  const matching = t.actions > 0 ? getMatchedComparison(ctx) : null;
   const measuredActions = d.byAction.filter((a) => a.measured > 0);
   const pendingHref = buildHref("/recommendations", { statut: "PROPOSEE" });
   // Fiche ouverte depuis la liste : fil d'Ariane « Interventions » qui ramène au même type d'action et à la même page
@@ -121,6 +124,7 @@ export default async function InterventionsPage({ searchParams }: { searchParams
       </PageIntro>
       <Notice tone="neutral" className="mb-6">
         <strong className="font-semibold text-fg">Observation, pas un effet causal.</strong> {CAUSALITY_NOTICE.replace(/^Observation, pas un effet causal : (.)/, (_m, c: string) => c.toUpperCase())}
+        {matching && " La comparaison avec des collaborateurs similaires, plus bas, en tient compte en partie, sans prouver d'effet."}
       </Notice>
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-5">
@@ -260,6 +264,8 @@ export default async function InterventionsPage({ searchParams }: { searchParams
               </div>
             </section>
           )}
+
+          {matching && <MatchedComparison data={matching} />}
 
           {t.actions > 0 && (
             <>
