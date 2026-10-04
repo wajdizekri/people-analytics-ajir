@@ -54,3 +54,6 @@ __pycache__/
 *.db
 *.db-wal
 *.db-shm
+
+# journaux locaux
+*.log
