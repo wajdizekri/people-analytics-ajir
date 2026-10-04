@@ -20,6 +20,7 @@ import { formatDate } from "@/components/pilotage/labels";
 import { PILOTAGE_ROLES, pageContext } from "@/lib/dal/context";
 import { absenteeismQuerySchema, getAbsenteeism, type AbsSeries } from "@/lib/dal/absenteeism";
 import { getAbsenteeismForecast } from "@/lib/dal/ai-absenteeism";
+import { readConformal } from "@/lib/ai/conformal";
 import { departmentOptions, parseQuery } from "@/lib/dal/employees";
 import { MIN_GROUP_SIZE } from "@/lib/dal/pilotage-metrics";
 import { TermTip } from "@/components/help";
@@ -321,7 +322,7 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
       )}
 
       <div id="prevision" className="mt-4 scroll-mt-4">
-        <AbsenteeismForecastCard d={f} preferKey={preferKey} />
+        <AbsenteeismForecastCard d={f} preferKey={preferKey} coverage={readConformal("absenteeism", f.modelVersion)?.coverage} />
       </div>
 
       <SectionHeader

@@ -6,6 +6,8 @@ import { SERIES, monthShort, type Band, type Point } from "@/components/ai/workf
 import { ProjectionChart, ProjectionLegend } from "@/components/ai/workforce/projection-chart";
 import { WorkforceRecoStatusForm } from "@/components/ai/workforce/reco-status-form";
 import { WorkforceScenarioForm } from "@/components/ai/workforce/scenario-form";
+import { CoverageNote } from "@/components/ai/conformal/coverage-note";
+import { readConformal } from "@/lib/ai/conformal";
 import { getWorkforceForecast, workforceScenarioSchema, type WorkforceDeptRow, type WorkforceReco } from "@/lib/dal/ai-workforce";
 import { pageContext } from "@/lib/dal/context";
 import { parseQuery } from "@/lib/dal/employees";
@@ -222,6 +224,13 @@ export default async function PrevisionsPage({ searchParams }: { searchParams: P
   const focusName = v.focus.departmentId ? v.focus.label : "toute l'entreprise";
   const open = v.recommendations.filter((r) => r.status === "PROPOSEE");
   const decided = v.recommendations.filter((r) => r.status !== "PROPOSEE");
+  // Couverture mesurée des fourchettes (versions calibrées) : source des démissions et niveau (entreprise ou département) affichés
+  const level = v.focus.departmentId ? "dept" : "total";
+  const coverageFor = (version: string | null) => {
+    const c = readConformal("workforce", version)?.coverage;
+    return c?.[`${v.resignSource}:${level}`] ?? c?.[`TAUX:${level}`] ?? null;
+  };
+  const coverageNote = sc.isReference ? undefined : "Mesure faite pour le scénario de référence.";
 
   return (
     <>
@@ -353,6 +362,7 @@ export default async function PrevisionsPage({ searchParams }: { searchParams: P
               rows={chartRows(s.observedHc, s.hc, sc.isReference ? null : s.referenceHc, (x) => fmt.int(x))}
               numeric
             />
+            <CoverageNote cell={coverageFor(v.models.effectif)} note={coverageNote} />
           </VisualCard>
           <VisualCard
             title={
@@ -383,6 +393,7 @@ export default async function PrevisionsPage({ searchParams }: { searchParams: P
                   rows={chartRows(s.observedMass, s.mass, sc.isReference ? null : s.referenceMass, (x) => fmt.tnd(x))}
                   numeric
                 />
+                <CoverageNote cell={coverageFor(v.models.masse)} note={coverageNote} />
               </>
             ) : (
               <EmptyState title="Masse salariale non projetée" compact>

@@ -5,6 +5,8 @@ import { departmentBars, groupLineChart, monthShort, observedForecastOption, pea
 import { GroupTable, OverloadTable, workloadRecoItems } from "@/components/ai/workload/sections";
 import { RecoBoard } from "@/components/ai/workload/reco-status-form";
 import { DEFS, Def, ReadingGuide, fr, type Answer } from "@/components/ai/workload/insight-kit";
+import { CoverageNote } from "@/components/ai/conformal/coverage-note";
+import { readConformal } from "@/lib/ai/conformal";
 import { PILOTAGE_ROLES, pageContext } from "@/lib/dal/context";
 import { MIN_GROUP_SIZE, getWorkload, type GroupView, type WorkloadManager, type WorkloadRh } from "@/lib/dal/ai-workload";
 import { updateWorkloadRecoAction } from "./actions";
@@ -105,8 +107,12 @@ function Method({ w }: { w: WorkloadRh | WorkloadManager }) {
   );
 }
 
+// Couverture mesurée des fourchettes du modèle qui a produit les prévisions (version calibrée), par portée
+const coverageOf = (w: WorkloadRh | WorkloadManager) => readConformal("workload", w.modelVersion ?? null)?.coverage;
+
 function RhView({ w }: { w: WorkloadRh }) {
   const c = w.company;
+  const coverage = coverageOf(w);
   const next = c?.forecast[0] ?? null;
   const tensionTeams = w.teams.filter((t) => t.tension);
   const probable = tensionTeams.filter((t) => t.tension === "PROBABLE").length;
@@ -296,6 +302,7 @@ function RhView({ w }: { w: WorkloadRh }) {
           caption="Équipes dont le pic prévu dépasse le seuil de tension"
           empty={<EmptyState title="Aucune équipe au-dessus du seuil de tension sur les 3 prochains mois" icon="success" compact />}
         />
+        <CoverageNote cell={coverage?.EQUIPE} />
       </section>
       <section aria-labelledby="departements-titre" className="mt-8">
         <SectionHeader
@@ -305,6 +312,7 @@ function RhView({ w }: { w: WorkloadRh }) {
           description="Heures sup par ETP observées et prévues, toutes équipes confondues."
         />
         <GroupTable groups={w.departments} caption="Heures sup par ETP observées et prévues par département" showDepartment={false} nameHeader="Département" />
+        <CoverageNote cell={coverage?.DEPARTEMENT} />
       </section>
       <section id="surcharges" aria-labelledby="surcharges-titre" className="mt-8 scroll-mt-4">
         <SectionHeader
@@ -341,6 +349,7 @@ function ManagerView({ w }: { w: WorkloadManager }) {
       ? `${tension.length} de vos équipes ${plural(tension.length, "pourrait", "pourraient")} dépasser le seuil de tension`
       : `Vos équipes restent sous le seuil de tension jusqu'en ${until}`;
   const multi = w.teams.slice(0, 8);
+  const teamCoverage = coverageOf(w)?.EQUIPE;
   return (
     <>
       <QuestionAnswer
@@ -411,7 +420,9 @@ function ManagerView({ w }: { w: WorkloadManager }) {
             subtitle="Heures sup par ETP et par mois (h) · 12 mois observés puis 3 mois prévus · tirets : seuil de tension"
             chart={groupLineChart(single, w.threshold)}
             footnote="Bleu : observé. Gris en tirets : prévision. Bande grise : fourchette probable à 80 %, qui contient la valeur réelle environ 8 fois sur 10."
-          />
+          >
+            <CoverageNote cell={teamCoverage} />
+          </VisualCard>
         ) : (
           <VisualCard
             title={chartTitle}
@@ -445,6 +456,7 @@ function ManagerView({ w }: { w: WorkloadManager }) {
                 ]),
               }}
             />
+            <CoverageNote cell={teamCoverage} />
           </VisualCard>
         )
       ) : (

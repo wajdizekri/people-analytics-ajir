@@ -1,5 +1,6 @@
 import { EmptyState, Notice, cardCls, fmt } from "@/components/ui";
 import type { AbsForecastDto, AbsForecastUnit } from "@/lib/dal/ai-absenteeism";
+import type { CoverageCell } from "@/lib/ai/conformal";
 import { MIN_GROUP_SIZE } from "@/lib/dal/pilotage-metrics";
 import { fr } from "@/components/ai/workload/insight-kit";
 import { forecastChart } from "./chart";
@@ -43,7 +44,8 @@ export function readForecast(u: AbsForecastUnit) {
 }
 
 // Visuel « prévision à 3 mois » de /absenteeism : courbe observé + prévu avec fourchette, tableau « Voir les données ».
-export function AbsenteeismForecastCard({ d, preferKey }: { d: AbsForecastDto; preferKey?: string }) {
+// coverage : couverture mesurée par portée du modèle qui a produit les prévisions (version calibrée), ligne sous le graphique.
+export function AbsenteeismForecastCard({ d, preferKey, coverage }: { d: AbsForecastDto; preferKey?: string; coverage?: Partial<Record<AbsForecastUnit["scope"], CoverageCell>> | null }) {
   const rh = d.view === "RH";
   const units = [...d.units].sort((a, b) => (a.key === preferKey ? -1 : b.key === preferKey ? 1 : 0));
   const title = <h2 className="mb-3 text-base font-semibold text-fg">Prévision de l&apos;absentéisme à 3 mois</h2>;
@@ -69,7 +71,7 @@ export function AbsenteeismForecastCard({ d, preferKey }: { d: AbsForecastDto; p
         <ForecastPicker
           items={units.map((u) => {
             const r = readForecast(u);
-            return { key: u.key, label: u.label, spec: forecastChart(u, r.avg12), message: r.message, detail: r.detail };
+            return { key: u.key, label: u.label, spec: forecastChart(u, r.avg12), message: r.message, detail: r.detail, coverage: coverage?.[u.scope] ?? null };
           })}
           subtitle={`Taux d'absence mensuel (%), 24 mois observés puis 3 mois prévus · données au ${fr.date(d.asOf)}`}
           footnote={[

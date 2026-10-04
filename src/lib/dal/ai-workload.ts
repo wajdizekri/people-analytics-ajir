@@ -68,7 +68,7 @@ export type WorkloadRh = Common & {
   rule: { thresholdH: number; months: number };
   recommendations: WorkloadReco[];
 };
-export type WorkloadManager = Common & { view: "MANAGER"; teams: GroupView[]; hiddenTeams: number; recommendations: WorkloadReco[] };
+export type WorkloadManager = Common & { view: "MANAGER"; teams: GroupView[]; hiddenTeams: number; recommendations: WorkloadReco[]; modelVersion?: string | null };
 export type WorkloadView = WorkloadRh | WorkloadManager;
 
 const UNIT = "heures sup par ETP et par mois";
@@ -208,7 +208,7 @@ export function getWorkload(ctx: AccessContext): WorkloadView {
           WHERE e.status = 'ACTIF' AND e.manager_id IN (SELECT value FROM json_each(@managers))`,
       )
       .get({ managers: JSON.stringify(managers) }) as { n: number };
-    return { view: "MANAGER", asOf, threshold, unit: UNIT, teams, hiddenTeams: Math.max(0, withReports.n - teams.length), recommendations: listRecos(ctx, managers) };
+    return { view: "MANAGER", asOf, threshold, unit: UNIT, teams, hiddenTeams: Math.max(0, withReports.n - teams.length), recommendations: listRecos(ctx, managers), modelVersion: version };
   }
 
   const rows = read("", {});

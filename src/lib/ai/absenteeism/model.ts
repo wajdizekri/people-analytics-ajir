@@ -1,3 +1,4 @@
+import type { CoverageCell } from "../conformal";
 import type { MonthCal } from "./series";
 
 // Inférence du bundle models/absenteeism/<version>/model.json (ridge direct par horizon, ml/absenteeism/model.py).
@@ -13,6 +14,9 @@ const MA12 = FEATURES.indexOf("ma12");
 export type Scope = "ENTREPRISE" | "DEPARTEMENT" | "EQUIPE";
 export type Family = "EQUIPE" | "AGREGE";
 export type HorizonModel = { mean: number[]; std: number[]; coef: number[]; intercept: number; offset: "ma12" | "none" };
+// Champ additif des versions calibrées (ml/absenteeism/conformal.py) : quantiles signés [bas, haut] par portée et horizon,
+// même échelle que l'intervalle v1. Absent (ou portée manquante) : quantiles v1 par famille.
+export type AbsConformal = { level: number; quantiles: Partial<Record<Scope, Record<string, [number, number]>>>; coverage?: Partial<Record<Scope, CoverageCell>> };
 export type AbsBundle = {
   version: string;
   kind: "RIDGE_DIRECT";
@@ -22,6 +26,7 @@ export type AbsBundle = {
   intervals: { level: number; rate_floor: number; quantiles: Record<Family, Record<string, [number, number]>> };
   visibility_lag_days: number;
   min_group: number;
+  conformal?: AbsConformal;
   metrics?: unknown;
 };
 export type Pair = [number[], number[]]; // [num[12], den[12]] des mois O-11 .. O
@@ -32,6 +37,9 @@ export function validateBundle(b: AbsBundle): AbsBundle {
   if (b.kind !== "RIDGE_DIRECT") throw new Error(`Type de modèle d'absentéisme inattendu : ${b.kind}`);
   if (b.features.length !== FEATURES.length || b.features.some((f, i) => f !== FEATURES[i])) throw new Error("Variables du modèle d'absentéisme incompatibles.");
   for (const h of b.horizons) if (!b.models[String(h)] || !b.intervals.quantiles.EQUIPE[String(h)] || !b.intervals.quantiles.AGREGE[String(h)]) throw new Error(`Horizon ${h} incomplet.`);
+  for (const byH of Object.values(b.conformal?.quantiles ?? {}))
+    for (const q of Object.values(byH ?? {}))
+      if (!Array.isArray(q) || !Number.isFinite(q[0]) || !Number.isFinite(q[1]) || q[0] > 0 || q[1] < 0) throw new Error("Quantiles conformes du modèle d'absentéisme invalides.");
   return b;
 }
 
@@ -82,7 +90,7 @@ export function forecastUnit(b: AbsBundle, h: number, scope: Scope, own: Pair, p
   if (!m) throw new Error(`Modèle absent pour l'horizon ${h}.`);
   const x = features(h, scope, own, parent, company, calT, calT12);
   const value = predictRate(m, x);
-  const [qlo, qhi] = b.intervals.quantiles[familyOf(scope)][String(h)];
+  const [qlo, qhi] = b.conformal?.quantiles[scope]?.[String(h)] ?? b.intervals.quantiles[familyOf(scope)][String(h)];
   const s = intervalScale(value, own[1], b.intervals.rate_floor);
   return { h, x, value, lower: Math.max(0, value + qlo * s), upper: value + qhi * s };
 }

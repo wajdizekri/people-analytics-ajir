@@ -4,8 +4,10 @@ import { useState } from "react";
 import { EChart } from "@/components/charts/echart";
 import { ChartData, type ChartSpec } from "@/components/charts/pbi";
 import { fieldCls } from "@/components/ui";
+import type { CoverageCell } from "@/lib/ai/conformal";
+import { CoverageNote } from "@/components/ai/conformal/coverage-note";
 
-type Item = { key: string; label: string; spec: ChartSpec; message: string; detail: string };
+type Item = { key: string; label: string; spec: ChartSpec; message: string; detail: string; coverage?: CoverageCell | null };
 
 // Visuel « prévision » : le titre (message) suit le périmètre choisi (RH : entreprise ou département) ; graphiques construits côté serveur.
 export function ForecastPicker({ items, subtitle, footnote }: { items: Item[]; subtitle: string; footnote: string }) {
@@ -44,6 +46,7 @@ export function ForecastPicker({ items, subtitle, footnote }: { items: Item[]; s
         ariaLabel={`${current.message}. ${current.spec.ariaLabel}`}
       />
       <ChartData table={current.spec.table} caption={current.message} />
+      <CoverageNote cell={current.coverage} />
       <p className="mt-2 text-xs leading-relaxed text-fg-muted">{footnote}</p>
     </div>
   );

@@ -1,3 +1,5 @@
+import type { CoverageCell } from "../conformal";
+
 // Moteur de projection (stock-flux + régression de masse). Même suite d'opérations que ml/workforce/engine.py :
 // toute modification doit être reportée des deux côtés (parité vérifiée par golden.json).
 
@@ -7,6 +9,10 @@ export type ResignSource = "TAUX" | "LOGREG";
 
 type Quantiles = { dept: number[]; total: number[] };
 export type IntervalSpec = { level: number; method?: string } & Partial<Record<ResignSource, Quantiles>>;
+// Champ additif des versions calibrées (ml/workforce/conformal.py) : [bas, haut] signés par horizon, en écarts-types
+// stock-flux (effectif) ou en part de la prévision (masse). Absent : intervalle symétrique v1 (interval).
+type ConformalQuantiles = { dept: [number, number][]; total: [number, number][] };
+export type WorkforceConformal = { level: number; quantiles: Partial<Record<ResignSource, ConformalQuantiles>>; coverage?: Record<string, CoverageCell> };
 
 export type EffectifBundle = {
   version: string;
@@ -17,6 +23,7 @@ export type EffectifBundle = {
   retirement: { age: number; lag_days: number; q_prior: number; min_cases: number };
   cdd: { q_prior: number; min_cases: number };
   interval: IntervalSpec;
+  conformal?: WorkforceConformal;
   metrics?: Record<string, unknown>;
 };
 
@@ -28,6 +35,7 @@ export type MasseBundle = {
   windows: { level_months: number };
   raise_fallback: number;
   interval: IntervalSpec;
+  conformal?: WorkforceConformal;
   metrics?: Record<string, unknown>;
 };
 
@@ -89,6 +97,11 @@ const pickInterval = (q: IntervalSpec, source: ResignSource): Quantiles => {
   if (!v) throw new Error("Bundle sans quantiles d'intervalle.");
   return v;
 };
+const pickConformal = (b: { conformal?: WorkforceConformal } | null, source: ResignSource): ConformalQuantiles | null =>
+  b?.conformal ? (b.conformal.quantiles[source] ?? b.conformal.quantiles.TAUX ?? null) : null;
+// Bornes à 80 % : quantiles conformes (v + bas × échelle, v + haut × échelle) s'ils existent, sinon v ± q × échelle (v1)
+const band = (v: number, scale: number, q: number, cq: [number, number] | null): [number, number] =>
+  cq ? [Math.max(0, v + cq[0] * scale), v + cq[1] * scale] : [Math.max(0, v - q * scale), v + q * scale];
 
 export function project(be: EffectifBundle, bm: MasseBundle | null, state: WorkforceState, scenario: Scenario): Projection {
   const H = be.horizon;
@@ -98,6 +111,8 @@ export function project(be: EffectifBundle, bm: MasseBundle | null, state: Workf
   const raise = scenario.raise == null ? state.raise : scenario.raise;
   const qe = pickInterval(be.interval, state.resignSource);
   const qm = bm ? pickInterval(bm.interval, state.resignSource) : null;
+  const ce = pickConformal(be, state.resignSource);
+  const cm = pickConformal(bm, state.resignSource);
 
   const factor: number[] = [];
   let jan = 0;
@@ -177,9 +192,7 @@ export function project(be: EffectifBundle, bm: MasseBundle | null, state: Workf
       const v = a.vari[i] + cur;
       a.vari[i] = v;
       sd[i] = Math.sqrt(v);
-      const hw = qe.dept[i] * sd[i];
-      lo[i] = Math.max(0, hc[i] - hw);
-      up[i] = hc[i] + hw;
+      [lo[i], up[i]] = band(hc[i], sd[i], qe.dept[i], ce ? ce.dept[i] : null);
     }
     let mass: number[] | null = null;
     let mlo: number[] | null = null;
@@ -194,9 +207,7 @@ export function project(be: EffectifBundle, bm: MasseBundle | null, state: Workf
         const b = factor[i] * (a.base[i] + a.hiresHc[i] * dep.hireSalary);
         a.base[i] = b;
         mass[i] = b * Math.exp(level + bm.season[(m0 + k) % 12]);
-        const hw = qm.dept[i] * mass[i];
-        mlo[i] = Math.max(0, mass[i] - hw);
-        mup[i] = mass[i] + hw;
+        [mlo[i], mup[i]] = band(mass[i], mass[i], qm.dept[i], cm ? cm.dept[i] : null);
       }
     }
     return { id: dep.id, code: dep.code, name: dep.name, hc0: dep.hc0, mass0: dep.mass0, hc, hcSd: sd, hcLower: lo, hcUpper: up, exits: a.exits, hires: a.hires, mass, massLower: mlo, massUpper: mup };
@@ -226,13 +237,11 @@ export function project(be: EffectifBundle, bm: MasseBundle | null, state: Workf
       if (withMass) total.mass![i] += d.mass![i];
     });
     total.hcSd[i] = Math.sqrt(v);
-    const hw = qe.total[i] * total.hcSd[i];
-    total.hcLower[i] = Math.max(0, total.hc[i] - hw);
-    total.hcUpper[i] = total.hc[i] + hw;
+    [total.hcLower[i], total.hcUpper[i]] = band(total.hc[i], total.hcSd[i], qe.total[i], ce ? ce.total[i] : null);
     if (withMass && qm) {
-      const hwm = qm.total[i] * total.mass![i];
-      total.massLower![i] = Math.max(0, total.mass![i] - hwm);
-      total.massUpper![i] = total.mass![i] + hwm;
+      const [mlo, mup] = band(total.mass![i], total.mass![i], qm.total[i], cm ? cm.total[i] : null);
+      total.massLower![i] = mlo;
+      total.massUpper![i] = mup;
     }
   }
   const byGrade = [...grades.keys()].sort().map((g) => {

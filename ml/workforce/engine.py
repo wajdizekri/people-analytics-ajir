@@ -21,6 +21,23 @@ def _interval(q: dict, source: str) -> dict:
     return q.get(source) or q["TAUX"]
 
 
+def _conformal(bundle: dict | None, source: str) -> dict | None:
+    """Quantiles conformes signés [bas, haut] par horizon (champ additif `conformal`), None pour un bundle v1."""
+    c = bundle.get("conformal") if bundle else None
+    if not c:
+        return None
+    q = c["quantiles"]
+    return q.get(source) or q["TAUX"]
+
+
+def _band(v: float, scale: float, q, cq) -> tuple[float, float]:
+    """Bornes à 80 % : quantiles conformes (v + bas x échelle, v + haut x échelle) s'ils existent, sinon v ± q x échelle."""
+    if cq is not None:
+        return max(0.0, v + float(cq[0]) * scale), v + float(cq[1]) * scale
+    hw = float(q) * scale
+    return max(0.0, v - hw), v + hw
+
+
 def project(bundle_e: dict, bundle_m: dict | None, state: dict, scenario: dict) -> dict:
     H = int(bundle_e["horizon"])
     m0 = month_index(state["month0"])
@@ -35,6 +52,8 @@ def project(bundle_e: dict, bundle_m: dict | None, state: dict, scenario: dict) 
     source = state["resignSource"]
     qe = _interval(bundle_e["interval"], source)
     qm = _interval(bundle_m["interval"], source) if bundle_m else None
+    ce = _conformal(bundle_e, source)
+    cm = _conformal(bundle_m, source)
 
     factor = []
     jan = 0
@@ -113,9 +132,7 @@ def project(bundle_e: dict, bundle_m: dict | None, state: dict, scenario: dict) 
             v = acc["var"][i] + cur
             acc["var"][i] = v
             sd[i] = math.sqrt(v)
-            hw = float(qe["dept"][i]) * sd[i]
-            lo[i] = max(0.0, hc[i] - hw)
-            up[i] = hc[i] + hw
+            lo[i], up[i] = _band(hc[i], sd[i], qe["dept"][i], ce["dept"][i] if ce else None)
         mass = mlo = mup = None
         level = dep.get("level")
         if level is None:
@@ -128,9 +145,7 @@ def project(bundle_e: dict, bundle_m: dict | None, state: dict, scenario: dict) 
                 b = factor[i] * (acc["base"][i] + acc["hiresHc"][i] * hire_sal)
                 acc["base"][i] = b
                 mass[i] = b * math.exp(float(level) + float(bundle_m["season"][(m0 + k) % 12]))
-                hw = float(qm["dept"][i]) * mass[i]
-                mlo[i] = max(0.0, mass[i] - hw)
-                mup[i] = mass[i] + hw
+                mlo[i], mup[i] = _band(mass[i], mass[i], qm["dept"][i], cm["dept"][i] if cm else None)
         out_depts.append({
             "id": dep["id"], "code": dep["code"], "name": dep["name"], "hc0": acc["hc0"], "mass0": acc["mass0"],
             "hc": hc, "hcSd": sd, "hcLower": lo, "hcUpper": up,
@@ -156,13 +171,9 @@ def project(bundle_e: dict, bundle_m: dict | None, state: dict, scenario: dict) 
             if with_mass:
                 tot_mass[i] += d["mass"][i]
         tot_sd[i] = math.sqrt(v)
-        hw = float(qe["total"][i]) * tot_sd[i]
-        tot_lo[i] = max(0.0, tot_hc[i] - hw)
-        tot_up[i] = tot_hc[i] + hw
+        tot_lo[i], tot_up[i] = _band(tot_hc[i], tot_sd[i], qe["total"][i], ce["total"][i] if ce else None)
         if with_mass:
-            hwm = float(qm["total"][i]) * tot_mass[i]
-            tot_mlo[i] = max(0.0, tot_mass[i] - hwm)
-            tot_mup[i] = tot_mass[i] + hwm
+            tot_mlo[i], tot_mup[i] = _band(tot_mass[i], tot_mass[i], qm["total"][i], cm["total"][i] if cm else None)
     mass0 = [d["mass0"] for d in out_depts]
     total = {
         "hc0": sum(d["hc0"] for d in out_depts),

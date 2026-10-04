@@ -210,6 +210,10 @@ export const TERMS = {
     text: "Famille de démissions qui se ressemblent sur des données professionnelles observées le mois précédant la démission : ancienneté, carrière, salaire, heures supplémentaires, absences hors santé, formation, contrat. Description non causale ; aucun collaborateur n'est étiqueté.",
     roles: ["RH"],
   },
+  fourchetteCalibree: {
+    label: "Fourchette calibrée",
+    text: "Fourchette recalée sur les erreurs passées du modèle pour contenir la valeur réelle au moins 8 fois sur 10. La couverture est la part des valeurs observées tombées dans la fourchette. Elle est mesurée sur des mois récents, jamais utilisés pour la caler.",
+  },
 } as const satisfies Record<string, Term>;
 
 export type TermId = keyof typeof TERMS;
