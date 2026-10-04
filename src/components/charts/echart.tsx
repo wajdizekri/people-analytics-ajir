@@ -1,7 +1,7 @@
 "use client";
 
 import ReactECharts from "echarts-for-react";
-import { format as echartsFormat, type EChartsOption } from "echarts";
+import { format as echartsFormat, graphic, type EChartsOption } from "echarts";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useSyncExternalStore, type ComponentProps, type RefObject } from "react";
 import { useTheme } from "@/components/ui/theme";
@@ -148,18 +148,50 @@ function itemTooltip(valueText: (v: unknown) => string) {
   };
 }
 
+// Une ligne tient dans `width` si ECharts ne la recoupe pas (overflow « break », sondé avec le même algorithme que le rendu : il
+// mesure lettre par lettre, compte une lettre accentuée comme un idéogramme et, sur une page chargée, chaque lettre comme un « a »,
+// soit plus large que la mesure d'un seul tenant) ni ne la tronque (overflow « truncate »). Sinon ECharts ajoutait une 3e ligne,
+// supprimée sans « … ».
+const fitCache = new Map<string, boolean>();
+function fitsLine(s: string, width: number, font: string): boolean {
+  const key = `${width}|${font}|${s}`;
+  let fits = fitCache.get(key);
+  if (fits == null) {
+    const probe = new graphic.Text({ style: { text: s, font, width, overflow: "break", lineHeight: 10, height: 10, lineOverflow: "truncate" } });
+    probe.getBoundingRect();
+    fits = !probe.isTruncated && echartsFormat.truncateText(s, width, font, "…") === s;
+    if (fitCache.size >= 2000) fitCache.clear();
+    fitCache.set(key, fits);
+  }
+  return fits;
+}
+
+// Plus long début du texte qui tient suivi de « … »
+function cutToFit(s: string, width: number, font: string): string {
+  if (fitsLine(s, width, font)) return s;
+  let lo = 0;
+  let hi = s.length - 1;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (fitsLine(`${s.slice(0, mid).trimEnd()}…`, width, font)) lo = mid;
+    else hi = mid - 1;
+  }
+  return `${s.slice(0, lo).trimEnd()}…`;
+}
+
 /** Texte coupé en deux lignes au plus (entre deux mots) dans `width` px ; au-delà, la seconde ligne finit par « … ». */
 export function twoLineLabel(text: string, width: number, font: string): string {
-  const cut = (s: string) => echartsFormat.truncateText(s, width, font, "…");
   const words = text.trim().split(/\s+/);
   let first = words[0] ?? "";
   let k = 1;
-  while (k < words.length && cut(`${first} ${words[k]}`) === `${first} ${words[k]}`) first = `${first} ${words[k++]}`;
+  while (k < words.length && fitsLine(`${first} ${words[k]}`, width, font)) first = `${first} ${words[k++]}`;
   const rest = words.slice(k).join(" ");
-  return rest ? `${cut(first)}\n${cut(rest)}` : cut(first);
+  return rest ? `${cutToFit(first, width, font)}\n${cutToFit(rest, width, font)}` : cutToFit(first, width, font);
 }
 
+// Boîte du libellé (ECharts) et largeur visée par twoLineLabel : 4 px de marge pour qu'aucune ligne ne soit recoupée
 const MOBILE_LABEL_WIDTH = 112;
+const MOBILE_LABEL_FIT = MOBILE_LABEL_WIDTH - 4;
 
 function localizeAxis(axis: Any, defaultType: "category" | "value", narrow: boolean) {
   return mapOne(axis, (a: Any) => {
@@ -173,7 +205,9 @@ function localizeAxis(axis: Any, defaultType: "category" | "value", narrow: bool
       // Mobile : libellés longs (départements) sur deux lignes au plus plutôt que tronqués à quelques lettres ; plus long encore,
       // « … » en fin de seconde ligne (le texte entier reste dans l'infobulle et le tableau). Libellés enrichis (rich) : inchangés.
       const f = axisLabel.formatter;
-      const font = `${isNum(axisLabel.fontSize) ? axisLabel.fontSize : 12}px ${CHART_FONT}`;
+      // Police écrite comme ECharts écrit celle du libellé (style et graisse « normal » par défaut) : zrender garde ses mesures
+      // par chaîne de police, la ligne est donc mesurée exactement comme au rendu
+      const font = `${axisLabel.fontStyle || "normal"} ${axisLabel.fontWeight || "normal"} ${isNum(axisLabel.fontSize) ? axisLabel.fontSize : 12}px ${axisLabel.fontFamily || CHART_FONT}`;
       const raw = (v: unknown, i: number) => String(typeof f === "function" ? f(v, i) : typeof f === "string" ? f.replace("{value}", String(v)) : (v ?? ""));
       axisLabel = {
         ...axisLabel,
@@ -182,13 +216,17 @@ function localizeAxis(axis: Any, defaultType: "category" | "value", narrow: bool
         lineHeight: 14,
         height: 28,
         lineOverflow: "truncate",
-        ...(axisLabel.rich ? {} : { formatter: (v: unknown, i: number) => twoLineLabel(raw(v, i), MOBILE_LABEL_WIDTH, font) }),
+        ...(axisLabel.rich ? {} : { formatter: (v: unknown, i: number) => twoLineLabel(raw(v, i), MOBILE_LABEL_FIT, font) }),
       };
     }
     // Mobile : barres horizontales, un nom par barre (jamais une étiquette sur deux) ; axe de valeurs à 4 graduations au plus
     // (hideOverlap coupé : la boîte d'étiquette sur deux lignes déborde sur la barre voisine et ECharts en masquait une sur deux)
     if (narrow && type === "category" && defaultType === "value" && axisLabel?.interval == null) axisLabel = { ...axisLabel, interval: 0, hideOverlap: axisLabel?.hideOverlap ?? false };
-    if (narrow && type === "value" && a?.splitNumber == null) return { ...a, axisLabel, splitNumber: 4 };
+    if (narrow && type === "value" && a?.splitNumber == null) {
+      // Axe de 0 à 100 (parts en %) : 0, 25, 50, 75, 100 ; avec 4 graduations libres, ECharts écrivait 0, 30, 60, 90 (100 absent ou collé à 90)
+      if (a?.min === 0 && a?.max === 100 && a?.interval == null) return { ...a, axisLabel, interval: 25 };
+      return { ...a, axisLabel, splitNumber: 4 };
+    }
     return axisLabel === a?.axisLabel ? a : { ...a, axisLabel };
   });
 }

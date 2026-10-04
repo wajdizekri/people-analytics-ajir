@@ -200,20 +200,32 @@ export function deltaVerdict(delta: Delta): keyof typeof VERDICT {
   return (delta.value > 0) === (delta.good === "up") ? "favorable" : "defavorable";
 }
 
+// Écart en tête du libellé (« −0,67 pt », « −9 », « −0,6 h ») : insécable avec la flèche ; la suite (période, référence) passe à la ligne
+const DELTA_UNIT = /^(?:pts?|%|h|j|×|TND)$/;
+function splitDeltaLabel(label: string): [string, string] {
+  const words = label.split(" ");
+  const n = words.length > 1 && DELTA_UNIT.test(words[1]) ? 2 : 1;
+  return [words.slice(0, n).join(" "), words.slice(n).join(" ")];
+}
+
 // Variation lisible sans la couleur : forme de la flèche, sens écrit pour les lecteurs d'écran, écart signé, jugement en toutes lettres
 // dans une pastille à bordure (la bordure reste visible à l'impression et en contraste forcé)
 export function DeltaLine({ delta }: { delta: Delta }) {
   const v = deltaVerdict(delta);
   const s = VERDICT[v];
   const direction = delta.value > 0 ? "En hausse" : delta.value < 0 ? "En baisse" : "Stable";
+  const [head, rest] = splitDeltaLabel(delta.label);
   return (
     <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] tabular-nums text-fg-muted">
-      <span aria-hidden="true" className={`font-semibold ${s.arrow}`}>
-        {delta.value > 0 ? "▲" : delta.value < 0 ? "▼" : "▬"}
-      </span>
-      <span className="sr-only">{direction} : </span>
-      <span>
-        {delta.label}
+      <span className="min-w-0">
+        <span className="whitespace-nowrap">
+          <span aria-hidden="true" className={`mr-1.5 font-semibold ${s.arrow}`}>
+            {delta.value > 0 ? "▲" : delta.value < 0 ? "▼" : "▬"}
+          </span>
+          <span className="sr-only">{direction} : </span>
+          {head}
+        </span>
+        {rest && ` ${rest}`}
         {delta.reference && <span className="text-fg-subtle"> {delta.reference}</span>}
       </span>
       {s.text && <span className={`rounded-full border px-1.5 text-xs font-semibold ${s.cls}`}>{s.text}</span>}

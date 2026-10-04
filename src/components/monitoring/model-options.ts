@@ -58,10 +58,15 @@ function stackEnd(values: number[][], radius: [number, number, number, number]) 
  */
 export type FactorRow = { label: string; weight: number; axis?: string };
 export const factorDirection = (weight: number) => (weight >= 0 ? "Risque plus élevé" : "Risque plus faible");
+// Sur mobile (demi-axe de 80 px environ), l'étiquette d'une barre négative (« −11 % ») est posée vers les libellés de facteur :
+// axe à 1,6 fois le plus grand poids (la plus longue barre laisse plus d'un tiers du demi-axe à son étiquette) et 16 px entre
+// libellés et tracé, pour qu'elle ne colle jamais au libellé même quand elle déborde un peu du tracé.
+const FACTOR_HEADROOM = 1.6;
+export const FACTOR_LABEL_MARGIN = 16;
 
 export function factorsChart(input: FactorRow[]): ChartSpec {
   const rows = [...input].sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight) || a.label.localeCompare(b.label, "fr"));
-  const max = Math.max(5, Math.ceil((Math.max(0, ...rows.map((r) => Math.abs(r.weight))) * 1.35) / 5) * 5);
+  const max = Math.max(5, Math.ceil((Math.max(0, ...rows.map((r) => Math.abs(r.weight))) * FACTOR_HEADROOM) / 5) * 5);
   const option: EChartsOption = {
     animation: false,
     grid: grid(8, 20),
@@ -83,7 +88,7 @@ export function factorsChart(input: FactorRow[]): ChartSpec {
       data: rows.map((r) => r.axis ?? r.label),
       ...AXIS,
       axisLine: { show: false },
-      axisLabel: { ...AXIS.axisLabel, color: INK, width: 200, overflow: "break", interval: 0 },
+      axisLabel: { ...AXIS.axisLabel, color: INK, width: 200, overflow: "break", interval: 0, margin: FACTOR_LABEL_MARGIN },
       splitLine: { show: false },
     },
     series: [

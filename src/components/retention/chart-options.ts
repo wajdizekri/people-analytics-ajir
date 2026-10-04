@@ -1,5 +1,5 @@
 import type { ChartSpec, ChartTable } from "@/components/charts/builders";
-import { BAND_FILL, CHART_PALETTE, NBSP, SEMANTIC, frNumber } from "@/components/charts/theme";
+import { BAND_FILL, CHART_INK, CHART_PALETTE, NBSP, SEMANTIC, frNumber } from "@/components/charts/theme";
 import type { CurveSummary } from "@/lib/retention/summary";
 
 // Courbe de maintien en escalier (Kaplan-Meier) : une série par groupe, l'ensemble en référence avec sa bande d'IC à 95 %.
@@ -15,6 +15,18 @@ export const followedText = (n: number | null) => (n == null ? "—" : `${frNumb
 export const monthsText = (m: number) => `${frNumber(m, 0)}${NBSP}mois`;
 
 const grid = (top: number) => ({ left: 8, right: 24, top, bottom: 8, outerBoundsMode: "same" as const, outerBoundsContain: "all" as const });
+
+// Repère des 50 % : étiquette sous la ligne, au début de l'axe, là où la courbe (encore au-dessus de 50 % avant la médiane) ne passe
+// pas ; fond de surface et marge intérieure pour qu'une courbe de groupe qui croiserait l'étiquette ne la rende pas illisible.
+export const MEDIAN_LABEL = {
+  formatter: "50 % : durée médiane",
+  position: "insideStartBottom" as const,
+  color: CHART_INK.ink,
+  fontSize: 12,
+  backgroundColor: CHART_INK.surface,
+  padding: [2, 4],
+  borderRadius: 4,
+};
 
 function points(c: CurveSummary) {
   return c.survival.map((s, m) =>
@@ -76,7 +88,7 @@ export function retentionChart(i: { overall: RetentionSeries; groups: RetentionS
           data: [
             {
               yAxis: 50,
-              label: { formatter: "50 % : durée médiane", position: "insideEndTop" as const, color: "#334155", fontSize: 12 },
+              label: { ...MEDIAN_LABEL, padding: [...MEDIAN_LABEL.padding] },
               lineStyle: { color: SEMANTIC.reference, type: "dashed" as const, width: 1 },
             },
           ],

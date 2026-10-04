@@ -3,6 +3,8 @@ import { frRate, type RiskTotals } from "@/components/pilotage/chart-options";
 
 // Titres-messages des visuels (charte § 5 : le titre dit ce qu'il faut retenir) et variations des cartes KPI.
 // Écarts de taux calculés sur les valeurs affichées (arrondies au dixième de point) : jamais « 0,6 % contre 0,7 % : 0,0 pt ».
+// Absentéisme : au centième de point, comme ses visuels (courbe et barres à 2 décimales) : « 0,98 % contre 0,78 % », jamais
+// « 1,0 % contre 0,8 % » au-dessus de barres qui affichent 0,98 % et 0,78 %.
 
 const int = (n: number) => n.toLocaleString("fr-FR");
 const plural = (n: number, one: string, many: string) => `${int(n)} ${n > 1 ? many : one}`;
@@ -10,6 +12,9 @@ const plural = (n: number, one: string, many: string) => `${int(n)} ${n > 1 ? ma
 export const signed = (n: number, digits = 0) =>
   n.toLocaleString("fr-FR", { minimumFractionDigits: digits, maximumFractionDigits: digits, signDisplay: "exceptZero" }).replace("-", "−");
 export const pointsDiff = (a: number, b: number) => (Math.round(a * 1000) - Math.round(b * 1000)) / 10;
+// Taux en centièmes de point, arrondi comme les valeurs des visuels d'absentéisme (Math.round(r * 100 * 10 ** 2))
+const hundredths = (r: number) => Math.round(r * 100 * 100);
+const absRate = (r: number) => frRate(hundredths(r) / 10000, 2);
 
 // Variations des cartes KPI : KpiCard ajoute la flèche et le jugement écrit (« favorable », « à surveiller », « stable »)
 export function rateDelta(from: number | null, to: number | null, since: string, good: "up" | "down"): Delta | null {
@@ -41,9 +46,9 @@ export function turnoverTitle(first: number | null, last: number | null, sinceMo
 
 export function absenteeismTitle(last: number | null, average: number | null, month: string): string {
   if (last == null || average == null) return "Absentéisme mensuel non disponible";
-  const d = pointsDiff(last, average);
-  const where = Math.abs(d) < 0.1 ? "proche de" : d > 0 ? "au-dessus de" : "sous";
-  return `En ${month}, l'absentéisme (${frRate(last)}) est ${where} la moyenne de la période`;
+  const d = hundredths(last) - hundredths(average);
+  const where = Math.abs(d) < 10 ? "proche de" : d > 0 ? "au-dessus de" : "sous";
+  return `En ${month}, l'absentéisme (${absRate(last)}) est ${where} la moyenne de la période`;
 }
 
 export function riskTitle(t: RiskTotals): string {
@@ -72,6 +77,6 @@ export function headcountByDepartmentTitle(rows: { name: string; headcount: numb
 export function absenteeismByDepartmentTitle(rows: { name: string; absenteeismRate: number | null }[], average: number | null): string {
   const top = rows.filter((r) => r.absenteeismRate != null).sort((x, y) => y.absenteeismRate! - x.absenteeismRate!)[0];
   if (!top) return "Absentéisme par département non disponible";
-  const avg = average == null ? "" : ` contre ${frRate(average)} en moyenne`;
-  return `${top.name} : absentéisme le plus élevé (${frRate(top.absenteeismRate!)}${avg})`;
+  const avg = average == null ? "" : ` contre ${absRate(average)} en moyenne`;
+  return `${top.name} : absentéisme le plus élevé (${absRate(top.absenteeismRate!)}${avg})`;
 }

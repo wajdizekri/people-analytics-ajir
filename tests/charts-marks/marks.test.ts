@@ -275,7 +275,8 @@ describe("mobile : libellés de catégorie coupés après deux lignes avec « �
     const long = "Direction des systèmes d'information et de la transformation numérique";
     const o = localizeOption({ yAxis: { type: "category", data: [long], axisLabel: { width: 150 } }, xAxis: { type: "value" }, series: [] }, undefined, true) as Any;
     expect(o.yAxis.axisLabel).toMatchObject({ width: 112, overflow: "break", height: 28, lineOverflow: "truncate" });
-    expect(o.yAxis.axisLabel.formatter(long, 0)).toBe(twoLineLabel(long, 112, font));
+    // Ligne visée à 108 px (4 px de marge dans la boîte de 112 px), police écrite comme celle d'ECharts (tests/charts-fix)
+    expect(o.yAxis.axisLabel.formatter(long, 0)).toBe(twoLineLabel(long, 108, `normal normal ${font}`));
     const custom = localizeOption({ yAxis: { type: "category", axisLabel: { width: 150, formatter: (v: string) => `Équipe ${v}` } }, series: [] }, undefined, true) as Any;
     expect(custom.yAxis.axisLabel.formatter("Nord", 0)).toBe("Équipe Nord");
     const rich = localizeOption({ yAxis: { type: "category", axisLabel: { width: 150, formatter: "{v|72 %}", rich: { v: {} } } }, series: [] }, undefined, true) as Any;

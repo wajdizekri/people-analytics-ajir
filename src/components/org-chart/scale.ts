@@ -22,12 +22,15 @@ const dark = (c: string) => DARK_COLORS[c.toLowerCase()] ?? c;
 const sem = (c: string) => ({ light: c, dark: dark(c) });
 const NA = sem(SEMANTIC.contexte);
 
+// Effectif : une seule teinte (bleu ArabSoft), du clair au foncé en clair ; en sombre, contraste croissant sur la surface #111a2b,
+// le plus petit palier à 3,6:1 (aplat porteur d'information ≥ 3:1), écart de clarté OKLCH ≥ 0,078 entre paliers
+// (validateur de la compétence dataviz, mode --ordinal)
 export function tiersFor(colorBy: OrgColorBy, ref: Reference): Tier[] {
   if (colorBy === "effectif")
     return [
-      { key: "t1", label: "Moins de 10 personnes", color: { light: "#a9c4e8", dark: "#2b4a73" } },
-      { key: "t2", label: "10 à 49 personnes", color: { light: "#5b8fcf", dark: "#3572bd" } },
-      { key: "t3", label: "50 à 199 personnes", color: { light: "#1e56a3", dark: "#5b8fcf" } },
+      { key: "t1", label: "Moins de 10 personnes", color: { light: "#a9c4e8", dark: "#3572bd" } },
+      { key: "t2", label: "10 à 49 personnes", color: { light: "#5b8fcf", dark: "#5b8fcf" } },
+      { key: "t3", label: "50 à 199 personnes", color: { light: "#1e56a3", dark: "#7ea7dc" } },
       { key: "t4", label: "200 personnes et plus", color: { light: "#0b3a66", dark: "#a9c4e8" } },
     ];
   if (colorBy === "risque")

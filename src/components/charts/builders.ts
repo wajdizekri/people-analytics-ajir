@@ -93,6 +93,18 @@ function shareBarThickness(height: number, rows: number, categoryAxis: boolean) 
   return Math.min(BAR_MAX, (0.7 * Math.max(0, height - (categoryAxis ? 114 : 110))) / Math.max(1, rows));
 }
 
+// Sous 640 px, le wrapper écrit un nom de catégorie long (plus de 16 caractères, ~108 px) sur deux lignes de 14 px : hauteur
+// mobile portée à TWO_LINE_ROW px par ligne du graphique pour que deux noms voisins ne se touchent pas. Hors du tracé : marge
+// haute, nom de l'axe, légende passée en bas (mesurés au rendu à 360 px : tests/charts-fix).
+const TWO_LINE_ROW = 44;
+const BAR_OVERHEAD = 65;
+const STACKED_OVERHEAD = 123;
+const SHARE_OVERHEAD = 141;
+function twoLineHeight(names: string[], height: number, overhead: number): { mobileHeight?: number } {
+  if (!names.some((n) => n.length > 16)) return {};
+  return { mobileHeight: Math.max(height, names.length * TWO_LINE_ROW + overhead) };
+}
+
 // Arrondi « agréable » vers le haut (1, 2, 2,5, 5 × 10^n) pour inclure une ligne de référence dans l'axe
 function niceCeil(v: number) {
   if (v <= 0) return 0;
@@ -114,14 +126,21 @@ function endLabelWidth(refs: Reference[] | undefined, f: ValueFormat): number {
   return Math.min(END_LABEL_MAX, Math.ceil(chars * 6.8) + 4);
 }
 
+// Barres : z de la série (ECharts : 2), que la ligne verticale de référence reprend avec un z2 de 2, entre la barre (z2 1) et
+// son étiquette de valeur (z2 3) : la ligne passe sur les barres et sous les valeurs, détourées de la couleur de surface
+const BAR_Z = 2;
+const REFERENCE_Z2 = 2;
+const VALUE_BOX = { backgroundColor: CHART_SURFACE, padding: [1, 3] as [number, number], borderRadius: 2 };
+
 function referenceLine(refs: Reference[] | undefined, axis: "xAxis" | "yAxis", f: ValueFormat): MarkLineComponentOption | undefined {
   if (!refs?.length) return undefined;
   const width = endLabelWidth(refs, f);
   return {
     silent: true,
     symbol: ["none", "none"],
+    ...(axis === "xAxis" ? { z: BAR_Z } : {}),
     data: refs.map((r) => ({
-      ...(axis === "yAxis" ? { yAxis: r.value } : { xAxis: r.value }),
+      ...(axis === "yAxis" ? { yAxis: r.value } : { xAxis: r.value, z2: REFERENCE_Z2 }),
       // Ligne horizontale : texte à droite du bout de ligne (jamais sur la courbe) ; ligne verticale : texte horizontal au-dessus du tracé
       label:
         axis === "yAxis"
@@ -300,6 +319,7 @@ export function barChart(i: {
   const dataMax = Math.max(0, ...rows.map((r) => r.value ?? 0));
   const refMax = Math.max(0, ...(i.references ?? []).map((r) => r.value));
   const top = rows.filter((r) => r.value != null).slice(0, 3);
+  const height = i.height ?? Math.max(140, rows.length * 30 + 56);
   return {
     option: {
       animation: false,
@@ -324,13 +344,15 @@ export function barChart(i: {
           barMaxWidth: BAR_MAX,
           barCategoryGap: "32%",
           itemStyle: { borderRadius: BAR_END },
-          label: { show: showValues, position: "right", color: LABEL_COLOR, fontSize: 12 },
+          z: BAR_Z,
+          label: { show: showValues, position: "right", color: LABEL_COLOR, fontSize: 12, ...(i.references?.length ? VALUE_BOX : {}) },
           markLine: referenceLine(i.references, "xAxis", f),
         },
       ],
     },
     format: f,
-    height: i.height ?? Math.max(140, rows.length * 30 + 56),
+    height,
+    ...twoLineHeight(rows.map((r) => r.name), height, BAR_OVERHEAD + (i.references?.length ? 20 : 0)),
     ariaLabel: `Barres horizontales${i.sort === "none" ? "" : " triées"} : ${axisName(i.measure, i.unit)} par ${i.categoryName?.toLowerCase() ?? "catégorie"} (${rows.length}).${
       top.length ? ` En tête : ${top.map((r) => `${r.name} ${formatValue(r.value, f)}`).join(", ")}.` : ""
     }`,
@@ -367,6 +389,7 @@ export function stackedBarChart(i: {
   const lastPart = rows.map((r) => r.shown.reduce((t, v, k) => (v > 0 ? k : t), -1));
   const integers = i.rows.every((r) => r.values.every((v) => Number.isInteger(v || 0)));
   const name = axisName(i.measure, i.unit);
+  const height = i.height ?? (vertical ? 300 : Math.max(160, rows.length * 32 + 90));
   const categoryAxis = vertical
     ? { type: "category" as const, data: rows.map((r) => r.name), name: i.categoryName, nameLocation: "middle" as const, nameGap: 30, axisLabel: { hideOverlap: true } }
     : { type: "category" as const, inverse: true, data: rows.map((r) => r.name), axisLabel: { width: 150, overflow: "truncate" as const, ellipsis: "…" } };
@@ -419,7 +442,8 @@ export function stackedBarChart(i: {
       ],
     },
     format: f,
-    height: i.height ?? (vertical ? 300 : Math.max(160, rows.length * 32 + 90)),
+    height,
+    ...(vertical ? {} : twoLineHeight(rows.map((r) => r.name), height, STACKED_OVERHEAD)),
     ariaLabel: `${vertical ? "Colonnes empilées" : "Barres empilées"} : ${name} par ${i.categoryName?.toLowerCase() ?? "catégorie"}, réparties en ${partNames(parts, folded)}.${
       topRow ? ` Total le plus élevé : ${topRow.name} (${formatValue(topRow.total, f)}).` : ""
     }`,
@@ -485,6 +509,7 @@ export function shareChart(i: {
     },
     format: { unit: "%", digits: 1 },
     height,
+    ...(categoryAxis ? twoLineHeight(i.rows.map((r) => r.name), height, SHARE_OVERHEAD) : {}),
     ariaLabel: `Barre empilée 100 % : ${i.measure}. ${i.rows
       .map((r, n) => `${r.name ? `${r.name} : ` : ""}${i.parts.map((p, k) => `${p.label} ${frNumber(pct(r.values[k] || 0, totals[n]), 0)} %`).join(", ")}`)
       .join(" ; ")}.`,

@@ -167,7 +167,7 @@ describe("titres-messages et variations", () => {
     expect(headcountTitle(7, 7, "depuis fin sept. 2025")).toBe("L'effectif est stable depuis fin sept. 2025 : 7 collaborateurs");
     expect(turnoverTitle(0.111, 0.109, "sept. 2025")).toBe(`Le turnover reste stable, autour de 10,9${NBSP}%`);
     expect(turnoverTitle(0, 0.145, "sept. 2025")).toBe(`Le turnover augmente : 14,5${NBSP}% contre 0,0${NBSP}% en sept. 2025`);
-    expect(absenteeismTitle(0.006, 0.008, "août 2026")).toBe(`En août 2026, l'absentéisme (0,6${NBSP}%) est sous la moyenne de la période`);
+    expect(absenteeismTitle(0.006, 0.008, "août 2026")).toBe(`En août 2026, l'absentéisme (0,60${NBSP}%) est sous la moyenne de la période`);
     expect(riskTitle({ ELEVE: 19, MOYEN: 30, FAIBLE: 938, nonScored: 181 })).toBe(`19 collaborateurs en risque élevé, soit 1,9${NBSP}% des évalués`);
     expect(riskTitle({ ELEVE: 0, MOYEN: 0, FAIBLE: 6, nonScored: 3 })).toBe("Aucun collaborateur en risque élevé");
     expect(riskByDepartmentTitle([{ name: "Production", ELEVE: 6 }, { name: "Achats", ELEVE: 5 }])).toBe("Production compte le plus de risques élevés : 6 sur 11");
