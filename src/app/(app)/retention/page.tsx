@@ -4,6 +4,8 @@ import { TermTip } from "@/components/help";
 import { ActiveFilters, FilterForm, buildHref, type ActiveFilter } from "@/components/pilotage/filters";
 import { CI_LABEL, ciText, monthsText, pct, retentionChart } from "@/components/retention/chart-options";
 import { GroupTable, ReadingNotes, medianText } from "@/components/retention/sections";
+import { DepartureProfiles } from "@/components/retention/departure-profiles";
+import { getDepartureProfiles } from "@/lib/dal/typology";
 import { PILOTAGE_ROLES, pageContext } from "@/lib/dal/context";
 import { parseQuery } from "@/lib/dal/employees";
 import { MAX_CHART_GROUPS, RETENTION_MODES, RETENTION_SEGMENTS, getRetention, retentionQuerySchema, type RetentionDto, type RetentionSegment } from "@/lib/dal/retention";
@@ -27,6 +29,7 @@ export default async function RetentionPage({ searchParams }: { searchParams: Pr
   const ctx = await pageContext(PILOTAGE_ROLES);
   const { data: q, ignored } = parseQuery(retentionQuerySchema, await searchParams, "lenient");
   const r = getRetention(ctx, q);
+  const profiles = getDepartureProfiles(ctx);
   const rh = r.view === "RH";
   const start = r.observationStart ? fmt.date(r.observationStart) : null;
   const scopeLabel = rh ? "Toute l'entreprise" : "Votre périmètre";
@@ -68,6 +71,7 @@ export default async function RetentionPage({ searchParams }: { searchParams: Pr
       />
       <ActiveFilters filters={filters} ignored={ignored} />
       <Content r={r} role={ctx.role} start={start} scopeLabel={scopeLabel} />
+      {profiles && <DepartureProfiles data={profiles} role={ctx.role} />}
     </>
   );
 }

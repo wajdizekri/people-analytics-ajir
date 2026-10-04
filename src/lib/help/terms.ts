@@ -205,6 +205,11 @@ export const TERMS = {
     label: "Durée médiane de présence",
     text: "Ancienneté à laquelle la moitié des embauchés est partie. « Non atteinte » : plus de la moitié est encore présente à la fin du suivi.",
   },
+  profilDepart: {
+    label: "Profil de départ",
+    text: "Famille de démissions qui se ressemblent sur des données professionnelles observées le mois précédant la démission : ancienneté, carrière, salaire, heures supplémentaires, absences hors santé, formation, contrat. Description non causale ; aucun collaborateur n'est étiqueté.",
+    roles: ["RH"],
+  },
 } as const satisfies Record<string, Term>;
 
 export type TermId = keyof typeof TERMS;

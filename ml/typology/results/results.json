@@ -1,0 +1,500 @@
+{
+  "summary": {
+    "ref": "2026-08-31",
+    "fsv": "v1",
+    "departures": 546,
+    "classified": 480,
+    "opposed": 0,
+    "unclassified": 66,
+    "first_exit": "2020-11-02",
+    "last_exit": "2026-08-28",
+    "variables": [
+      "tenure_months",
+      "months_since_promotion",
+      "raise_pct_12m",
+      "compa_ratio",
+      "overtime_h_avg_3m",
+      "absence_rate_12m",
+      "training_hours_12m"
+    ],
+    "transforms": [
+      "log1p",
+      "none",
+      "none",
+      "none",
+      "log1p",
+      "sqrt",
+      "log1p"
+    ],
+    "min_profile_size": 24,
+    "describe": {
+      "tenure_months": {
+        "mean": 75.63958333333333,
+        "median": 55.0,
+        "p10": 14.0,
+        "p90": 159.0
+      },
+      "months_since_promotion": {
+        "mean": 40.93958333333333,
+        "median": 35.0,
+        "p10": 8.0,
+        "p90": 81.0
+      },
+      "raise_pct_12m": {
+        "mean": 0.05398231875,
+        "median": 0.049206,
+        "p10": 0.020000900000000002,
+        "p90": 0.06692750000000001
+      },
+      "compa_ratio": {
+        "mean": 0.9878258479166667,
+        "median": 0.9911315,
+        "p10": 0.8740957,
+        "p90": 1.1058424
+      },
+      "overtime_h_avg_3m": {
+        "mean": 7.010817647916666,
+        "median": 4.194194,
+        "p10": 0.0,
+        "p90": 20.467992100000004
+      },
+      "absence_rate_12m": {
+        "mean": 0.01405255,
+        "median": 0.008547,
+        "p10": 0.0,
+        "p90": 0.03128710000000001
+      },
+      "training_hours_12m": {
+        "mean": 11.56875,
+        "median": 7.0,
+        "p10": 0.0,
+        "p90": 31.0
+      }
+    }
+  },
+  "candidates": [
+    {
+      "k": 3,
+      "k_effective": 2,
+      "merges": 1,
+      "sizes": [
+        253,
+        227
+      ],
+      "silhouette": 0.1666545241528151,
+      "inertia": 2781.2007085207897,
+      "stability": {
+        "ari_mean": null,
+        "ari_ci95": [
+          null,
+          null
+        ],
+        "jaccard": [],
+        "jaccard_min": null,
+        "n_boot": 0
+      }
+    },
+    {
+      "k": 4,
+      "k_effective": 3,
+      "merges": 1,
+      "sizes": [
+        177,
+        163,
+        140
+      ],
+      "silhouette": 0.14813796944239155,
+      "inertia": 2506.653867687395,
+      "stability": {
+        "ari_mean": 0.48273818175119776,
+        "ari_ci95": [
+          0.24854450154487315,
+          0.8210370053479159
+        ],
+        "jaccard": [
+          0.6627988515138385,
+          0.6672983505893096,
+          0.4964670736202661
+        ],
+        "jaccard_min": 0.4964670736202661,
+        "n_boot": 200
+      }
+    },
+    {
+      "k": 5,
+      "k_effective": 4,
+      "merges": 1,
+      "sizes": [
+        158,
+        124,
+        110,
+        88
+      ],
+      "silhouette": 0.13700184890911443,
+      "inertia": 2330.1678460072135,
+      "stability": {
+        "ari_mean": 0.5125301670558176,
+        "ari_ci95": [
+          0.24907856533399872,
+          0.8612156692299019
+        ],
+        "jaccard": [
+          0.6710910075087954,
+          0.5680273533748743,
+          0.6112835706905798,
+          0.5734981686703887
+        ],
+        "jaccard_min": 0.5680273533748743,
+        "n_boot": 200
+      }
+    },
+    {
+      "k": 6,
+      "k_effective": 4,
+      "merges": 2,
+      "sizes": [
+        165,
+        122,
+        113,
+        80
+      ],
+      "silhouette": 0.13876175941378893,
+      "inertia": 2330.6661890915047,
+      "stability": {
+        "ari_mean": null,
+        "ari_ci95": [
+          null,
+          null
+        ],
+        "jaccard": [],
+        "jaccard_min": null,
+        "n_boot": 0
+      }
+    },
+    {
+      "k": 7,
+      "k_effective": 5,
+      "merges": 2,
+      "sizes": [
+        145,
+        104,
+        97,
+        78,
+        56
+      ],
+      "silhouette": 0.13633318911515468,
+      "inertia": 2204.948772863267,
+      "stability": {
+        "ari_mean": 0.4007981656001598,
+        "ari_ci95": [
+          0.2405388763510973,
+          0.6125087711339448
+        ],
+        "jaccard": [
+          0.5221539137834988,
+          0.44881326227943463,
+          0.5085107966114799,
+          0.6218682667787551,
+          0.37430498188847194
+        ],
+        "jaccard_min": 0.37430498188847194,
+        "n_boot": 200
+      }
+    },
+    {
+      "k": 8,
+      "k_effective": 5,
+      "merges": 3,
+      "sizes": [
+        142,
+        97,
+        95,
+        78,
+        68
+      ],
+      "silhouette": 0.13481013312340057,
+      "inertia": 2205.2503106670306,
+      "stability": {
+        "ari_mean": null,
+        "ari_ci95": [
+          null,
+          null
+        ],
+        "jaccard": [],
+        "jaccard_min": null,
+        "n_boot": 0
+      }
+    }
+  ],
+  "contract_cdd_by_profile": {
+    "1": 0.5506,
+    "2": 0.0726,
+    "3": 0.0091,
+    "4": 0.3068
+  },
+  "chosen": {
+    "k": 5,
+    "k_effective": 4,
+    "rule": "aucune partition stable : partition la plus stable (ARI moyen)"
+  },
+  "profiles": [
+    {
+      "id": 1,
+      "label": "Arrivées récentes, surtout en CDD",
+      "traits": [
+        {
+          "feature": "tenure_months",
+          "direction": "BAISSE",
+          "effect": -0.861518,
+          "text": "Ancienneté médiane de 24 mois, contre 55 mois pour l'ensemble des départs"
+        },
+        {
+          "feature": "months_since_promotion",
+          "direction": "BAISSE",
+          "effect": -0.784705,
+          "text": "Sans promotion depuis 17 mois en médiane (ou depuis l'embauche), contre 35 mois pour l'ensemble"
+        },
+        {
+          "feature": "contract_cdd",
+          "direction": "HAUSSE",
+          "effect": 0.66778,
+          "text": "55 % en CDD au moment du départ, contre 26 % pour l'ensemble"
+        },
+        {
+          "feature": "absence_rate_12m",
+          "direction": "BAISSE",
+          "effect": -0.591893,
+          "text": "Taux d'absence hors santé de 0,6 % sur 12 mois, contre 1,4 % pour l'ensemble"
+        }
+      ],
+      "size": 158,
+      "share": 0.329167,
+      "median_tenure_months": 24.0,
+      "stability": 0.6711
+    },
+    {
+      "id": 2,
+      "label": "Formation soutenue, salaire au-dessus de la médiane du poste",
+      "traits": [
+        {
+          "feature": "training_hours_12m",
+          "direction": "HAUSSE",
+          "effect": 0.727774,
+          "text": "Formation : 21 h sur 12 mois en moyenne, contre 12 h pour l'ensemble"
+        },
+        {
+          "feature": "compa_ratio",
+          "direction": "HAUSSE",
+          "effect": 0.670069,
+          "text": "Salaire médian à 105 % de la médiane du poste, contre 99 % pour l'ensemble"
+        },
+        {
+          "feature": "months_since_promotion",
+          "direction": "HAUSSE",
+          "effect": 0.587438,
+          "text": "Sans promotion depuis 54 mois en médiane (ou depuis l'embauche), contre 35 mois pour l'ensemble"
+        },
+        {
+          "feature": "tenure_months",
+          "direction": "HAUSSE",
+          "effect": 0.466155,
+          "text": "Ancienneté médiane de 78 mois, contre 55 mois pour l'ensemble des départs"
+        }
+      ],
+      "size": 124,
+      "share": 0.258333,
+      "median_tenure_months": 78.5,
+      "stability": 0.568
+    },
+    {
+      "id": 3,
+      "label": "Grande ancienneté, sans promotion depuis longtemps",
+      "traits": [
+        {
+          "feature": "tenure_months",
+          "direction": "HAUSSE",
+          "effect": 0.927008,
+          "text": "Ancienneté médiane de 125 mois, contre 55 mois pour l'ensemble des départs"
+        },
+        {
+          "feature": "months_since_promotion",
+          "direction": "HAUSSE",
+          "effect": 0.862966,
+          "text": "Sans promotion depuis 64 mois en médiane (ou depuis l'embauche), contre 35 mois pour l'ensemble"
+        },
+        {
+          "feature": "compa_ratio",
+          "direction": "BAISSE",
+          "effect": -0.727062,
+          "text": "Salaire médian à 92 % de la médiane du poste, contre 99 % pour l'ensemble"
+        },
+        {
+          "feature": "overtime_h_avg_3m",
+          "direction": "BAISSE",
+          "effect": -0.559423,
+          "text": "Heures supplémentaires : 3,7 h par mois en moyenne sur 3 mois, contre 7,0 h pour l'ensemble"
+        }
+      ],
+      "size": 110,
+      "share": 0.229167,
+      "median_tenure_months": 125.0,
+      "stability": 0.6113
+    },
+    {
+      "id": 4,
+      "label": "Peu de formation",
+      "traits": [
+        {
+          "feature": "absence_rate_12m",
+          "direction": "HAUSSE",
+          "effect": 1.126664,
+          "text": "Taux d'absence hors santé de 3,4 % sur 12 mois, contre 1,4 % pour l'ensemble"
+        },
+        {
+          "feature": "training_hours_12m",
+          "direction": "BAISSE",
+          "effect": -0.907852,
+          "text": "Formation : 3,1 h sur 12 mois en moyenne, contre 12 h pour l'ensemble"
+        },
+        {
+          "feature": "months_since_promotion",
+          "direction": "BAISSE",
+          "effect": -0.497559,
+          "text": "Sans promotion depuis 24 mois en médiane (ou depuis l'embauche), contre 35 mois pour l'ensemble"
+        },
+        {
+          "feature": "tenure_months",
+          "direction": "BAISSE",
+          "effect": -0.268799,
+          "text": "Ancienneté médiane de 46 mois, contre 55 mois pour l'ensemble des départs"
+        }
+      ],
+      "size": 88,
+      "share": 0.183333,
+      "median_tenure_months": 46.0,
+      "stability": 0.5735
+    }
+  ],
+  "fairness": {
+    "cramers_v_sex": 0.04763041409704196,
+    "cramers_v_age_band": 0.2693806411970964,
+    "sex_by_profile": {
+      "1": {
+        "M": 0.6013,
+        "F": 0.3987
+      },
+      "2": {
+        "M": 0.621,
+        "F": 0.379
+      },
+      "3": {
+        "M": 0.6636,
+        "F": 0.3364
+      },
+      "4": {
+        "M": 0.625,
+        "F": 0.375
+      },
+      "ensemble": {
+        "M": 0.625,
+        "F": 0.375
+      }
+    },
+    "age_band_by_profile": {
+      "1": {
+        "30-44 ans": 0.5823,
+        "< 30 ans": 0.3924,
+        "45 ans et plus": 0.0253
+      },
+      "2": {
+        "30-44 ans": 0.629,
+        "< 30 ans": 0.2016,
+        "45 ans et plus": 0.1694
+      },
+      "3": {
+        "30-44 ans": 0.6182,
+        "45 ans et plus": 0.2727,
+        "< 30 ans": 0.1091
+      },
+      "4": {
+        "< 30 ans": 0.4886,
+        "30-44 ans": 0.4091,
+        "45 ans et plus": 0.1023
+      },
+      "ensemble": {
+        "30-44 ans": 0.5708,
+        "< 30 ans": 0.2958,
+        "45 ans et plus": 0.1333
+      }
+    }
+  },
+  "job_family_by_profile": {
+    "1": {
+      "Production": 0.3797,
+      "Finance": 0.2278,
+      "IT": 0.2152,
+      "Commercial": 0.1013,
+      "Support": 0.0759
+    },
+    "2": {
+      "Production": 0.3871,
+      "Commercial": 0.2581,
+      "Finance": 0.1532,
+      "Support": 0.1048,
+      "IT": 0.0968
+    },
+    "3": {
+      "Production": 0.4273,
+      "Commercial": 0.1909,
+      "Finance": 0.1545,
+      "IT": 0.1364,
+      "Support": 0.0909
+    },
+    "4": {
+      "Production": 0.4205,
+      "Finance": 0.1818,
+      "IT": 0.1705,
+      "Commercial": 0.1364,
+      "Support": 0.0909
+    },
+    "ensemble": {
+      "Production": 0.4,
+      "Finance": 0.1833,
+      "Commercial": 0.1688,
+      "IT": 0.1583,
+      "Support": 0.0896
+    }
+  },
+  "mechanisms": {
+    "matched": 480,
+    "unmatched": 0,
+    "ari": 0.015882843568726882,
+    "nmi": 0.018741824079018875,
+    "crosstab": {
+      "1": {
+        "EVENEMENT_PERSONNEL": 19,
+        "OFFRE_EXTERNE": 101,
+        "SEUIL_ENGAGEMENT": 38
+      },
+      "2": {
+        "EVENEMENT_PERSONNEL": 14,
+        "OFFRE_EXTERNE": 65,
+        "SEUIL_ENGAGEMENT": 45
+      },
+      "3": {
+        "EVENEMENT_PERSONNEL": 10,
+        "OFFRE_EXTERNE": 55,
+        "SEUIL_ENGAGEMENT": 45
+      },
+      "4": {
+        "EVENEMENT_PERSONNEL": 4,
+        "OFFRE_EXTERNE": 40,
+        "SEUIL_ENGAGEMENT": 44
+      }
+    }
+  },
+  "bundle": {
+    "dir": "models/typology/typo-kmeans-v1-20261004",
+    "version": "typo-kmeans-v1-20261004"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "_doc": "Sélection des départs volontaires à regrouper, exécutée telle quelle par TypeScript (departures.ts) et Python (ml/typology/data.py) : même population par construction. Départ = démission ou abandon visible à la référence (sortie et saisie <= @ref). Variables = feature_snapshot (@fsv) à la dernière fin de mois avant la date de l'événement (démission, sinon sortie - 1 mois, comme v_label_panel), au plus 6 mois avant ; sans telle ligne, le départ n'est pas classé. Département et famille de métier : derniers connus.",
+  "departures": [
+    "WITH dep AS (",
+    "  SELECT x.id AS exit_id, x.employee_id, x.exit_date, x.reason,",
+    "         COALESCE(x.resignation_date, date(x.exit_date, '-1 month')) AS event_date",
+    "  FROM exit_event x",
+    "  WHERE x.reason IN ('DEMISSION', 'ABANDON') AND x.exit_date <= @ref AND x.recorded_at <= @ref",
+    ")",
+    "SELECT dep.exit_id AS exitId, dep.employee_id AS employeeId, dep.exit_date AS exitDate, dep.reason AS reason,",
+    "       dep.event_date AS eventDate, fs.as_of AS asOf, fs.values_json AS valuesJson,",
+    "       d.name AS departmentName, e.job_family AS jobFamily",
+    "FROM dep",
+    "JOIN employee e ON e.id = dep.employee_id",
+    "LEFT JOIN department d ON d.id = e.department_id",
+    "LEFT JOIN feature_snapshot fs ON fs.employee_id = dep.employee_id AND fs.fsv = @fsv AND fs.as_of = (",
+    "  SELECT MAX(f2.as_of) FROM feature_snapshot f2",
+    "  WHERE f2.employee_id = dep.employee_id AND f2.fsv = @fsv",
+    "    AND f2.as_of < dep.event_date AND f2.as_of >= date(dep.event_date, '-6 months'))",
+    "ORDER BY dep.exit_date, dep.exit_id"
+  ]
+}

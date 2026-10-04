@@ -1,0 +1,376 @@
+{
+  "version": "typo-kmeans-v1-20261004",
+  "kind": "KMEANS",
+  "topic": "TYPOLOGIE_DEPARTS",
+  "fsv": "v1",
+  "population": "Démissions et abandons de poste visibles à la référence ; variables à la dernière fin de mois avant la démission (au plus 6 mois avant), opposés au traitement exclus",
+  "features": [
+    "tenure_months",
+    "months_since_promotion",
+    "raise_pct_12m",
+    "compa_ratio",
+    "overtime_h_avg_3m",
+    "absence_rate_12m",
+    "training_hours_12m"
+  ],
+  "feature_index": [
+    0,
+    3,
+    6,
+    5,
+    8,
+    14,
+    17
+  ],
+  "transform": [
+    "log1p",
+    "none",
+    "none",
+    "none",
+    "log1p",
+    "sqrt",
+    "log1p"
+  ],
+  "clip": [
+    [
+      1.6094379124341003,
+      5.80474321957371
+    ],
+    [
+      2.79,
+      120.0
+    ],
+    [
+      0.0,
+      0.32064036999999945
+    ],
+    [
+      0.7693441,
+      1.2155536399999998
+    ],
+    [
+      0.0,
+      3.4572055985717354
+    ],
+    [
+      0.0,
+      0.26692793326773423
+    ],
+    [
+      0.0,
+      4.146441881354842
+    ]
+  ],
+  "standardization": {
+    "mean": [
+      3.9563163589529164,
+      40.96239583333333,
+      0.05326253718749999,
+      0.9877296577083333,
+      1.5962943918920849,
+      0.09605880807576549,
+      1.9179458123745212
+    ],
+    "std": [
+      0.9413224209971629,
+      28.865938034905128,
+      0.04733030751917777,
+      0.09063590301129591,
+      1.0200803406354466,
+      0.06681256736047868,
+      1.2071677903608753
+    ]
+  },
+  "centers": [
+    [
+      -0.8615175159521695,
+      -0.7847053702338287,
+      0.035159917576278,
+      0.0009412525960912326,
+      0.4143549462871842,
+      -0.5918934571192921,
+      0.30529463941309776
+    ],
+    [
+      0.46615484331793205,
+      0.5874383498250338,
+      0.017761777541895916,
+      0.6700693933855569,
+      0.005635411589020324,
+      0.12228440491111697,
+      0.7277736421926599
+    ],
+    [
+      0.9270079298044804,
+      0.8629662895164537,
+      -0.21537057128115747,
+      -0.7270616737440585,
+      -0.5594232539182281,
+      -0.18900505524226263,
+      -0.5326315950923215
+    ],
+    [
+      -0.2687989241985656,
+      -0.4975590764564661,
+      0.18105722100773072,
+      -0.03705157475164698,
+      -0.052617211584187897,
+      1.12666427377862,
+      -0.9078523772614093
+    ]
+  ],
+  "profiles": [
+    {
+      "id": 1,
+      "label": "Arrivées récentes, surtout en CDD",
+      "traits": [
+        {
+          "feature": "tenure_months",
+          "direction": "BAISSE",
+          "effect": -0.861518,
+          "text": "Ancienneté médiane de 24 mois, contre 55 mois pour l'ensemble des départs"
+        },
+        {
+          "feature": "months_since_promotion",
+          "direction": "BAISSE",
+          "effect": -0.784705,
+          "text": "Sans promotion depuis 17 mois en médiane (ou depuis l'embauche), contre 35 mois pour l'ensemble"
+        },
+        {
+          "feature": "contract_cdd",
+          "direction": "HAUSSE",
+          "effect": 0.66778,
+          "text": "55 % en CDD au moment du départ, contre 26 % pour l'ensemble"
+        },
+        {
+          "feature": "absence_rate_12m",
+          "direction": "BAISSE",
+          "effect": -0.591893,
+          "text": "Taux d'absence hors santé de 0,6 % sur 12 mois, contre 1,4 % pour l'ensemble"
+        }
+      ],
+      "size": 158,
+      "share": 0.329167,
+      "median_tenure_months": 24.0,
+      "stability": 0.6711
+    },
+    {
+      "id": 2,
+      "label": "Formation soutenue, salaire au-dessus de la médiane du poste",
+      "traits": [
+        {
+          "feature": "training_hours_12m",
+          "direction": "HAUSSE",
+          "effect": 0.727774,
+          "text": "Formation : 21 h sur 12 mois en moyenne, contre 12 h pour l'ensemble"
+        },
+        {
+          "feature": "compa_ratio",
+          "direction": "HAUSSE",
+          "effect": 0.670069,
+          "text": "Salaire médian à 105 % de la médiane du poste, contre 99 % pour l'ensemble"
+        },
+        {
+          "feature": "months_since_promotion",
+          "direction": "HAUSSE",
+          "effect": 0.587438,
+          "text": "Sans promotion depuis 54 mois en médiane (ou depuis l'embauche), contre 35 mois pour l'ensemble"
+        },
+        {
+          "feature": "tenure_months",
+          "direction": "HAUSSE",
+          "effect": 0.466155,
+          "text": "Ancienneté médiane de 78 mois, contre 55 mois pour l'ensemble des départs"
+        }
+      ],
+      "size": 124,
+      "share": 0.258333,
+      "median_tenure_months": 78.5,
+      "stability": 0.568
+    },
+    {
+      "id": 3,
+      "label": "Grande ancienneté, sans promotion depuis longtemps",
+      "traits": [
+        {
+          "feature": "tenure_months",
+          "direction": "HAUSSE",
+          "effect": 0.927008,
+          "text": "Ancienneté médiane de 125 mois, contre 55 mois pour l'ensemble des départs"
+        },
+        {
+          "feature": "months_since_promotion",
+          "direction": "HAUSSE",
+          "effect": 0.862966,
+          "text": "Sans promotion depuis 64 mois en médiane (ou depuis l'embauche), contre 35 mois pour l'ensemble"
+        },
+        {
+          "feature": "compa_ratio",
+          "direction": "BAISSE",
+          "effect": -0.727062,
+          "text": "Salaire médian à 92 % de la médiane du poste, contre 99 % pour l'ensemble"
+        },
+        {
+          "feature": "overtime_h_avg_3m",
+          "direction": "BAISSE",
+          "effect": -0.559423,
+          "text": "Heures supplémentaires : 3,7 h par mois en moyenne sur 3 mois, contre 7,0 h pour l'ensemble"
+        }
+      ],
+      "size": 110,
+      "share": 0.229167,
+      "median_tenure_months": 125.0,
+      "stability": 0.6113
+    },
+    {
+      "id": 4,
+      "label": "Peu de formation",
+      "traits": [
+        {
+          "feature": "absence_rate_12m",
+          "direction": "HAUSSE",
+          "effect": 1.126664,
+          "text": "Taux d'absence hors santé de 3,4 % sur 12 mois, contre 1,4 % pour l'ensemble"
+        },
+        {
+          "feature": "training_hours_12m",
+          "direction": "BAISSE",
+          "effect": -0.907852,
+          "text": "Formation : 3,1 h sur 12 mois en moyenne, contre 12 h pour l'ensemble"
+        },
+        {
+          "feature": "months_since_promotion",
+          "direction": "BAISSE",
+          "effect": -0.497559,
+          "text": "Sans promotion depuis 24 mois en médiane (ou depuis l'embauche), contre 35 mois pour l'ensemble"
+        },
+        {
+          "feature": "tenure_months",
+          "direction": "BAISSE",
+          "effect": -0.268799,
+          "text": "Ancienneté médiane de 46 mois, contre 55 mois pour l'ensemble des départs"
+        }
+      ],
+      "size": 88,
+      "share": 0.183333,
+      "median_tenure_months": 46.0,
+      "stability": 0.5735
+    }
+  ],
+  "k": 4,
+  "k_grid": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "min_profile_size": 24,
+  "selection": {
+    "rule": "aucune partition stable : partition la plus stable (ARI moyen)",
+    "candidates": [
+      {
+        "k": 3,
+        "k_effective": 2,
+        "merges": 1,
+        "sizes": [
+          253,
+          227
+        ],
+        "silhouette": 0.166655,
+        "ari_mean": null,
+        "jaccard_min": null
+      },
+      {
+        "k": 4,
+        "k_effective": 3,
+        "merges": 1,
+        "sizes": [
+          177,
+          163,
+          140
+        ],
+        "silhouette": 0.148138,
+        "ari_mean": 0.482738,
+        "jaccard_min": 0.496467
+      },
+      {
+        "k": 5,
+        "k_effective": 4,
+        "merges": 1,
+        "sizes": [
+          158,
+          124,
+          110,
+          88
+        ],
+        "silhouette": 0.137002,
+        "ari_mean": 0.51253,
+        "jaccard_min": 0.568027
+      },
+      {
+        "k": 6,
+        "k_effective": 4,
+        "merges": 2,
+        "sizes": [
+          165,
+          122,
+          113,
+          80
+        ],
+        "silhouette": 0.138762,
+        "ari_mean": null,
+        "jaccard_min": null
+      },
+      {
+        "k": 7,
+        "k_effective": 5,
+        "merges": 2,
+        "sizes": [
+          145,
+          104,
+          97,
+          78,
+          56
+        ],
+        "silhouette": 0.136333,
+        "ari_mean": 0.400798,
+        "jaccard_min": 0.374305
+      },
+      {
+        "k": 8,
+        "k_effective": 5,
+        "merges": 3,
+        "sizes": [
+          142,
+          97,
+          95,
+          78,
+          68
+        ],
+        "silhouette": 0.13481,
+        "ari_mean": null,
+        "jaccard_min": null
+      }
+    ]
+  },
+  "trained_at": "2026-10-04T12:20:22Z",
+  "data_hash": "sha256:8f15b3f7eb844f8eb0b60cbb318e42ebc5de08ee89e3a40aea7f22aa983359e9",
+  "reference_date": "2026-08-31",
+  "train_rows": 480,
+  "train_from": "2020-11-02",
+  "train_to": "2026-08-28",
+  "metrics": {
+    "silhouette": 0.137002,
+    "ari_mean": 0.51253,
+    "ari_ci95": [
+      0.249079,
+      0.861216
+    ],
+    "jaccard_min": 0.568027,
+    "n_boot": 200,
+    "departures": 546,
+    "unclassified": 66
+  }
+}

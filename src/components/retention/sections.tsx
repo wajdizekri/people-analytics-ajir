@@ -100,10 +100,10 @@ export function GroupTable({ overall, groups, caption }: { overall: { label: str
 }
 
 // Encarts « Comment lire » et « Limites » : listes courtes, détail dans l'aide
-export function ReadingNotes({ reading, limits, helpHref }: { reading: ReactNode[]; limits: ReactNode[]; helpHref?: string }) {
+export function ReadingNotes({ reading, limits, helpHref, headingLevel = 2 }: { reading: ReactNode[]; limits: ReactNode[]; helpHref?: string; headingLevel?: 2 | 3 }) {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card title="Comment lire" headingLevel={2}>
+      <Card title="Comment lire" headingLevel={headingLevel}>
         <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-fg-muted">
           {reading.map((r, i) => (
             <li key={i}>{r}</li>
@@ -117,7 +117,7 @@ export function ReadingNotes({ reading, limits, helpHref }: { reading: ReactNode
           </p>
         )}
       </Card>
-      <Card title="Limites" headingLevel={2}>
+      <Card title="Limites" headingLevel={headingLevel}>
         <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-fg-muted">
           {limits.map((r, i) => (
             <li key={i}>{r}</li>
