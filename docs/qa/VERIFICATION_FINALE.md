@@ -13,6 +13,19 @@
    `Start-Process cmd.exe -ArgumentList '/c','npm run dev -- -p 3000 > data\dev-server.log 2>&1' -WorkingDirectory 'C:\Users\stagiaire1\Desktop\aziz-pfe\people-analytics' -WindowStyle Hidden`
 8. Envoyer le résultat aux sessions encore ouvertes (40, e9, 4e).
 
+## Passe finale du 04/10 au soir (session ae) : après captures, correctifs, vague « titres seuls » et assistant
+État vérifié : main local b49404f (vague « titres seuls », commit d'étape a7) + 850d818, 3f7b046, 33c9b0b (assistant RAG de 1a) + sélecteurs E2E adaptés (non commités).
+- Correctifs depuis la passe de 13 h : 18 défauts vus sur les captures (impression des en-têtes de tableaux, libellés coupés à 390 px, palette, /admin/users, compte, transparence, organigramme, curseur des prévisions, graphiques) ; points urgents de l'audit (1d) ; 3 corrections d'audit (1a) ; vague « titres seuls » (5 agents : socle, pilotage, analyses, monitoring/admin, organisation/compte/aide).
+- tsc --noEmit : 0 erreur. eslint . : 0 problème.
+- vitest (hors tests/security, 2 workers) : 161 fichiers, 1 396 réussis, 1 ignoré, 0 échec (183 s).
+- Build + E2E complet (port 3210, build .next-sec, base data/e2e-verif.db ; `E2E_PORT`, `E2E_DIST_DIR`, `E2E_DB` surchargeables dans server.mjs et helpers.ts pour ne pas toucher au serveur :3200 en cours) :
+  - build de production sans erreur ni avertissement, 43 pages (dont `/api/assistant`) ;
+  - passe complète (19:20–19:39, 18,4 min) : 160 tests, 152 réussis, 8 échoués. axe 0 violation (43 pages en clair, 21 en sombre, 1 en menu réduit), Connexion 3D 3/3 ;
+  - 7 échecs = sélecteurs périmés par la vague (alerts « Alerte clôturée », création de compte avec rôle désormais obligatoire, fiche « Risque X » sans tiret, filtre « Statut » ambigu) ; 1 vrai défaut : Échap ne refermait pas la réponse de l'assistant d'aide quand le focus avait quitté le composant (bouton en attente) → écouteur `keydown` sur le document dans help-assistant.tsx ;
+  - relance après correction (rebuild + admin, alerts, assistant, employees, recommendations ; 19:43–19:46) : 41/41 réussis, dont assistant.spec 6/6 (RH, manager, admin : replié, sources internes /aide, Échap, audit sans texte, API sans IA générative, rôle tiré de la session).
+- Bilan : tsc 0, eslint 0, vitest 1 396/1 ignoré, build 0 avertissement, E2E 160/160 (passe complète + relance ciblée des 5 fichiers corrigés).
+- Captures : les 124 PNG de `docs/qa/captures/design-system/final/` sont ANTÉRIEURES à la vague « titres seuls » ; à refaire (script prêt, lancement par l'utilisateur).
+
 ## Résultat du 04/10 (12:28–13:00, session ae)
 - Étapes 1–4 vertes : tsc 0, eslint 0, vitest 1079/1 ignoré, build 0 avertissement (42 pages), E2E 152/152 (13,2 min) puis auth.spec 15/15 avec le test « champs vides » (153 au total). axe 43/43 clair, 21/21 sombre, 1/1 rail ; Connexion 3D 3/3. Hypothèses des specs toutes confirmées.
 - Corrections : sélecteurs obsolètes (admin, dashboard-rh, data-model .spec.ts) ; connexion à vide sans bulle native (login-form.tsx, noValidate + message sous le champ).

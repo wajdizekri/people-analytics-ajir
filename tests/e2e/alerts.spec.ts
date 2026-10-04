@@ -47,7 +47,7 @@ test.describe("Alertes — RH", () => {
     await expect(statusBadge(page)).toHaveText("Traitée");
     // Le formulaire disparaît à la clôture : le résultat reste annoncé par un toast
     await expect(page.getByText("Alerte marquée comme traitée.")).toBeVisible();
-    await expect(page.getByText(/Cette alerte est clôturée \(traitée\)/)).toBeVisible();
+    await expect(page.getByText("Alerte clôturée (traitée)")).toBeVisible();
     expect(statusOf(alert.id).status).toBe("TRAITEE");
     const audits = q<{ detail: string }>(
       "SELECT a.detail_json AS detail FROM audit_log a JOIN app_user u ON u.id = a.user_id WHERE u.login = @l AND a.action = 'alert.update' AND a.target_id = @id ORDER BY a.id",
@@ -68,7 +68,7 @@ test.describe("Alertes — RH", () => {
     await applyStep(page, "Rejeter l'alerte", "Faux positif vérifié avec le manager (E2E)");
     await expect(statusBadge(page)).toHaveText("Rejetée");
     await expect(page.getByText("Faux positif vérifié avec le manager (E2E)")).toBeVisible();
-    await expect(page.getByText(/Cette alerte est clôturée \(rejetée\)/)).toBeVisible();
+    await expect(page.getByText("Alerte clôturée (rejetée)")).toBeVisible();
     expect(statusOf(alert.id)).toMatchObject({ status: "REJETEE", comment: "Faux positif vérifié avec le manager (E2E)" });
   });
 

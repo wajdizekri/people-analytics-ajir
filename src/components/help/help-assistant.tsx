@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useReducer, useRef, useState, type FocusEvent, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useId, useReducer, useRef, useState, type FocusEvent, type FormEvent } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { fieldCls } from "@/components/ui/classes";
 import { Icon } from "@/components/ui/icons";
@@ -197,12 +197,19 @@ export function HelpAssistant({ examples = [], className = "" }: { examples?: st
     ask(value);
   };
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Escape" && (open || loading)) {
+  // Écoute sur le document : pendant l'envoi le bouton est désactivé et le focus peut sortir du composant
+  useEffect(() => {
+    if (!open && !loading) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
       e.preventDefault();
-      close();
-    }
-  };
+      abortRef.current?.abort();
+      dispatch({ type: "close" });
+      inputRef.current?.focus();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, loading]);
 
   const onBlur = (e: FocusEvent<HTMLFormElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocused(false);
@@ -211,7 +218,7 @@ export function HelpAssistant({ examples = [], className = "" }: { examples?: st
   const showExamples = focused && !value.trim() && !loading && examples.length > 0;
 
   return (
-    <div className={`w-full min-w-0 ${className}`} onKeyDown={onKeyDown}>
+    <div className={`w-full min-w-0 ${className}`}>
       <form role="search" aria-labelledby={`${uid}-label`} onSubmit={onSubmit} onFocus={() => setFocused(true)} onBlur={onBlur}>
         <label id={`${uid}-label`} htmlFor={`${uid}-input`} className="sr-only">
           Poser une question à l&apos;assistant d&apos;aide

@@ -133,7 +133,7 @@ test.describe("Recommandations", () => {
     await page.goto("/recommendations");
     await expect(page.getByRole("heading", { level: 1, name: "Recommandations" })).toBeVisible();
     for (const k of ["Taux d'adoption", "Interventions enregistrées", "Jugées pertinentes"]) await expect(page.getByText(k).first()).toBeVisible();
-    await page.getByLabel("Statut").selectOption("PROPOSEE");
+    await page.getByLabel("Statut", { exact: true }).selectOption("PROPOSEE");
     await page.getByRole("button", { name: "Appliquer" }).click();
     await expect(page).toHaveURL(/statut=PROPOSEE/);
     await waitReady(page);

@@ -66,7 +66,7 @@ test.describe("Liste et fiche collaborateur — RH", () => {
     await expect(estimation).toContainText(/[Cc]alcul au \d{2}\/\d{2}\/\d{4}/);
     await expect(estimation.getByRole("heading", { name: "Principaux facteurs associés" })).toBeVisible();
     await expect(estimation.getByText(/Fait (monter|baisser) le risque/).first()).toBeVisible();
-    await expect(page.locator('section[aria-labelledby="fiche-resume"]')).toContainText(/Risque (Élevé|Moyen|Faible) —/);
+    await expect(page.locator('section[aria-labelledby="fiche-resume"]')).toContainText(/Risque (Élevé|Moyen|Faible)/);
     await expect(estimation.locator("ol > li").first()).toBeVisible();
     const phrases = await estimation.locator("ol > li").allInnerTexts();
     expect(phrases.length).toBeGreaterThan(0);

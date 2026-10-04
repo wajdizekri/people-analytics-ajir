@@ -30,7 +30,7 @@ test.describe("Administration", () => {
 
     const row = page.getByRole("row").filter({ hasText: loginName });
     await expect(row).toContainText("Responsable RH");
-    await expect(row).toContainText("Lien en attente");
+    await expect(row).toContainText("Lien valable jusqu'au");
     expect(q1<{ role: string; pw: number }>("SELECT role, password_hash IS NOT NULL AS pw FROM app_user WHERE login = @l", { l: loginName })).toEqual({ role: "RH", pw: 0 });
 
     const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
@@ -52,6 +52,7 @@ test.describe("Administration", () => {
     await page.goto("/admin/users");
     const form = createForm(page);
     await form.getByLabel("Identifiant").fill(USERS.rh.login);
+    await form.getByLabel("Rôle").selectOption("RH");
     await form.getByRole("button", { name: "Créer le compte" }).click();
     await expect(page.getByText("Cet identifiant est déjà utilisé.")).toBeVisible();
 
@@ -272,7 +273,7 @@ test.describe("Paramètres côté navigateur (sans enregistrement)", () => {
     await amount.fill("600");
     await expect(date).toHaveAttribute("aria-invalid", "false");
     await expect(recap(page)).toContainText(/Barème SMIG daté : .*600\sTND à partir du 01\/01\/2099/);
-    await expect(smig.locator("p").filter({ hasText: /^En clair/ })).toContainText(/600\sTND à partir du 01\/01\/2099/);
+    await expect(smig.locator("p").filter({ hasText: /^Barème :/ })).toContainText(/600\sTND à partir du 01\/01\/2099/);
 
     await smig.getByRole("button", { name: `Retirer la période ${n + 1}`, exact: true }).click();
     await expect(removeButtons).toHaveCount(n);

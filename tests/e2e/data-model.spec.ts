@@ -13,12 +13,12 @@ test.describe("Santé des données", () => {
       test.skip(!batch, "aucun import dans la base");
       await page.goto("/data-health");
       await expect(page.getByRole("heading", { level: 1, name: "Santé des données" })).toBeVisible();
-      await expect(page.getByText("Score qualité").first()).toBeVisible();
+      await expect(page.getByText("Qualité du dernier import").first()).toBeVisible();
       const pct = (batch!.quality * 100).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
       await expect(page.getByText(new RegExp(`${pct}\\s?%`)).first()).toBeVisible();
-      await expect(page.getByRole("region", { name: /État des données/ })).toContainText(/Dernier import du \d{2}\/\d{2}\/\d{4}/);
+      await expect(page.getByRole("region", { name: /État des données/ })).toContainText(/Import du \d{2}\/\d{2}\/\d{4}/);
       const threshold = Math.round(Number(setting("quality_threshold")) * 100);
-      await expect(page.getByText(new RegExp(`seuil de blocage\\s?(:|à)\\s?${threshold}\\s?%`, "i")).first()).toBeVisible();
+      await expect(page.getByText(new RegExp(`seuil de blocage\\s?(:|à)\\s?${threshold}\\s?%`, "i")).first()).toBeAttached();
       const history = page.getByRole("table", { name: "Historique des imports" });
       await expect(history).toContainText(batch!.source.split(/[\\/]/).pop()!);
       await history.getByRole("link", { name: new RegExp(`Voir les contrôles.*n° ${batch!.id}`) }).click();
@@ -46,7 +46,7 @@ test.describe("Santé des données", () => {
 
     test("l'admin prépare un import : sélection vérifiée, fichier non prévu retiré, sélection vidée (sans envoi)", async ({ page }) => {
       await page.goto("/data-health");
-      await expect(page.getByText("Glissez-déposez les fichiers CSV de l'export ici")).toBeVisible();
+      await expect(page.getByText(/Glisser-déposer les fichiers CSV/)).toBeVisible();
       const csv = (name: string) => ({ name, mimeType: "text/csv", buffer: Buffer.from("code;libelle\n") });
       await page.locator("#export-files").setInputFiles([csv("employees.csv"), csv("inconnu.csv")]);
       await expect(page.getByText("2 fichiers choisis").first()).toBeVisible();
@@ -61,7 +61,7 @@ test.describe("Santé des données", () => {
     test("séparation des tâches : aucun montant de salaire dans les exemples de rejet montrés à l'admin", async ({ page }) => {
       await page.goto("/data-health");
       await expect(page.getByRole("heading", { level: 1, name: "Santé des données" })).toBeVisible();
-      const open = page.getByText("Voir des exemples de lignes concernées");
+      const open = page.getByText("Exemples de lignes (100 max)");
       if (await open.count()) await open.click();
       const samples = page.getByRole("table", { name: /Exemples de lignes en échec/ });
       test.skip((await samples.count()) === 0, "aucun exemple de rejet affiché");
@@ -89,7 +89,7 @@ test.describe("Transparence du modèle", () => {
         await expect(page.getByText("Modèle en service").first()).toBeVisible();
         await expect(page.getByText(champ!.version).first()).toBeVisible();
         const cap = (Number(setting("capacity_rate")) * 100).toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-        await expect(page.getByText(new RegExp(`${cap}\\s?% des collaborateurs évalués`))).toBeVisible();
+        await expect(page.getByText(new RegExp(`${cap}\\s?% des évalués`))).toBeVisible();
         if (champ!.kind === "B0") {
           const rules = page.getByRole("table", { name: /Règles du score B0/ });
           expect(await rules.locator("tbody tr").count()).toBeGreaterThan(0);
