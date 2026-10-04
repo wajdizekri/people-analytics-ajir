@@ -7,9 +7,9 @@ import { ActivationLinkBox } from "./activation-link-box";
 import { fieldCls, labelCls } from "./admin-ui";
 
 const ROLE_HELP: Record<string, string> = {
-  RH: "Voit toute l'entreprise, rémunérations comprises.",
-  MANAGER: "Voit seulement son équipe, sans salaires ni probabilités.",
-  ADMIN: "Administre l'outil, sans accès aux données RH.",
+  RH: "Accès : toute l'entreprise, salaires compris",
+  MANAGER: "Accès : son équipe, sans salaires ni probabilités",
+  ADMIN: "Accès : administration, sans données RH",
 };
 
 function FieldError({ id, message }: { id: string; message?: string }) {
@@ -23,7 +23,7 @@ export function UserCreateForm() {
   // Résultat annoncé par un toast ; le détail (champ en erreur, lien d'activation à copier) reste sous le formulaire
   useActionToast(state, {
     error: "Compte non créé",
-    description: state.link ? "Copiez le lien d'activation affiché sous le formulaire : il ne sera montré qu'une fois." : "Le motif est indiqué sous le formulaire.",
+    description: state.link ? "Lien d'activation sous le formulaire, affiché une seule fois" : "Motif sous le formulaire",
   });
 
   return (
@@ -37,7 +37,7 @@ export function UserCreateForm() {
           {fe.login ? (
             <FieldError id="nu-login-err" message={fe.login} />
           ) : (
-            <p id="nu-login-help" className="mt-1 text-xs text-fg-muted">De 3 à 50 caractères : lettres, chiffres, point, tiret.</p>
+            <p id="nu-login-help" className="mt-1 text-xs text-fg-muted">3 à 50 caractères : lettres, chiffres, point, tiret</p>
           )}
         </div>
         <div>
@@ -52,7 +52,7 @@ export function UserCreateForm() {
           {fe.role ? (
             <FieldError id="nu-role-err" message={fe.role} />
           ) : (
-            <p id="nu-role-help" className="mt-1 text-xs text-fg-muted">{ROLE_HELP[role] ?? "Le rôle fixe ce que la personne pourra voir."}</p>
+            <p id="nu-role-help" className="mt-1 text-xs text-fg-muted">{ROLE_HELP[role] ?? "Accès selon le rôle"}</p>
           )}
         </div>
         <div>
@@ -67,7 +67,7 @@ export function UserCreateForm() {
             <FieldError id="nu-matricule-err" message={fe.matricule} />
           ) : (
             <p id="nu-matricule-help" className="mt-1 text-xs text-fg-muted">
-              {role === "MANAGER" ? "Le manager verra les collaborateurs placés sous ce matricule." : "Matricule AJIR de la personne, si elle figure parmi les collaborateurs."}
+              {role === "MANAGER" ? "Périmètre : équipe de ce matricule" : "Matricule AJIR, si collaborateur"}
             </p>
           )}
         </div>
@@ -76,11 +76,7 @@ export function UserCreateForm() {
           <input id="nu-email" name="email" defaultValue={state.values?.email} type="email" maxLength={200}
             placeholder="prenom.nom@entreprise.tn" className={fieldCls(!!fe.email)}
             aria-invalid={!!fe.email} aria-describedby={fe.email ? "nu-email-err" : undefined} />
-          {fe.email ? (
-            <FieldError id="nu-email-err" message={fe.email} />
-          ) : (
-            <p className="mt-1 text-xs text-fg-muted">Pour vous souvenir à qui transmettre le lien.</p>
-          )}
+          <FieldError id="nu-email-err" message={fe.email} />
         </div>
         <div className="lg:pt-6">
           <Button type="submit" variant="primary" icon="plus" pending={pending} pendingLabel="Création…" className="w-full lg:w-auto">
@@ -92,7 +88,7 @@ export function UserCreateForm() {
         {state.error && <p role="alert" className="mt-3 text-sm font-medium text-danger">{state.error}</p>}
         {!state.error && Object.keys(fe).length > 0 && (
           <p role="alert" className="mt-3 text-sm font-medium text-danger">
-            Compte non créé : corrigez {Object.keys(fe).length > 1 ? "les champs signalés en rouge" : "le champ signalé en rouge"}, puis cliquez de nouveau sur « Créer le compte ».
+            Compte non créé : {Object.keys(fe).length > 1 ? "champs à corriger" : "champ à corriger"}
           </p>
         )}
       </div>

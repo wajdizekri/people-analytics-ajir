@@ -41,8 +41,9 @@ describe("phrase de couverture sous une prévision", () => {
     expect(coverageSentence(cell(0.9, 0))).toBeNull();
   });
 
-  it("rendu : une ligne et la bulle de définition du glossaire ; rien pour un modèle non calibré", () => {
+  it("rendu : badge « Fourchette calibrée », phrase et définition dans la bulle ; rien pour un modèle non calibré", () => {
     const html = renderToStaticMarkup(createElement(CoverageNote, { cell: cell(0.75) }));
+    expect(html).toContain(`Fourchette calibrée · 75${S}% (cible 80${S}%)`);
     expect(html).toContain("sous la cible de 80");
     expect(html).toContain('data-couverture="sous-la-cible"');
     expect(html).toContain(`Définition : ${TERMS.fourchetteCalibree.label}`);

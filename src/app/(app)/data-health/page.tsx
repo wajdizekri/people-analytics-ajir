@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { pageContext } from "@/lib/dal/context";
 import { EXPORT_FILES, UPLOAD_MAX_TOTAL_BYTES, getDataHealth, getImportDetail, listImports, type DataHealthDTO, type ImportDetailDTO, type WorkerState } from "@/lib/dal/imports";
 import { FRESHNESS_DAYS, getDataMonitoring, type DataMonitoringDTO } from "@/lib/dal/data-monitoring";
@@ -9,7 +8,8 @@ import { KpiCard, type Status } from "@/components/charts/pbi";
 import { IMPORT_STATUS, JOB_TYPE_LABEL, nf, qualityStatus } from "@/components/monitoring/data-options";
 import { OnThisPage } from "@/components/ux/on-this-page";
 import { AutoRefresh } from "@/components/ux/auto-refresh";
-import { PageIntro, TermTip } from "@/components/help";
+import { TermTip } from "@/components/help";
+import { ActionLine } from "@/components/monitoring/action-line";
 import { RecomputeForm, UploadForm } from "./admin-controls";
 import { ImportControls, ImportLead } from "./import-controls";
 import { Trends } from "./trends";
@@ -54,71 +54,61 @@ function freshness(days: number | null): { tone: Status; label: string } | undef
   return days <= FRESHNESS_DAYS.crit ? { tone: "attention", label: "En retard" } : { tone: "critique", label: "Périmées" };
 }
 
-// Verdict en une phrase et points d'attention, du plus grave au moins grave
-function healthSummary(health: DataHealthDTO, mon: DataMonitoringDTO, admin: boolean): { tone: Light; label: string; title: string; points: ReactNode[] } {
+// Verdict : badge, constat au format libellé : valeur, action la plus urgente
+function healthSummary(health: DataHealthDTO, mon: DataMonitoringDTO, admin: boolean): { tone: Light; label: string; title: string; points: string[]; action: string } {
   const rank: Record<Light, number> = { bon: 0, attention: 1, critique: 2 };
   let tone = "bon" as Light;
   const raise = (to: Light) => {
     if (rank[to] > rank[tone]) tone = to;
   };
-  const points: ReactNode[] = [];
+  const points: string[] = [];
+  const actions: string[] = [];
+  const warnAdmin = "Prévenir l'administrateur";
   const last = health.lastImport;
   const threshold = fmt.pct(mon.qualityThreshold, 0);
   let title: string;
   if (!last) {
     raise("attention");
-    title = "Aucun import terminé : les autres écrans n'ont pas encore de données AJIR.";
-    points.push(admin ? "Importez le premier export AJIR à l'aide des trois étapes ci-dessous." : "L'administrateur de l'outil doit importer le premier export AJIR.");
+    title = "Aucun import terminé";
+    actions.push(admin ? "Importer un export AJIR" : warnAdmin);
   } else {
-    const when = `Dernier import du ${fmt.date(last.startedAt)}${health.dataEndDate ? ` (données jusqu'au ${fmt.date(health.dataEndDate)})` : ""}`;
-    const quality = last.qualityScore != null ? fmt.pct(last.qualityScore, 1) : "non mesurée";
-    if (last.status === "ECHEC") {
+    title = `Import du ${fmt.date(last.startedAt)} · ${IMPORT_STATUS[last.status].label} · Qualité ${last.qualityScore != null ? fmt.pct(last.qualityScore, 1) : "non mesurée"}`;
+    if (last.status === "ECHEC") raise("critique");
+    else if (health.scoring.blocked) {
       raise("critique");
-      title = `${when} en échec : aucun nouveau calcul n'a été publié.`;
-    } else if (health.scoring.blocked) {
-      raise("critique");
-      title = `${when} bloqué : qualité ${quality}, sous le seuil de ${threshold}. Calcul des risques suspendu.`;
-    } else {
-      title = `${when} : qualité ${quality}, calcul autorisé.`;
+      points.push(`Calcul des risques : suspendu (seuil ${threshold})`);
     }
     if (last.status !== "OK") {
       const run = health.scoring.currentRun;
-      points.push(
-        `Les écrans affichent toujours le dernier calcul publié${run ? ` (au ${fmt.date(run.asOf)})` : ""}. ${
-          admin ? "Corrigez dans AJIR les rejets expliqués plus bas, puis importez un nouvel export." : "L'administrateur doit importer un export corrigé."
-        }`,
-      );
+      if (run) points.push(`Calcul affiché : ${fmt.date(run.asOf)}`);
+      actions.push(admin ? "Importer un export corrigé" : warnAdmin);
     } else if (qualityStatus(last.qualityScore, mon.qualityThreshold, last.status)?.tone === "attention") {
       raise("attention");
-      points.push(`Qualité proche du seuil de blocage (${threshold}) : surveillez les rejets expliqués plus bas.`);
+      points.push(`Seuil de blocage : ${threshold}`);
+      actions.push("Surveiller les lignes rejetées");
     }
   }
   const w = health.worker;
   if (w.state === "PERIME" || w.state === "ABSENT") {
     raise("attention");
-    points.push(
-      <>
-        Le service de calcul ne répond pas{w.heartbeatAt ? ` (dernier signal ${age(w.ageSeconds)})` : ""}. Un nouvel import ou un recalcul resterait en attente.{" "}
-        {admin ? "Redémarrez le service « worker » sur le serveur." : "Prévenez l'administrateur de l'outil."}
-      </>,
-    );
+    points.push(`Service de calcul : arrêté${w.heartbeatAt ? ` (signal ${age(w.ageSeconds)})` : ""}`);
+    actions.push(admin ? "Redémarrer le service de calcul" : warnAdmin);
   } else if (w.state === "EN_RETARD") {
     raise("attention");
-    points.push(`Le service de calcul répond avec retard (dernier signal ${age(w.ageSeconds)}).`);
+    points.push(`Service de calcul : en retard (signal ${age(w.ageSeconds)})`);
   }
   const fresh = freshness(mon.dataLagDays);
   if (fresh && fresh.tone !== "bon") {
     raise("attention");
-    points.push(`Les données ont ${fmt.int(mon.dataLagDays)} jours : l'export AJIR du mois suivant est attendu.`);
+    points.push(`Fraîcheur : ${fmt.int(mon.dataLagDays)} jours`);
+    actions.push(admin ? "Importer l'export du mois" : warnAdmin);
   }
-  if (health.runningImport) points.push(`Import n° ${health.runningImport.id} en cours depuis le ${fmt.dateTime(health.runningImport.startedAt)}.`);
-  const label =
-    tone === "critique" ? "Action requise" : tone === "attention" ? (last ? "Données utilisables, à surveiller" : "En attente de données") : "Données fiables";
-  if (!points.length) points.push("Rien à signaler : les chiffres des autres écrans reposent sur un import conforme.");
-  return { tone, label, title, points };
+  if (health.runningImport) points.push(`Import en cours : n° ${health.runningImport.id} depuis le ${fmt.dateTime(health.runningImport.startedAt)}`);
+  const label = tone === "critique" ? "Action requise" : tone === "attention" ? (last ? "À surveiller" : "En attente de données") : "Données fiables";
+  return { tone, label, title, points, action: actions[0] ?? "Aucune" };
 }
 
-function MonitoringKpis({ health, mon, admin }: { health: DataHealthDTO; mon: DataMonitoringDTO; admin: boolean }) {
+function MonitoringKpis({ health, mon }: { health: DataHealthDTO; mon: DataMonitoringDTO }) {
   const last = mon.imports.at(-1) ?? null;
   const prev = mon.imports.at(-2) ?? null;
   const quality = qualityStatus(last?.qualityScore ?? null, mon.qualityThreshold, last?.status);
@@ -129,15 +119,14 @@ function MonitoringKpis({ health, mon, admin }: { health: DataHealthDTO; mon: Da
   const scoringTone: Status = health.scoring.blocked ? "critique" : "bon";
   const run = health.scoring.currentRun;
   const detailHref = last ? `/data-health?batch=${last.id}#detail` : undefined;
-  const workerDown = health.worker.state === "PERIME" || health.worker.state === "ABSENT";
   return (
     <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <KpiCard
         tip={<TermTip term="scoreQualite" align="end" />}
-        label="Score qualité du dernier import"
+        label="Qualité du dernier import"
         value={last?.qualityScore != null ? fmt.pct(last.qualityScore, 1) : "—"}
         status={quality}
-        delta={qDelta != null ? { value: qDelta, label: `${signed(qDelta, `${nf(Math.abs(qDelta))} pt`)} par rapport à l'import précédent`, good: "up" } : null}
+        delta={qDelta != null ? { value: qDelta, label: signed(qDelta, `${nf(Math.abs(qDelta))} pt`), reference: "vs import précédent", good: "up" } : null}
         hint={last ? `Seuil de blocage : ${fmt.pct(mon.qualityThreshold, 0)}` : "Aucun import terminé"}
         href={detailHref}
         detailLabel="Voir les contrôles"
@@ -146,35 +135,31 @@ function MonitoringKpis({ health, mon, admin }: { health: DataHealthDTO; mon: Da
         tip={<TermTip term="lignesRejetees" align="end" />}
         label="Lignes rejetées au dernier import"
         value={last ? fmt.int(last.rowsRejected) : "—"}
-        delta={rDelta != null ? { value: rDelta, label: `${signed(rDelta, fmt.int(Math.abs(rDelta)))} par rapport à l'import précédent`, good: "down" } : null}
-        hint={last && read ? `${fmt.pct(last.rowsRejected / read, 1)} des ${fmt.int(read)} lignes lues` : undefined}
+        delta={rDelta != null ? { value: rDelta, label: signed(rDelta, fmt.int(Math.abs(rDelta))), reference: "vs import précédent", good: "down" } : null}
+        hint={last && read ? `${fmt.pct(last.rowsRejected / read, 1)} de ${fmt.int(read)} lignes lues` : undefined}
         href={detailHref}
-        detailLabel="Voir pourquoi"
+        detailLabel="Voir les contrôles"
       />
       <KpiCard
         tip={<TermTip term="fraicheur" align="end" />}
         label="Fraîcheur des données"
         value={mon.dataLagDays != null ? `${fmt.int(mon.dataLagDays)} jour${mon.dataLagDays > 1 ? "s" : ""}` : "—"}
         status={freshness(mon.dataLagDays)}
-        hint={mon.dataEndDate ? `Données jusqu'au ${fmt.date(mon.dataEndDate)} · un export attendu chaque mois` : "Aucune donnée importée"}
+        hint={mon.dataEndDate ? `Données au ${fmt.date(mon.dataEndDate)}` : "Aucune donnée importée"}
       />
       <KpiCard
         tip={<TermTip term="worker" align="end" />}
         label="Service de calcul"
         value={w.label}
         status={{ tone: w.tone, label: TONE_LABEL[w.tone] }}
-        hint={
-          workerDown
-            ? `${health.worker.heartbeatAt ? `Dernier signal ${age(health.worker.ageSeconds)}` : "Aucun signal reçu"} · ${admin ? "à redémarrer sur le serveur" : "prévenir l'administrateur"}`
-            : `Dernier signal ${age(health.worker.ageSeconds)}`
-        }
+        hint={health.worker.heartbeatAt ? `Dernier signal : ${age(health.worker.ageSeconds)}` : "Aucun signal reçu"}
       />
       <KpiCard
         tip={<TermTip term="calculRisques" align="end" />}
         label="Calcul des risques"
         value={health.scoring.blocked ? "Bloqué" : "Autorisé"}
         status={{ tone: scoringTone, label: TONE_LABEL[scoringTone] }}
-        hint={run ? `Dernier calcul publié au ${fmt.date(run.asOf)} · ${fmt.int(run.nScored)} collaborateurs évalués` : "Aucun calcul publié"}
+        hint={run ? `Calcul du ${fmt.date(run.asOf)} · ${fmt.int(run.nScored)} évalués` : "Aucun calcul publié"}
       />
     </div>
   );
@@ -209,7 +194,7 @@ export default async function DataHealthPage({ searchParams }: { searchParams: S
       <PageHeader
         eyebrow="Données et modèle"
         title="Santé des données"
-        subtitle={`Imports de l'export AJIR, contrôles qualité et calcul mensuel${health.dataEndDate ? ` — données au ${fmt.date(health.dataEndDate)}` : ""}.`}
+        period={health.dataEndDate ? `Données au ${fmt.date(health.dataEndDate)}` : undefined}
         actions={
           admin ? (
             <ButtonLink href="#import" variant="primary" icon="upload">
@@ -218,18 +203,10 @@ export default async function DataHealthPage({ searchParams }: { searchParams: S
           ) : undefined
         }
       />
-      <StatusSummary tone={summary.tone} label={summary.label} title={summary.title} points={summary.points} ariaLabel="État des données en un coup d'œil" />
+      <StatusSummary tone={summary.tone} label={summary.label} title={summary.title} points={summary.points} ariaLabel="État des données en un coup d'œil">
+        <ActionLine>{summary.action}</ActionLine>
+      </StatusSummary>
       <AutoRefresh active={busy && workerUp} label="Traitement en cours (import ou calcul)." />
-      <PageIntro
-        helpHref="/aide#qualite-donnees"
-        points={[
-          "Sous le seuil de qualité, l'import est bloqué : les écrans gardent le dernier calcul publié.",
-          "Chaque contrôle en échec est expliqué, avec l'action à mener dans AJIR.",
-          admin ? "Vous importez ici l'export AJIR du mois et relancez le calcul mensuel." : "L'administrateur importe les exports ; vous vérifiez ici leur fiabilité.",
-        ]}
-      >
-        Vérifier que l&apos;export AJIR a bien été importé avant de se fier aux chiffres des autres écrans.
-      </PageIntro>
       <OnThisPage
         items={[
           { id: "detail", label: "Contrôles qualité" },
@@ -240,23 +217,22 @@ export default async function DataHealthPage({ searchParams }: { searchParams: S
       />
 
       <section aria-label="Indicateurs de qualité des données et des traitements">
-        <MonitoringKpis health={health} mon={mon} admin={admin} />
+        <MonitoringKpis health={health} mon={mon} />
       </section>
 
-      <Section
-        id="detail"
-        title={detail ? `Contrôles de l'import n° ${detail.batch.id}` : "Contrôles qualité d'un import"}
-        intro={detail ? <ImportLead detail={detail} /> : "Les lignes signalées par contrôle, leur effet sur l'import et l'action à mener dans AJIR."}
-      >
+      <Section id="detail" title={detail ? `Contrôles de l'import n° ${detail.batch.id}` : "Contrôles qualité"}>
         {detailMissing && (
-          <Notice tone="warning">
-            Import n° {batchId} introuvable. Choisissez un import dans l&apos;<a href="#historique" className="font-medium underline underline-offset-2">historique</a>.
+          <Notice tone="warning" action={<a href="#historique" className="font-medium underline underline-offset-2">Historique</a>}>
+            Import n° {batchId} introuvable
           </Notice>
         )}
-        {!detail && !detailMissing && (
-          <EmptyState title="Aucun import à détailler">Les contrôles qualité du dernier import s&apos;afficheront ici après le premier import.</EmptyState>
+        {!detail && !detailMissing && <EmptyState title="Aucun import à détailler" />}
+        {detail && (
+          <>
+            <ImportLead detail={detail} />
+            <ImportControls detail={detail} />
+          </>
         )}
-        {detail && <ImportControls detail={detail} />}
       </Section>
 
       {admin && (
@@ -264,20 +240,13 @@ export default async function DataHealthPage({ searchParams }: { searchParams: S
           <Card title="Importer un export AJIR" className="lg:col-span-2">
             <UploadForm accepted={EXPORT_FILES} maxBytes={UPLOAD_MAX_TOTAL_BYTES} workerUp={workerUp} />
           </Card>
-          <Card title="Relancer le calcul mensuel">
-            <p className="mb-3 text-sm text-fg-muted">
-              Recalcule les indicateurs, les niveaux de risque, les anomalies et les alertes sur les dernières données importées.
-            </p>
-            <p className="mb-3 text-xs text-fg-muted">Utile après une modification des paramètres. Inutile après un import : le calcul est lancé automatiquement.</p>
-            <RecomputeForm
-              disabled={health.scoring.blocked}
-              reason={health.scoring.blocked ? "Indisponible tant que le dernier import est bloqué : importez d'abord un export conforme." : undefined}
-            />
+          <Card title="Relancer le calcul mensuel" actions={<TermTip term="calculRisques" align="end" />}>
+            <RecomputeForm disabled={health.scoring.blocked} reason={health.scoring.blocked ? "Indisponible : dernier import bloqué" : undefined} />
           </Card>
         </div>
       )}
 
-      <Section id="historique" title="Historique des imports et des traitements">
+      <Section id="historique" title="Imports et traitements">
         <div className="grid grid-cols-1 gap-6 2xl:grid-cols-5">
           <section aria-labelledby="imports-titre" className="min-w-0 2xl:col-span-3">
             <h3 id="imports-titre" className="mb-2 text-base font-semibold text-heading">
@@ -288,11 +257,16 @@ export default async function DataHealthPage({ searchParams }: { searchParams: S
               pageSize={10}
               maxHeight={false}
               empty={
-                <EmptyState title="Aucun import enregistré">
-                  {admin
-                    ? "Importez un export AJIR ci-dessus : il apparaîtra ici après son traitement par le service de calcul."
-                    : "Le premier export AJIR, importé par l'administrateur, apparaîtra ici après son traitement."}
-                </EmptyState>
+                <EmptyState
+                  title="Aucun import enregistré"
+                  action={
+                    admin ? (
+                      <ButtonLink href="#import" size="sm" icon="upload">
+                        Importer un export AJIR
+                      </ButtonLink>
+                    ) : undefined
+                  }
+                />
               }
               columns={[
                 { key: "import", label: "Import" },
@@ -319,7 +293,7 @@ export default async function DataHealthPage({ searchParams }: { searchParams: S
                         {shown && (
                           <span className="mt-1 block">
                             <StatusBadge tone="info" dot={false}>
-                              Contrôles affichés ci-dessus
+                              Affiché
                             </StatusBadge>
                           </span>
                         )}
@@ -353,7 +327,7 @@ export default async function DataHealthPage({ searchParams }: { searchParams: S
               caption="Traitements récents"
               pageSize={10}
               maxHeight={false}
-              empty={<EmptyState title="Aucun traitement enregistré">Les imports et calculs mensuels lancés apparaîtront ici.</EmptyState>}
+              empty={<EmptyState title="Aucun traitement enregistré" />}
               columns={[
                 { key: "type", label: "Traitement" },
                 { key: "statut", label: "Statut" },
@@ -390,12 +364,7 @@ export default async function DataHealthPage({ searchParams }: { searchParams: S
         </div>
       </Section>
 
-      <Section
-        id="tendances"
-        title="Tendances des imports et des traitements"
-        intro="Évolution d'un import à l'autre : utile pour repérer une dégradation progressive de l'export."
-        className="mb-0"
-      >
+      <Section id="tendances" title="Tendances" className="mb-0">
         <Trends mon={mon} />
       </Section>
     </>

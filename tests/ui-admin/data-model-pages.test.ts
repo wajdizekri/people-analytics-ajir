@@ -84,10 +84,11 @@ describe("Santé des données", () => {
     as("RH");
     const page = (await import("@/app/(app)/data-health/page")).default;
     const s = text(html(await page(sp)));
-    expect(s).toMatch(/Dernier import du \d{2}\/\d{2}\/2026 \(données jusqu'au 31\/08\/2026\) : qualité 98,1 %, calcul autorisé\./);
+    expect(s).toContain("Période : Données au 31/08/2026");
+    expect(s).toMatch(/Import du \d{2}\/\d{2}\/2026 · Conforme · Qualité 98,1 %/);
     expect(s).toContain("Salaire de base inférieur au SMIG");
-    expect(s).toContain("Ce que cela veut dire :");
-    expect(s).toContain("Que faire : Vérifier le bulletin dans AJIR");
+    expect(s).toContain("Signification :");
+    expect(s).toContain("Action : Vérifier le bulletin dans AJIR");
     expect(s).toContain("Lignes importées, à vérifier");
     expect(s).toContain("Salaire de base 300 TND");
     expect(s).not.toContain("Lancer l'import");
@@ -103,7 +104,7 @@ describe("Santé des données", () => {
     expect(s).toContain("Importer un export AJIR");
     expect(s).toContain("Relancer le calcul mensuel");
     expect(s).toContain("Manquant · obligatoire");
-    expect(s).toContain("Redémarrez le service « worker » sur le serveur.");
+    expect(s).toContain("Action : Redémarrer le service de calcul");
     expect(s).not.toContain("300 TND");
   });
 });
@@ -113,15 +114,15 @@ describe("Transparence du modèle", () => {
     as("RH");
     const page = (await import("@/app/(app)/transparency/page")).default;
     const s = text(html(await page()));
-    expect(s).toContain("Modèle dans ses cibles");
-    expect(s).toContain("Comment le modèle décide");
+    expect(s).toContain("Dans la cible Régression logistique");
+    expect(s).toContain("Fonctionnement du modèle");
     expect(s).toContain("Salaire plus haut que la médiane du poste");
-    expect(s).toContain("14 ont démissionné dans les 6 mois suivants");
-    expect(s).toContain("7 étaient classés Élevé 6 mois avant leur départ");
-    expect(s).toContain("63 cas sur 100");
-    expect(s).toMatch(/Pour 100 démissions prévues ?, 100 ont été observées/);
-    expect(s).toContain("aucun groupe n'est surestimé ni sous-estimé");
-    expect(s).toContain("2,0 % des collaborateurs évalués");
+    expect(s).toContain("14 sur 100 Démissions à 6 mois");
+    expect(s).toContain("7 sur 100 Démissionnaires classés Élevé 6 mois avant");
+    expect(s).toContain("0,63 Modéré");
+    expect(s).toContain("Observé / prévu 1,00 (cible 0,8 à 1,25) Dans la cible");
+    expect(s).toContain("Juste pour chaque groupe");
+    expect(s).toContain("2,0 % des évalués");
     expect(s).toContain("Historique des versions");
   });
 
@@ -161,7 +162,7 @@ describe("Design system : écrans « Données et modèle »", () => {
     as("ADMIN");
     const page = (await import("@/app/(app)/data-health/page")).default;
     const s = text(html(await page(sp)));
-    expect(s).toContain("Glissez-déposez les fichiers CSV de l'export ici");
+    expect(s).toContain("Glisser-déposer les fichiers CSV");
     expect(s).toContain("Choisir les fichiers CSV");
     expect(s).toContain("Aucun fichier choisi");
   });

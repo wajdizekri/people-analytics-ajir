@@ -260,7 +260,7 @@ describe("pages", () => {
     expect(rhHtml).toContain("Estimation non causale");
     expect(rhHtml).toContain("Charges patronales (%)");
     const bt = html(await backtesting({ searchParams: Promise.resolve({ mois: "2024-11" }) }));
-    for (const s of ["exposition au risque", "score à règles (B0)", "Précision", "Rappel", "Délai moyen avant démission", "Classés Élevé"]) expect(bt).toContain(s);
+    for (const s of ["Exposition au risque, hors effet des actions", "Score à règles (B0) : points", "Précision", "Rappel", "Délai moyen avant démission", "Classés Élevé"]) expect(bt).toContain(s);
     expect(bt).not.toMatch(/départs? évités?/i);
     asManager();
     const mgrHtml = html(await detail({ params: Promise.resolve({ id: String(ids.f) }) }));

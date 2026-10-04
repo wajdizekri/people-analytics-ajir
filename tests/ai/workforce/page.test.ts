@@ -40,12 +40,16 @@ describe("page /previsions", () => {
     session.current = { userId: seed.rhUserId, login: "rh.demo", role: "RH", employeeId: null };
     const html = renderToStaticMarkup((await (await page())(sp())) as ReactElement);
     expect(html).toContain("Projection indicative");
+    expect(html).toContain("Projection à 12 mois");
+    expect(html).toContain("Projection de l&#x27;effectif");
+    expect(html).toContain("Projection de la masse salariale");
+    expect(html).toContain("Simulation de scénario");
     expect(html).toContain("Effectif observé et projeté à 12 mois");
     expect(html).toContain("Masse salariale brute observée et projetée");
     expect(html).toContain("Projection par département");
     expect(html).toContain("Recommandations RH");
     expect(html).toContain('name="embauches"');
-    expect(html).toMatch(/Effectif prévu dans 12 mois : <strong[^>]*>[\d\s ]+<\/strong> \(fourchette /);
+    expect(html).toMatch(/Effectif prévu en [^<]+<\/dt><dd[^>]*>[\d\s]+<span/);
     expect(html).toContain("Recalculer la projection");
     expect(html).toContain("Fourchette probable à 80 %");
     for (const code of (db().prepare("SELECT code FROM department").all() as { code: string }[]).map((d) => d.code)) expect(html).toContain(code);

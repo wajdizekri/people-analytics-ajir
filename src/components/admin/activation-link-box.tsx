@@ -19,7 +19,7 @@ export function ActivationLinkBox({ url, login, expiresAt }: { url: string; logi
         <Icon name="link" className="h-4 w-4 text-success" />
         Lien d&apos;activation pour {login}
       </label>
-      <p className="mt-1 text-xs text-fg-muted">Étape suivante : copiez ce lien et transmettez-le à la personne par un canal sûr (messagerie interne, en main propre).</p>
+      <p className="mt-1 text-xs text-fg-muted">Transmission : canal sûr (messagerie interne, en main propre)</p>
       <div className="mt-2 flex flex-wrap gap-2">
         <input
           id={id}
@@ -44,10 +44,10 @@ export function ActivationLinkBox({ url, login, expiresAt }: { url: string; logi
           {copied ? "Lien copié" : "Copier le lien"}
         </Button>
       </div>
-      {copied === false && <p className="mt-1 text-xs font-medium text-danger">Copie automatique impossible : sélectionnez le lien puis copiez-le (Ctrl+C).</p>}
+      {copied === false && <p className="mt-1 text-xs font-medium text-danger">Copie automatique impossible : copie manuelle (Ctrl+C)</p>}
       <p className="mt-2 flex items-start gap-1.5 text-xs text-fg-muted">
         <Icon name="clock" className="mt-px h-3.5 w-3.5" />
-        <span>Valable jusqu&apos;au {fmt.dateTime(expiresAt)}, une seule fois. Il ne sera plus affiché ensuite : en cas de perte, générez-en un nouveau.</span>
+        <span>Valable jusqu&apos;au {fmt.dateTime(expiresAt)} · usage unique · affiché une seule fois</span>
       </p>
     </div>
   );

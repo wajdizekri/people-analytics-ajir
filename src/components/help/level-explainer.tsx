@@ -13,8 +13,7 @@ export function LevelExplainer({ capacityRate, mediumLift, role }: { capacityRat
       badge: <RiskBadge level="ELEVE" />,
       text: (
         <>
-          Les collaborateurs les plus exposés : au plus <strong>{cap}</strong> des collaborateurs évalués chaque mois (capacité d&apos;entretiens RH).
-          C&apos;est une liste de priorités pour échanger, pas une liste de départs annoncés.
+          <strong>{cap}</strong> des évalués au plus, chaque mois (capacité d&apos;entretiens RH). Priorité d&apos;échange, pas départ annoncé.
         </>
       ),
     },
@@ -22,20 +21,14 @@ export function LevelExplainer({ capacityRate, mediumLift, role }: { capacityRat
       badge: <RiskBadge level="MOYEN" />,
       text: (
         <>
-          Risque estimé au moins <strong>{times} fois</strong> supérieur à la moyenne des collaborateurs évalués
-          {role === "MANAGER" ? "" : ` (lift ≥ ${times})`}, sans faire partie du niveau Élevé.
+          Risque ≥ <strong>{times} fois</strong> la moyenne{role === "MANAGER" ? "" : ` (lift ≥ ${times})`}, hors Élevé.
         </>
       ),
     },
-    { badge: <RiskBadge level="FAIBLE" />, text: <>Tous les autres collaborateurs évalués. Faible ne veut pas dire nul : des départs restent possibles.</> },
+    { badge: <RiskBadge level="FAIBLE" />, text: <>Autres évalués. Départ toujours possible.</> },
     {
       badge: <RiskBadge level={null} />,
-      text: (
-        <>
-          Hors du calcul. Contrat : stage, SIVP ou CDD qui se termine dans les 6 mois. Situation : arrivée depuis moins d&apos;un mois, 60 ans atteints dans
-          les 6 mois, démission connue. Ou opposition du collaborateur au calcul.
-        </>
-      ),
+      text: <>Hors calcul : stage, SIVP, CDD finissant sous 6 mois, arrivée récente, 60 ans sous 6 mois, démission connue, opposition.</>,
     },
   ];
   return (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ButtonLink, DataTable, EmptyState, Notice, PageHeader, SectionHeader, fmt } from "@/components/ui";
+import { Badge, ButtonLink, DataTable, EmptyState, PageHeader, SectionHeader, StatusBadge, fmt } from "@/components/ui";
 import { EChart } from "@/components/charts/echart";
 import { ChartData, KpiCard, VisualCard, barChart, lineChart } from "@/components/charts/pbi";
 import { ActiveFilters, FilterForm, buildHref } from "@/components/pilotage/filters";
@@ -13,19 +13,8 @@ import { countAlerts } from "@/lib/dal/alerts";
 import { listRecommendations } from "@/lib/dal/recommendations";
 import { ShortcutBar, type Shortcut } from "@/components/ux/shortcuts";
 import { levelFromLabel, withDrill, withDrillSpec } from "@/components/charts/drill";
-import { PageIntro, TermTip } from "@/components/help";
-import {
-  absenteeismByDepartmentTitle,
-  absenteeismTitle,
-  countDelta,
-  headcountByDepartmentTitle,
-  headcountTitle,
-  rateDelta,
-  riskByDepartmentTitle,
-  riskTitle,
-  signed,
-  turnoverTitle,
-} from "./messages";
+import { TermTip } from "@/components/help";
+import { countDelta, rateDelta, signed } from "./messages";
 
 // Liens de texte : jetons du thème, survol (soulignement épais), focus visible global, léger enfoncement au clic
 const linkCls =
@@ -58,15 +47,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const toMonth = formatMonth(d.period.to);
   const periodRange = `${fromMonth} – ${toMonth}`;
   const periodLabel = `${periodRange} (${d.period.label})`;
-  const onPeriod = `sur les ${d.period.label}`;
   const k = d.kpis;
   const s = d.series;
   const months = s.map((x) => formatMonth(x.month));
   const first = s[0];
   const last = s[s.length - 1];
-  const maskedReason = d.smallPopulation
-    ? `Non affiché pour un groupe de moins de ${MIN_GROUP_SIZE} personnes, pour préserver l'anonymat.`
-    : "Historique insuffisant : choisissez une période plus courte.";
+  const maskedReason = d.smallPopulation ? `Masqué : moins de ${MIN_GROUP_SIZE} personnes` : "Historique insuffisant";
   const risk = d.risk;
   const evaluated = risk ? risk.totals.ELEVE + risk.totals.MOYEN + risk.totals.FAIBLE : 0;
   const riskTotal = risk ? evaluated + risk.totals.nonScored : 0;
@@ -92,9 +78,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </ButtonLink>
         ) : undefined
       }
-    >
-      Les niveaux de risque apparaîtront après la publication du calcul mensuel (le 10 de chaque mois).
-    </EmptyState>
+    />
   );
   const noMatch = (
     <EmptyState
@@ -104,9 +88,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           Réinitialiser les filtres
         </ButtonLink>
       }
-    >
-      Élargissez les filtres pour retrouver des collaborateurs.
-    </EmptyState>
+    />
   );
 
   const newAlerts = countAlerts(ctx, { status: "NOUVELLE" });
@@ -133,7 +115,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     });
   }
 
-  // ---------- Visuels : helpers de la charte (formats français, tableau « Voir les données ») ; le titre porte le message ----------
+  // ---------- Visuels : helpers de la charte (formats français, tableau « Voir les données ») ----------
   const riskLevels =
     risk && riskTotal > 0
       ? barChart({
@@ -175,8 +157,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     : lineChart({
         categories: months,
         series: [
-          { name: "Turnover total", values: s.map((x) => toPct(x.turnover12)) },
-          { name: "dont départs volontaires", values: s.map((x) => toPct(x.turnover12Voluntary)), dashed: true },
+          { name: "Total", values: s.map((x) => toPct(x.turnover12)) },
+          { name: "Départs volontaires", values: s.map((x) => toPct(x.turnover12Voluntary)), dashed: true },
         ],
         measure: "Turnover 12 mois",
         unit: "%",
@@ -266,23 +248,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader
         title="Tableau de bord"
-        subtitle={
-          rh
-            ? "Indicateurs RH de l'entreprise : risques de départ, effectif, départs, absentéisme et formations."
-            : "Indicateurs de votre équipe (périmètre hiérarchique), hors rémunération : risques de départ, effectif, départs, absentéisme et formations."
-        }
         scope={rh ? "Toute l'entreprise" : "Votre équipe et toute votre hiérarchie"}
         period={`${periodLabel} · données AJIR au ${formatDate(d.referenceDate)}`}
+        badge={
+          d.smallPopulation || !rh ? (
+            <span className="inline-flex flex-wrap items-center gap-1">
+              {!rh && <Badge>Hors rémunération</Badge>}
+              {d.smallPopulation && <StatusBadge tone="warning">Données masquées : petit groupe</StatusBadge>}
+              <TermTip term="petitsGroupes" role={ctx.role} />
+            </span>
+          ) : undefined
+        }
         actions={
           <ButtonLink href="/synthese" variant="secondary" iconEnd="arrow-right">
             Lire la synthèse du mois
           </ButtonLink>
         }
       />
-      <PageIntro helpHref="/aide#tableau-de-bord">
-        Repérer où agir en priorité : un clic sur une carte, une barre ou un nombre ouvre la liste des collaborateurs concernés.
-      </PageIntro>
-      <ShortcutBar items={todo} note={isGlobal(ctx) && q.departement ? "Alertes : tout votre périmètre ; recommandations : département filtré." : undefined} />
+      <ShortcutBar items={todo} />
       <FilterForm
         action="/dashboard"
         values={q}
@@ -325,38 +308,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           },
         ]}
       />
-      <ActiveFilters
-        filters={chips}
-        ignored={ignored}
-        restricted={dropped}
-        note={q.niveau ? "le niveau de risque filtre le bloc risque et la liste, pas les indicateurs d'effectif" : undefined}
-      />
-      {d.smallPopulation && (
-        <Notice tone="warning" className="mb-4">
-          Groupe de moins de {MIN_GROUP_SIZE} personnes (ou dont le reste du périmètre compte moins de {MIN_GROUP_SIZE} personnes) : sorties, turnover et
-          absentéisme masqués pour préserver l&apos;anonymat.
-        </Notice>
-      )}
+      <ActiveFilters filters={chips} ignored={ignored} restricted={dropped} />
 
       <div className="space-y-8">
         <section aria-labelledby="indicateurs-titre">
           <SectionHeader
             id="indicateurs-titre"
             title="Indicateurs clés"
-            description={`Variation : ${toMonth} comparé à ${fromMonth}. Un lien en pied de carte ouvre le détail.`}
+            description={`Variation : ${toMonth} vs ${fromMonth}. Source : ${d.source === "AGREGATS" ? "agrégats mensuels" : "calcul détaillé sur la population filtrée"}, données au ${formatDate(d.referenceDate)}. Effectif, entrées, sorties et turnover : CDI et CDD, hors stages et SIVP. Absentéisme : hors maladie, maternité et congés annuels.${d.view === "RH" && d.risk ? ` Niveaux de risque : ${fmt.model(d.risk.modelVersion)}.` : ""}`}
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {risk ? (
               <KpiCard
                 label="Collaborateurs en risque élevé"
+                period={`Calcul du ${formatDate(risk.asOf)}`}
                 value={fmt.int(risk.totals.ELEVE)}
-                hint={`${
-                  !evaluated
-                    ? `Aucun collaborateur évalué au ${formatDate(risk.asOf)}`
-                    : risk.totals.ELEVE
-                      ? `${formatRate(risk.totals.ELEVE / evaluated)} des ${fmt.int(evaluated)} évalués au ${formatDate(risk.asOf)}`
-                      : `Aucun parmi les ${fmt.int(evaluated)} évalués au ${formatDate(risk.asOf)}`
-                } · ${risk.totals.MOYEN ? `${fmt.int(risk.totals.MOYEN)} en risque moyen` : "aucun en risque moyen"}`}
+                hint={`${evaluated ? `Part des évalués : ${formatRate(risk.totals.ELEVE / evaluated)}` : "Aucun évalué"} · Moyen : ${fmt.int(risk.totals.MOYEN)}`}
                 href={toList({ niveau: "ELEVE" })}
                 linkLabel={risk.totals.ELEVE > 1 ? `Voir les ${fmt.int(risk.totals.ELEVE)} collaborateurs` : "Voir la liste"}
                 tip={<TermTip term="niveauEleve" role={ctx.role} align="end" />}
@@ -365,27 +332,27 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <KpiCard
                 label="Collaborateurs en risque élevé"
                 value="—"
-                hint="Aucun calcul de risque publié"
+                emptyLabel="Aucun calcul publié"
                 tip={<TermTip term="niveauEleve" role={ctx.role} align="end" />}
               />
             )}
             <KpiCard
-              label="Turnover glissant 12 mois"
+              label="Turnover sur 12 mois"
               detailHref="/retention"
               detailLabel="Voir la rétention des embauchés"
               value={formatRate(k.turnover12)}
               delta={rateDelta(first.turnover12, last.turnover12, `depuis ${fromMonth}`, "down")}
               spark={s.map((x) => x.turnover12)}
-              hint={k.turnover12 == null ? maskedReason : `dont départs volontaires : ${formatRate(k.turnover12Voluntary)} · hors stages et SIVP`}
+              hint={k.turnover12 == null ? maskedReason : `Volontaire : ${formatRate(k.turnover12Voluntary)}`}
               tip={<TermTip term="turnover" role={ctx.role} align="end" />}
             />
             <KpiCard
               label="Absentéisme hors santé"
-              period={`Taux moyen ${onPeriod}`}
+              period={`Moyenne, ${d.period.label}`}
               value={formatRate(k.absenteeismRate)}
               delta={rateDelta(first.absenteeismRate, last.absenteeismRate, `en ${toMonth} vs ${fromMonth}`, "down")}
               spark={s.map((x) => x.absenteeismRate)}
-              hint={k.absenteeismRate == null ? maskedReason : "hors maladie, maternité et congés annuels"}
+              hint={k.absenteeismRate == null ? maskedReason : undefined}
               href={toAbsenteeism()}
               linkLabel="Analyser l'absentéisme"
               tip={<TermTip term="absenteisme" role={ctx.role} align="end" />}
@@ -395,31 +362,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               value={fmt.int(k.headcount)}
               delta={countDelta(first.headcount, last.headcount, `depuis fin ${fromMonth}`, "neutral")}
               spark={s.map((x) => x.headcount)}
-              hint="CDI et CDD, hors stages et SIVP"
               href={toList({ niveau: undefined })}
               linkLabel="Voir la liste (tous contrats)"
               tip={<TermTip term="effectif" role={ctx.role} align="end" />}
             />
             <KpiCard
               label="Entrées / sorties"
-              period={`Sur les ${d.period.label}`}
+              period={d.period.label}
               value={`${fmt.int(k.entries)} / ${fmt.int(k.exits)}`}
-              hint={
-                k.exits == null
-                  ? `Sorties masquées (groupe de moins de ${MIN_GROUP_SIZE} personnes)`
-                  : `dont ${plural(k.voluntaryExits ?? 0, "départ volontaire", "départs volontaires")} · solde ${signed(k.entries - k.exits)}`
-              }
+              hint={k.exits == null ? "Sorties masquées : petit groupe" : `Volontaires : ${fmt.int(k.voluntaryExits ?? 0)} · Solde : ${signed(k.entries - k.exits)}`}
               tip={<TermTip term="entreesSorties" role={ctx.role} align="end" />}
             />
             <KpiCard
               label="Formations obligatoires réalisées"
-              period={`Échéances ${onPeriod}`}
+              period={`Échéances, ${d.period.label}`}
               value={formatRate(k.mandatoryTraining.rate, 0)}
-              hint={
-                k.mandatoryTraining.due
-                  ? `${fmt.int(k.mandatoryTraining.done)} sur ${fmt.int(k.mandatoryTraining.due)} échéances`
-                  : "aucune échéance sur la période"
-              }
+              hint={k.mandatoryTraining.due ? `${fmt.int(k.mandatoryTraining.done)} / ${fmt.int(k.mandatoryTraining.due)} échéances` : "Aucune échéance"}
               detailHref="/formations"
               detailLabel="Voir les formations à risque de retard"
               tip={<TermTip term="formationsObligatoires" role={ctx.role} align="end" />}
@@ -432,44 +390,26 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   d.payroll.monthly[0] > 0
                     ? {
                         value: d.payroll.lastMonth - d.payroll.monthly[0],
-                        label: `${signed(((d.payroll.lastMonth - d.payroll.monthly[0]) / d.payroll.monthly[0]) * 100, 1)} % depuis ${fromMonth}`,
+                        label: `${signed(((d.payroll.lastMonth - d.payroll.monthly[0]) / d.payroll.monthly[0]) * 100, 1)} % depuis ${fromMonth}`,
                         good: "neutral",
                       }
                     : null
                 }
                 spark={d.payroll.monthly}
-                hint={`cumul ${onPeriod} : ${fmt.tnd(d.payroll.periodTotal)}`}
+                hint={`Cumul : ${fmt.tnd(d.payroll.periodTotal)}`}
                 tip={<TermTip term="masseSalariale" role={ctx.role} align="end" />}
               />
             )}
           </div>
-          <p className="mt-3 max-w-5xl text-xs leading-relaxed text-fg-subtle">
-            Source : {d.source === "AGREGATS" ? "agrégats mensuels" : "calcul détaillé sur la population filtrée"}, données au {formatDate(d.referenceDate)}.
-            Effectif, entrées, sorties et turnover : CDI et CDD, hors stages et SIVP. Absentéisme : tous les présents, hors maladie, maternité et congés
-            annuels.
-            {d.view === "RH" && d.risk ? ` Niveaux de risque : ${fmt.model(d.risk.modelVersion)}.` : ""}
-          </p>
         </section>
 
         <section aria-labelledby="risques-titre">
-          <SectionHeader
-            id="risques-titre"
-            title="Risques de départ"
-            description={
-              risk
-                ? `Calcul du ${formatDate(risk.asOf)} : combien de collaborateurs sont exposés${showDeptChart ? ", et dans quels départements" : ""}.`
-                : "Niveaux de risque estimés par le calcul mensuel."
-            }
-          />
+          <SectionHeader id="risques-titre" title="Risques de départ" />
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <VisualCard
               headingLevel={3}
-              title={risk ? riskTitle(risk.totals) : "Niveaux de risque non disponibles"}
-              subtitle={
-                risk
-                  ? `Répartition des niveaux de risque · calcul du ${formatDate(risk.asOf)} · ${fmt.int(riskTotal)} actifs, tous contrats`
-                  : "Répartition des niveaux de risque"
-              }
+              title="Collaborateurs par niveau de risque"
+              subtitle={risk ? `Calcul du ${formatDate(risk.asOf)} · ${fmt.int(riskTotal)} actifs, tous contrats` : undefined}
               chart={riskLevels ? withDrillSpec(riskLevels, toLevelList, "Cliquer pour voir les collaborateurs de ce niveau") : undefined}
               className={showDeptChart ? "" : "xl:col-span-3"}
               actions={
@@ -486,8 +426,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             {showDeptChart && (
               <VisualCard
                 headingLevel={3}
-                title={riskByDepartmentTitle(riskByDept)}
-                subtitle="Collaborateurs en risque élevé et moyen, par département ; tous les niveaux dans le détail en bas de page. La part « Élevé » suit la capacité d'entretiens RH."
+                title="Risque élevé et moyen par département"
                 className="xl:col-span-2"
                 actions={<TermTip term="capacite" role={ctx.role} align="end" />}
               >
@@ -506,31 +445,23 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </section>
 
         <section aria-labelledby="evolution-titre">
-          <SectionHeader id="evolution-titre" title="Évolution sur la période" description={`Mois par mois, ${periodRange}.`} />
+          <SectionHeader id="evolution-titre" title="Évolution mensuelle" />
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-            <VisualCard
-              headingLevel={3}
-              title={headcountChart ? headcountTitle(first.headcount, last.headcount, `depuis fin ${fromMonth}`) : "Aucun effectif sur la période"}
-              subtitle={`Effectif fin de mois (collaborateurs), hors stages et SIVP · ${periodRange}`}
-              chart={headcountChart ?? undefined}
-              actions={<TermTip term="effectif" role={ctx.role} align="end" />}
-            >
-              {!headcountChart && <EmptyState title="Aucun effectif sur la période">Élargissez les filtres ou choisissez une période plus longue.</EmptyState>}
+            <VisualCard headingLevel={3} title="Effectif fin de mois" chart={headcountChart ?? undefined} actions={<TermTip term="effectif" role={ctx.role} align="end" />}>
+              {!headcountChart && <EmptyState compact title="Aucun effectif sur la période" />}
             </VisualCard>
             <VisualCard
               headingLevel={3}
-              title={turnoverTitle(first.turnover12, last.turnover12, fromMonth)}
-              subtitle={`Turnover glissant 12 mois (%) : total et départs volontaires, hors stages et SIVP · ${periodRange}`}
+              title="Turnover sur 12 mois (%)"
               chart={turnoverChart ?? undefined}
               footnote={turnoverChart && smallTeam ? "Petite équipe : un seul départ fait varier le taux de plusieurs points." : undefined}
               actions={<TermTip term="turnover" role={ctx.role} align="end" />}
             >
-              {!turnoverChart && <EmptyState title="Turnover non disponible">{maskedReason}</EmptyState>}
+              {!turnoverChart && <EmptyState compact title={maskedReason} />}
             </VisualCard>
             <VisualCard
               headingLevel={3}
-              title={absenteeismTitle(last.absenteeismRate, k.absenteeismRate, toMonth)}
-              subtitle={`Absentéisme mensuel hors santé non planifié (%) · pointillé : moyenne de la période · ${periodRange}`}
+              title="Absentéisme mensuel (%)"
               chart={absenteeismChart ?? undefined}
               actions={
                 <Link href={toAbsenteeism()} className={linkCls}>
@@ -539,33 +470,26 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                 </Link>
               }
             >
-              {!absenteeismChart && <EmptyState title="Absentéisme non disponible">{maskedReason}</EmptyState>}
+              {!absenteeismChart && <EmptyState compact title={maskedReason} />}
             </VisualCard>
           </div>
         </section>
 
         {d.view === "RH" && (
           <section aria-labelledby="departements-titre">
-            <SectionHeader
-              id="departements-titre"
-              title="Comparaison des départements"
-              description={`Où se concentrent l'effectif (fin ${toMonth}) et l'absentéisme (${d.period.label}).`}
-            />
+            <SectionHeader id="departements-titre" title="Comparaison des départements" />
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               <VisualCard
                 headingLevel={3}
-                title={headcountByDepartmentTitle(d.departments, k.headcount)}
-                subtitle={`Effectif par département (collaborateurs), fin ${toMonth}, hors stages et SIVP`}
+                title="Effectif par département"
                 chart={deptHeadcountChart ? withDrillSpec(deptHeadcountChart, toDeptList, "Cliquer pour voir les collaborateurs du département") : undefined}
               >
-                {!deptHeadcountChart && (
-                  <EmptyState title="Aucun effectif sur la période">Élargissez les filtres ou choisissez une période plus longue.</EmptyState>
-                )}
+                {!deptHeadcountChart && <EmptyState compact title="Aucun effectif sur la période" />}
               </VisualCard>
               <VisualCard
                 headingLevel={3}
-                title={absenteeismByDepartmentTitle(d.departments, k.absenteeismRate)}
-                subtitle={`Absentéisme par département (%) ${onPeriod} · ambre : au-dessus de la moyenne${d.source === "DETAIL" ? " · département actuel des collaborateurs filtrés" : ""}`}
+                title="Absentéisme par département (%)"
+                subtitle="Ambre : au-dessus de la moyenne"
                 chart={deptAbsenteeismChart ? withDrillSpec(deptAbsenteeismChart, toDeptAbsenteeism, "Cliquer pour analyser l'absentéisme du département") : undefined}
                 actions={
                   <Link href={toAbsenteeism({ axe: "departement" })} className={linkCls}>
@@ -583,7 +507,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     }}
                   />
                 ) : (
-                  <EmptyState title="Aucune donnée d'absence sur la période">Choisissez une période plus longue ou retirez un filtre.</EmptyState>
+                  <EmptyState compact title="Aucune donnée d'absence sur la période" />
                 )}
               </VisualCard>
             </div>
@@ -592,12 +516,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
         {risk && riskByDept.length > 0 && (
           <section aria-labelledby="detail-titre">
-            <SectionHeader
-              id="detail-titre"
-              title="Détail des niveaux de risque par département"
-              description={`Calcul du ${formatDate(risk.asOf)}, départements les plus exposés en tête. Un nombre ouvre la liste des collaborateurs concernés.`}
-              tip={<TermTip term="capacite" role={ctx.role} align="end" />}
-            />
+            <SectionHeader id="detail-titre" title="Niveaux de risque par département" tip={<TermTip term="capacite" role={ctx.role} align="end" />} />
             <DataTable
               caption="Collaborateurs par niveau de risque et par département, avec liens vers la liste"
               defaultSort={{ key: "ELEVE", dir: "desc" }}

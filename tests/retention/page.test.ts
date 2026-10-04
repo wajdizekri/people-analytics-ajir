@@ -35,11 +35,12 @@ describe("page Rétention", () => {
     await expect(render()).rejects.toThrow("REDIRECT:/interdit");
   });
 
-  it("RH : réponse, 4 indicateurs, courbe, encarts Comment lire et Limites", async () => {
+  it("RH : synthèse, 4 indicateurs, courbe ; limites dans la bulle de méthode, plus d'encarts de texte", async () => {
     as("RH");
     const html = await render();
-    for (const s of ["Quelle part des embauchés est encore là ?", "Rétention à 12 mois", "Rétention à 24 mois", "Durée médiane de présence", "Embauches suivies", "Comment lire", "Limites"])
+    for (const s of ["Maintien des embauchés", "Rétention à 12 mois", "Rétention à 24 mois", "Durée médiane de présence", "Embauches suivies", "Courbe de maintien (%)"])
       expect(html).toContain(s);
+    expect(html).not.toContain("Comment lire");
     expect(html).toContain("Toute l&#x27;entreprise — 24 embauches suivies");
     expect(html).toContain("L&#x27;historique AJIR commence le 01/01/2024. 4 collaborateurs embauchés avant ne sont pas suivis");
     expect(html).toContain("Courbe de maintien en escalier");
@@ -51,6 +52,8 @@ describe("page Rétention", () => {
     as("RH");
     const html = await render({ segment: "departement", mode: "volontaires" });
     expect(html).toContain("Détail par département");
+    expect(html).toContain("Courbe de maintien par département (%)");
+    expect(html).toMatch(/Écart (non )?significatif/);
     expect(html).toContain("Test du log-rank");
     expect(html).toContain("Moins de 5 personnes suivies");
     expect(html).toContain("risques concurrents");

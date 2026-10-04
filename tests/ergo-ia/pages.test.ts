@@ -45,7 +45,7 @@ describe("/previsions", () => {
     const t = text(renderToStaticMarkup((await Page(sp({ embauches: "999" }))) as ReactElement));
     expect(t).toContain("Hypothèse non prise en compte");
     expect(t).toContain("rythme des embauches (de 0 à 300 %)");
-    expect(t).toContain("Corrigez la valeur dans « Tester un autre scénario »");
+    expect(t).toContain("Corrigez la valeur dans « Simulation de scénario »");
     expect(t).not.toMatch(/invalides? : embauches/);
   });
 
@@ -63,12 +63,15 @@ describe("/previsions", () => {
 });
 
 describe("/absenteeism", () => {
-  it("RH : sous-titres des visuels avec la période, variation du taux avec sa référence", async () => {
+  it("RH : titres courts des visuels, période dans le sous-titre, variation du taux avec sa référence", async () => {
     asRh();
     const Page = (await import("@/app/(app)/absenteeism/page")).default;
     const t = text(renderToStaticMarkup((await Page(sp({ granularite: "mois" }))) as ReactElement));
-    expect(t).toMatch(/Taux d'absence par mois \(% des jours ouvrables\) · .+ · \d+ derniers mois/);
+    expect(t).toContain("Absentéisme mensuel (%)");
+    expect(t).toContain("Prévision de l'absentéisme (%)");
+    expect(t).toMatch(/% des jours ouvrables · .+ · \d+ derniers mois/);
     expect(t).toContain("vs les mois précédents");
+    expect(t).not.toMatch(/le taux le plus élevé|L'absentéisme (augmente|baisse)|Absentéisme stable :/);
   });
 
   it("manager : jamais de signal individuel", async () => {
@@ -76,6 +79,6 @@ describe("/absenteeism", () => {
     const Page = (await import("@/app/(app)/absenteeism/page")).default;
     const t = text(renderToStaticMarkup((await Page(sp())) as ReactElement));
     expect(t).not.toContain("Signaux individuels");
-    expect(t).toContain("est-il sous contrôle ?");
+    expect(t).toContain("État de l'absentéisme");
   });
 });

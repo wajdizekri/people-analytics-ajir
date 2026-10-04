@@ -22,7 +22,7 @@ export function AutoRefresh({ active, label, seconds = 5 }: { active: boolean; l
       <span aria-hidden="true" className={`h-2 w-2 rounded-full bg-info ${paused ? "" : "animate-pulse motion-reduce:animate-none"}`} />
       {/* Annonce la suspension ou la reprise (le texte ne change pas à chaque actualisation) */}
       <span aria-live="polite">
-        {label} {paused ? "Actualisation automatique suspendue." : `La page s'actualise toutes les ${seconds} s.`}
+        {label} {paused ? "Actualisation suspendue" : `Actualisation toutes les ${seconds} s`}
       </span>
       <button
         type="button"

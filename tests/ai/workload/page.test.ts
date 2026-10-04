@@ -41,8 +41,10 @@ describe("page /charge", () => {
     runStep(getDb().sqlite, AS_OF);
     session.current = { userId: 1, login: "rh", role: "RH", employeeId: null };
     const html = await render();
-    expect(html).toContain("Quelles équipes sont en surcharge ?");
-    expect(html).toContain("prévu sur 3 mois, par département");
+    expect(html).toContain("Surcharge des équipes");
+    expect(html).toContain("Charge prévue par équipe (h)");
+    expect(html).toContain("Charge prévue par département (h)");
+    expect(html).toContain("Réservé RH");
     expect(html).toContain("Direction A");
     expect(html).toContain("Surcharges individuelles soutenues");
     expect(html).toContain(nameOf(fx.overloaded));
@@ -55,8 +57,8 @@ describe("page /charge", () => {
   it("MANAGER : équipes agrégées et recommandations collectives seulement", async () => {
     session.current = { userId: 3, login: "mgr", role: "MANAGER", employeeId: fx.head };
     const html = await render();
-    expect(html).toContain("Vos équipes sont-elles en surcharge ?");
-    expect(html).toContain("Recommandations pour vos équipes");
+    expect(html).toContain("Surcharge de vos équipes");
+    expect(html).toContain("Actions proposées");
     expect(html).not.toContain("Surcharges individuelles");
     expect(html).not.toContain(nameOf(fx.overloaded));
     expect(html).toContain("non affichée(s)");

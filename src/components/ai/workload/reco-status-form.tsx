@@ -219,10 +219,10 @@ export function RecoBoard({
             <strong className="font-semibold text-fg">{todo.length}</strong> à traiter
             {high ? (
               <>
-                , dont <strong className="font-semibold text-danger">{high}</strong> en priorité haute
+                {" "}
+                · <strong className="font-semibold text-danger">{high}</strong> en priorité haute
               </>
             ) : null}
-            .
           </p>
           <ul className="mt-3 space-y-3">
             {visible.map((i) => (

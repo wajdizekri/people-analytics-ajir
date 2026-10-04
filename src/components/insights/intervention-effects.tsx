@@ -1,4 +1,4 @@
-import { Notice, RiskBadge, StatusBadge } from "@/components/ui";
+import { RiskBadge, StatusBadge } from "@/components/ui";
 import { InfoTip } from "@/components/help";
 import { actionLabel, formatDate, formatRate } from "@/components/pilotage/labels";
 import type { EffectMeasure, EmployeeEffectsDto } from "@/lib/dal/interventions";
@@ -39,7 +39,7 @@ function Measure({ m, window }: { m: EffectMeasure; window: number }) {
       </div>
       {!m.complete && (
         <p className="mt-1.5 text-xs text-warning">
-          Recul partiel : {m.monthsAfter} mois observé{m.monthsAfter > 1 ? "s" : ""} sur {window} après l&apos;action.
+          Recul partiel : {m.monthsAfter} / {window} mois
         </p>
       )}
     </>
@@ -54,31 +54,35 @@ export function InterventionEffects({ data, className = "" }: { data: EmployeeEf
       id="avant-apres"
       title="Avant / après intervention"
       icon="effect"
-      hint={`${w} mois avant et ${w} mois après le mois de chaque action réalisée`}
+      hint={`${w} mois avant / après`}
       className={className}
       aside={
-        <InfoTip label="Avant / après" align="end">
-          Niveau de risque au dernier calcul publié avant l&apos;action puis {w} mois après
-          {data.view === "RH" ? `, absentéisme hors santé non planifié et heures supplémentaires pointées sur les ${w} mois civils de part et d'autre du mois de l'action` : ""}.{" "}
-          {CAUSALITY_NOTICE}
-        </InfoTip>
+        <>
+          <StatusBadge tone="neutral" dot={false}>
+            Observation non causale
+          </StatusBadge>
+          <InfoTip label="Avant / après" align="end">
+            Niveau de risque au dernier calcul publié avant l&apos;action puis {w} mois après
+            {data.view === "RH" ? `, absentéisme hors santé non planifié et heures supplémentaires pointées sur les ${w} mois civils de part et d'autre du mois de l'action` : ""}.{" "}
+            {CAUSALITY_NOTICE}
+          </InfoTip>
+        </>
       }
     >
       {data.items.length === 0 ? (
-        <p className="text-sm text-fg-muted">Aucune action réalisée pour ce collaborateur.</p>
+        <p className="text-sm text-fg-muted">Aucune action réalisée</p>
       ) : (
         <div className="space-y-3">
-          <Notice tone="neutral">{CAUSALITY_NOTICE}</Notice>
-          {data.opposed && <Notice>Opposition au traitement prédictif : les niveaux de risque ne sont pas calculés pour ce collaborateur.</Notice>}
+          {data.opposed && <StatusBadge tone="neutral">Opposition au traitement prédictif : non évalué</StatusBadge>}
           <ul className="space-y-3">
             {data.view === "RH"
               ? data.items.map((i) => (
                   <li key={i.key} className="rounded-control bg-surface p-3 ring-1 ring-inset ring-line">
                     <p className="mb-2 text-sm font-semibold text-heading">
                       {actionLabel(i.actionCode)} <span className="font-normal text-fg-muted">· réalisée le {formatDate(i.date)}</span>
-                      {i.source === "RECOMMANDATION" && <span className="font-normal text-fg-muted"> (date de décision, aucune intervention datée)</span>}
+                      {i.source === "RECOMMANDATION" && <span className="font-normal text-fg-muted"> (date de décision)</span>}
                     </p>
-                    {i.measure ? <Measure m={i.measure} window={w} /> : <p className="text-sm text-fg-muted">Mesure non calculée (opposition au traitement prédictif).</p>}
+                    {i.measure ? <Measure m={i.measure} window={w} /> : <p className="text-sm text-fg-muted">Non mesuré (opposition)</p>}
                   </li>
                 ))
               : data.items.map((i) => (
@@ -87,7 +91,7 @@ export function InterventionEffects({ data, className = "" }: { data: EmployeeEf
                       {actionLabel(i.actionCode)} <span className="font-normal text-fg-muted">· {shortMonth(i.month)}</span>
                     </p>
                     <Levels before={i.levelBefore} after={i.levelAfter} change={i.levelChange} />
-                    {!i.complete && <p className="mt-1.5 text-xs text-warning">Recul inférieur à {w} mois : mesure provisoire.</p>}
+                    {!i.complete && <p className="mt-1.5 text-xs text-warning">Mesure provisoire (moins de {w} mois)</p>}
                   </li>
                 ))}
           </ul>

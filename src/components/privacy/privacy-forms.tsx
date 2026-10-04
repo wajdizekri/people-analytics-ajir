@@ -27,13 +27,9 @@ function Feedback({ state }: { state: State }) {
 const WHY = "Le motif est indiqué sous le formulaire.";
 
 const TYPES: { value: RequestType; label: string; hint: string }[] = [
-  { value: "ACCES", label: "Accès à ses données", hint: "Le collaborateur reçoit une copie de toutes les données le concernant, sous un mois." },
-  {
-    value: "OPPOSITION",
-    label: "Opposition au calcul du risque",
-    hint: "Effet immédiat : plus d'estimation, de simulation « et si ? », de recommandation ni d'alerte de risque pour lui.",
-  },
-  { value: "RECTIFICATION", label: "Rectification d'une donnée", hint: "La correction se fait dans AJIR ; l'outil garde la trace de la demande." },
+  { value: "ACCES", label: "Accès à ses données", hint: "Copie complète sous un mois" },
+  { value: "OPPOSITION", label: "Opposition au calcul du risque", hint: "Effet immédiat : plus d'estimation ni d'alerte de risque" },
+  { value: "RECTIFICATION", label: "Rectification d'une donnée", hint: "Correction dans AJIR" },
 ];
 
 export function RequestForm({ employeeId, opposed, action }: { employeeId: number; opposed: boolean; action: Action }) {
@@ -47,7 +43,7 @@ export function RequestForm({ employeeId, opposed, action }: { employeeId: numbe
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="employeeId" value={employeeId} />
       <fieldset>
-        <legend className="text-sm font-medium text-fg">Que demande le collaborateur ?</legend>
+        <legend className="text-sm font-medium text-fg">Type de demande</legend>
         <div className="mt-2 grid gap-2">
           {TYPES.map((t) => {
             const disabled = t.value === "OPPOSITION" && opposed;
@@ -56,7 +52,7 @@ export function RequestForm({ employeeId, opposed, action }: { employeeId: numbe
                 <input type="radio" name="type" value={t.value} checked={type === t.value} disabled={disabled} onChange={() => setType(t.value)} className="mt-0.5 accent-primary" />
                 <span>
                   <span className="font-medium">{t.label}</span>
-                  <span className="block text-xs text-fg-muted">{disabled ? "Déjà en vigueur pour ce collaborateur." : t.hint}</span>
+                  <span className="block text-xs text-fg-muted">{disabled ? "Déjà en vigueur" : t.hint}</span>
                 </span>
               </label>
             );
@@ -71,11 +67,20 @@ export function RequestForm({ employeeId, opposed, action }: { employeeId: numbe
             </>
           ) : (
             <>
-              Précisions : date et mode de réception, motif invoqué <span className="font-normal text-fg-muted">(facultatif)</span>
+              Précisions <span className="font-normal text-fg-muted">(facultatif)</span>
             </>
           )}
         </label>
-        <textarea id={noteId} name="note" rows={3} maxLength={1000} required={type === "RECTIFICATION"} minLength={type === "RECTIFICATION" ? 3 : undefined} className={inputCls} />
+        <textarea
+          id={noteId}
+          name="note"
+          rows={3}
+          maxLength={1000}
+          required={type === "RECTIFICATION"}
+          minLength={type === "RECTIFICATION" ? 3 : undefined}
+          placeholder={type === "RECTIFICATION" ? undefined : "Date et mode de réception, motif invoqué"}
+          className={inputCls}
+        />
       </div>
       <Feedback state={state} />
       {type === "OPPOSITION" ? (
@@ -164,7 +169,7 @@ export function LiftOppositionForm({ employeeId, action }: { employeeId: number;
     <form action={formAction} className="mt-3 space-y-2">
       <input type="hidden" name="employeeId" value={employeeId} />
       <label htmlFor={noteId} className="block text-sm font-medium text-fg">
-        Pourquoi lever l&apos;opposition ? <span className="text-danger">(obligatoire)</span>
+        Motif de la levée <span className="text-danger">(obligatoire)</span>
       </label>
       <textarea id={noteId} name="note" rows={2} maxLength={1000} required minLength={3} placeholder="Ex. : retrait écrit du collaborateur reçu le …" className={inputCls} />
       <Feedback state={state} />

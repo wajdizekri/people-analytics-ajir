@@ -8,7 +8,7 @@ import { countOpenAlerts } from "@/lib/dal/alerts";
 import { getAdminMonitoring, type WeekComparison } from "@/lib/dal/monitoring";
 import { Chart, KpiCard, VisualCard, type ChartSpec, type Delta, type Status } from "@/components/charts/pbi";
 import { DataDetails } from "@/components/pilotage/data-details";
-import { ButtonLink, EmptyState, Notice, PageHeader, SectionHeader, cardCls, fmt, tableCls } from "@/components/ui";
+import { ButtonLink, EmptyState, Notice, PageHeader, SectionHeader, StatusBadge, cardCls, fmt, tableCls } from "@/components/ui";
 import { Icon } from "@/components/admin/admin-ui";
 import { describeAudit } from "@/components/admin/audit-labels";
 import { auditRefusalsHref, authDailyChart, jobsChart, plural, refusalsChart, roleCounts } from "@/components/monitoring/admin-options";
@@ -39,7 +39,7 @@ const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 // Le jugement (« favorable », « à surveiller ») est écrit par KpiCard à partir de `good`
 function weekDelta(w: WeekComparison, good: Delta["good"]): Delta {
   const diff = w.current - w.previous;
-  return { value: diff, good, label: diff === 0 ? "Stable" : `${diff > 0 ? "+" : "−"}${fmt.int(Math.abs(diff))}`, reference: "par rapport aux 7 jours précédents" };
+  return { value: diff, good, label: diff === 0 ? "Stable" : `${diff > 0 ? "+" : "−"}${fmt.int(Math.abs(diff))}`, reference: "vs 7 jours précédents" };
 }
 
 function signalAge(seconds: number | null): string {
@@ -50,7 +50,7 @@ function signalAge(seconds: number | null): string {
   return `dernier signal il y a ${Math.round(seconds / 86_400)} jours`;
 }
 
-function TaskButton({ href, icon, label, hint }: { href: string; icon: Parameters<typeof Icon>[0]["name"]; label: string; hint: string }) {
+function TaskButton({ href, icon, label, hint }: { href: string; icon: Parameters<typeof Icon>[0]["name"]; label: string; hint?: string }) {
   return (
     <Link
       href={href}
@@ -61,7 +61,7 @@ function TaskButton({ href, icon, label, hint }: { href: string; icon: Parameter
       </span>
       <span className="min-w-0">
         <span className="block text-base font-semibold text-heading">{label}</span>
-        <span className="block text-[13px] leading-snug text-fg-muted">{hint}</span>
+        {hint && <span className="block text-[13px] leading-snug text-fg-muted">{hint}</span>}
       </span>
       <Icon name="arrow" className="ml-auto h-4 w-4 shrink-0 text-link transition group-hover:translate-x-0.5" />
     </Link>
@@ -131,74 +131,71 @@ export default async function AdminConsolePage() {
   const lastImport = health.lastImport;
   const importState = lastImport ? IMPORT[lastImport.status] : { label: "Aucun import", tone: "attention" as const };
   const jobsTotal = jobs.reduce((s, j) => s + j.total, 0);
-  const jobsFailed = jobs.reduce((s, j) => s + j.counts.ECHEC, 0);
   const period = `${DAYS} derniers jours (${fmt.date(monitoring.from)} – ${fmt.date(monitoring.to)})`;
 
-  // Points d'attention : mêmes états, mêmes mots et mêmes liens que les tuiles ; les points critiques d'abord
-  const problems: { text: string; href: string; link: string; critical: boolean }[] = [];
+  // Points d'attention au format libellé : valeur, avec l'action en lien ; mêmes états et mêmes liens que les tuiles, les points critiques d'abord
+  const problems: { label: string; value: string; href: string; link: string; critical: boolean }[] = [];
   if (health.worker.state !== "ACTIF")
     problems.push({
-      text: `le service de calcul ${health.worker.state === "EN_RETARD" ? "répond avec retard" : "est arrêté"} (${signal})`,
+      label: "Service de calcul",
+      value: `${health.worker.state === "EN_RETARD" ? "en retard" : "arrêté"} (${signal})`,
       href: HEALTH_HREF,
       link: HEALTH_LINK,
       critical: worker.tone === "critique",
     });
   if (lastImport && importState.tone === "critique")
     problems.push({
-      text: `le dernier import (n° ${lastImport.id}) est ${lastImport.status === "BLOQUE" ? "bloqué" : "en échec"}`,
+      label: `Dernier import (n° ${lastImport.id})`,
+      value: lastImport.status === "BLOQUE" ? "bloqué" : "en échec",
       href: `/data-health?batch=${lastImport.id}#detail`,
       link: "Voir les contrôles de l'import",
       critical: true,
     });
-  if (!lastImport) problems.push({ text: "aucun export AJIR n'a encore été importé", href: "/data-health#import", link: "Importer un export AJIR", critical: false });
-  if (health.scoring.blocked && lastImport?.status !== "BLOQUE") problems.push({ text: "le calcul des risques est suspendu", href: HEALTH_HREF, link: HEALTH_LINK, critical: true });
+  if (!lastImport) problems.push({ label: "Export AJIR", value: "aucun import", href: "/data-health#import", link: "Importer un export AJIR", critical: false });
+  if (health.scoring.blocked && lastImport?.status !== "BLOQUE")
+    problems.push({ label: "Calcul des risques", value: "suspendu", href: HEALTH_HREF, link: HEALTH_LINK, critical: true });
   if (accounts.locked > 0)
-    problems.push({ text: plural(accounts.locked, "compte est verrouillé", "comptes sont verrouillés"), href: "/admin/users?etat=verrouille", link: "Débloquer les comptes", critical: false });
-  if (openAlerts > 0) problems.push({ text: plural(openAlerts, "alerte est à traiter", "alertes sont à traiter"), href: "/alerts?status=NOUVELLE", link: "Traiter les alertes", critical: false });
+    problems.push({ label: "Comptes verrouillés", value: fmt.int(accounts.locked), href: "/admin/users?etat=verrouille", link: "Débloquer les comptes", critical: false });
+  if (openAlerts > 0) problems.push({ label: "Alertes à traiter", value: fmt.int(openAlerts), href: "/alerts?status=NOUVELLE", link: "Traiter les alertes", critical: false });
   problems.sort((a, b) => Number(b.critical) - Number(a.critical));
-  const okParts = [
-    lastImport && lastImport.status === "OK" ? `dernier import conforme (${fmt.pct(lastImport.qualityScore, 1)} de qualité, le ${fmt.date(lastImport.startedAt)})` : null,
-    health.worker.state === "ACTIF" ? "service de calcul actif" : null,
-    plural(totalActive, "compte actif", "comptes actifs"),
-  ].filter(Boolean);
 
-  // Titre = le message ; sans donnée, le titre nomme le visuel et l'état vide de la carte porte le message (pas de phrase en double)
-  const authTitle =
-    logins30 + failed30 === 0 ? `Connexions des ${DAYS} derniers jours` : `${plural(logins30, "connexion réussie", "connexions réussies")} et ${plural(failed30, "échec", "échecs")} en ${DAYS} jours`;
-  const jobsTitle =
-    jobsTotal === 0
-      ? `Traitements des ${DAYS} derniers jours`
-      : `${plural(jobsTotal, "traitement", "traitements")} en ${DAYS} jours, ${jobsFailed ? `dont ${fmt.int(jobsFailed)} en échec` : "aucun en échec"}`;
   const refusals = refusalsChart(refusalsByAction);
-  const refusalsTitle = refusalsByAction.length === 0 ? `Refus d'accès des ${DAYS} derniers jours` : `Le plus refusé : « ${refusals.table.rows[0][0]} »`;
+  const authTitle = "Connexions par jour";
+  const jobsTitle = "Traitements par type et statut";
+  const refusalsTitle = "Refus d'accès par action";
 
   return (
     <>
       <PageHeader
         eyebrow="Administration"
         title="Console d'administration"
-        subtitle="Surveiller l'état de l'outil, gérer les comptes et contrôler les accès. Aucune donnée RH nominative n'est affichée ici."
+        badge={
+          <StatusBadge tone="info" dot={false}>
+            Aucune donnée RH nominative
+          </StatusBadge>
+        }
         period={period}
       />
 
       <div className="mb-6">
         {problems.length === 0 ? (
-          <Notice tone="success" title="Tout fonctionne normalement.">
-            <p>{capitalize(okParts.join(", "))}.</p>
+          <Notice tone="success" title="Tout fonctionne normalement">
+            {null}
           </Notice>
         ) : (
-          <Notice tone={problems.some((p) => p.critical) ? "error" : "warning"} title={`${plural(problems.length, "point demande", "points demandent")} votre attention.`}>
+          <Notice tone={problems.some((p) => p.critical) ? "error" : "warning"} title={plural(problems.length, "point d'attention", "points d'attention")}>
             <ul className="mt-1 space-y-1">
               {problems.map((p) => (
-                <li key={p.text} className="flex flex-wrap items-baseline gap-x-2">
-                  <span>{capitalize(p.text)}.</span>
+                <li key={p.label} className="flex flex-wrap items-baseline gap-x-2">
+                  <span>
+                    {p.label} : <strong className="font-semibold">{p.value}</strong>
+                  </span>
                   <Link href={p.href} className="font-medium underline underline-offset-2">
                     {p.link}
                   </Link>
                 </li>
               ))}
             </ul>
-            {okParts.length > 0 && <p className="mt-1.5 text-[13px] opacity-90">Par ailleurs : {okParts.join(", ")}.</p>}
           </Notice>
         )}
       </div>
@@ -210,23 +207,23 @@ export default async function AdminConsolePage() {
             href="/data-health#import"
             icon="upload"
             label="Importer un export AJIR"
-            hint={lastImport ? `Dernier import : n° ${lastImport.id} du ${fmt.date(lastImport.startedAt)}` : "Aucun import pour l'instant"}
+            hint={lastImport ? `Dernier import : n° ${lastImport.id} du ${fmt.date(lastImport.startedAt)}` : "Aucun import"}
           />
-          <TaskButton href="/admin/users#nouveau-compte" icon="user-plus" label="Créer un compte" hint="Puis transmettre le lien d'activation" />
+          <TaskButton href="/admin/users#nouveau-compte" icon="user-plus" label="Créer un compte" />
           <TaskButton href="/alerts?status=NOUVELLE" icon="bell" label="Traiter les alertes" hint={openAlerts ? plural(openAlerts, "alerte à traiter", "alertes à traiter") : "Aucune alerte à traiter"} />
-          <TaskButton href="/admin/audit" icon="list" label="Consulter le journal d'audit" hint="Qui a fait quoi, et quand" />
+          <TaskButton href="/admin/audit" icon="list" label="Consulter le journal d'audit" />
         </div>
       </section>
 
       <section aria-labelledby="etat" className="mb-6">
-        <SectionHeader id="etat" title="État de l'outil" description="Service de calcul, données, alertes et comptes, à cet instant." />
+        <SectionHeader id="etat" title="État de l'outil" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StateTile
             label="Service de calcul"
             value={worker.label}
             tone={worker.tone}
             state={worker.verdict}
-            hint={`${capitalize(signal)} : ${health.worker.state === "ACTIF" ? "imports et calculs traités" : "les imports et les calculs restent en attente"}`}
+            hint={capitalize(signal)}
             href={HEALTH_HREF}
             detailLabel={HEALTH_LINK}
           />
@@ -239,7 +236,7 @@ export default async function AdminConsolePage() {
             hint={
               lastImport
                 ? `N° ${lastImport.id} du ${fmt.date(lastImport.startedAt)} · ${plural(lastImport.rowsRejected, "ligne rejetée", "lignes rejetées")}`
-                : "Aucun export AJIR importé pour l'instant"
+                : "Aucun export AJIR importé"
             }
             href={lastImport ? `/data-health?batch=${lastImport.id}#detail` : "/data-health#import"}
             detailLabel={lastImport ? "Voir les contrôles de l'import" : "Importer un export AJIR"}
@@ -249,7 +246,7 @@ export default async function AdminConsolePage() {
             value={fmt.int(openAlerts)}
             tone={openAlerts ? "attention" : "bon"}
             state={openAlerts ? "À traiter" : "À jour"}
-            hint={openAlerts ? "Alertes système et données, nouvelles ou en cours" : "Aucune alerte système ou données ouverte"}
+            hint="Système et données"
             href="/alerts"
             detailLabel="Voir les alertes"
           />
@@ -274,22 +271,22 @@ export default async function AdminConsolePage() {
       </section>
 
       <section aria-labelledby="securite" className="mb-6">
-        <SectionHeader id="securite" title="Sécurité des accès" description={`7 derniers jours, comparés aux 7 jours précédents ; la courbe retrace les ${DAYS} derniers jours.`} />
+        <SectionHeader id="securite" title="Sécurité des accès" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <KpiCard
             label="Connexions réussies"
+            period="7 derniers jours"
             value={fmt.int(week.logins.current)}
             delta={weekDelta(week.logins, "up")}
-            hint="Identifiant et mot de passe acceptés"
             spark={daily.map((d) => d.logins)}
             href="/admin/audit?action=auth.login&outcome=OK"
             detailLabel="Voir les connexions dans le journal"
           />
           <KpiCard
             label="Échecs de connexion"
+            period="7 derniers jours"
             value={fmt.int(week.failedLogins.current)}
             delta={weekDelta(week.failedLogins, "down")}
-            hint="Mot de passe erroné, compte inconnu ou verrouillé"
             spark={daily.map((d) => d.failedLogins)}
             sparkTone="defavorable"
             href="/admin/audit?action=auth.login&outcome=REFUSE"
@@ -297,9 +294,9 @@ export default async function AdminConsolePage() {
           />
           <KpiCard
             label="Refus d'accès"
+            period="7 derniers jours"
             value={fmt.int(week.refusals.current)}
             delta={weekDelta(week.refusals, "down")}
-            hint="Page ou fiche hors du rôle"
             spark={daily.map((d) => d.refusals)}
             sparkTone="defavorable"
             href={auditRefusalsHref()}
@@ -309,13 +306,16 @@ export default async function AdminConsolePage() {
       </section>
 
       <section aria-labelledby="activite">
-        <SectionHeader id="activite" title={`Activité sur ${DAYS} jours`} description="Connexions par jour, traitements du service de calcul et refus d'accès." />
+        <SectionHeader id="activite" title={`Activité sur ${DAYS} jours`} />
         <div className="grid gap-3 xl:grid-cols-2">
-          <VisualCard headingLevel={3} className="xl:col-span-2" title={authTitle} subtitle={`Connexions réussies et échecs, nombre par jour, ${period}`}>
+          <VisualCard
+            headingLevel={3}
+            className="xl:col-span-2"
+            title={authTitle}
+            subtitle={logins30 + failed30 > 0 ? `${plural(logins30, "connexion réussie", "connexions réussies")} · ${plural(failed30, "échec", "échecs")}` : undefined}
+          >
             {logins30 + failed30 === 0 ? (
-              <EmptyState compact title={`Aucune tentative de connexion sur ${DAYS} jours`} action={<ButtonLink href="/admin/users" size="sm">Voir les comptes</ButtonLink>}>
-                Les connexions apparaissent ici dès qu&apos;un utilisateur ouvre une session.
-              </EmptyState>
+              <EmptyState compact title={`Aucune tentative de connexion sur ${DAYS} jours`} action={<ButtonLink href="/admin/users" size="sm">Voir les comptes</ButtonLink>} />
             ) : (
               <ChartBlock spec={authDailyChart(daily)} caption={authTitle} />
             )}
@@ -324,7 +324,7 @@ export default async function AdminConsolePage() {
           <VisualCard
             headingLevel={3}
             title={jobsTitle}
-            subtitle={`Traitements du service de calcul par type et statut, nombre sur ${DAYS} jours`}
+            subtitle={jobsTotal > 0 ? plural(jobsTotal, "traitement", "traitements") : undefined}
             actions={
               <Link href="/data-health#historique" className={cardLinkCls}>
                 Voir l&apos;historique<span className="sr-only"> des traitements</span>
@@ -332,9 +332,7 @@ export default async function AdminConsolePage() {
             }
           >
             {jobsTotal === 0 ? (
-              <EmptyState compact title={`Aucun traitement lancé sur ${DAYS} jours`} action={<ButtonLink href="/data-health#import" size="sm">Importer un export AJIR</ButtonLink>}>
-                Les traitements apparaissent après un import ou un calcul mensuel.
-              </EmptyState>
+              <EmptyState compact title={`Aucun traitement lancé sur ${DAYS} jours`} action={<ButtonLink href="/data-health#import" size="sm">Importer un export AJIR</ButtonLink>} />
             ) : (
               <ChartBlock spec={jobsChart(jobs)} caption={jobsTitle} />
             )}
@@ -343,7 +341,7 @@ export default async function AdminConsolePage() {
           <VisualCard
             headingLevel={3}
             title={refusalsTitle}
-            subtitle={`Refus d'accès par action, nombre sur ${DAYS} jours (8 actions au plus)`}
+            subtitle="8 actions max"
             actions={
               <Link href={auditRefusalsHref()} className={cardLinkCls}>
                 Voir le journal<span className="sr-only"> des refus d&apos;accès</span>
@@ -351,9 +349,7 @@ export default async function AdminConsolePage() {
             }
           >
             {refusalsByAction.length === 0 ? (
-              <EmptyState compact title={`Aucun refus d'accès sur ${DAYS} jours`} action={<ButtonLink href="/admin/audit" size="sm">Consulter le journal d&apos;audit</ButtonLink>}>
-                Personne n&apos;a tenté d&apos;ouvrir une page ou une fiche hors de son rôle.
-              </EmptyState>
+              <EmptyState compact title={`Aucun refus d'accès sur ${DAYS} jours`} action={<ButtonLink href="/admin/audit" size="sm">Consulter le journal d&apos;audit</ButtonLink>} />
             ) : (
               <ChartBlock
                 spec={refusals}
@@ -375,7 +371,7 @@ export default async function AdminConsolePage() {
             headingLevel={3}
             className="xl:col-span-2"
             title="Derniers refus d'accès"
-            subtitle="Tentatives d'ouvrir une page ou une fiche hors du rôle (hors échecs de connexion)"
+            subtitle="Hors échecs de connexion"
             actions={
               <Link href={auditRefusalsHref()} className={cardLinkCls}>
                 Tous les refus
@@ -383,9 +379,7 @@ export default async function AdminConsolePage() {
             }
           >
             {overview.recentRefusals.length === 0 ? (
-              <EmptyState compact title="Aucun refus d'accès enregistré">
-                Les tentatives d&apos;ouvrir une page ou une fiche hors du rôle s&apos;affichent ici dès qu&apos;elles se produisent.
-              </EmptyState>
+              <EmptyState compact title="Aucun refus d'accès enregistré" />
             ) : (
               <div className={tableCls.wrap}>
                 <table className={tableCls.table}>
@@ -393,7 +387,7 @@ export default async function AdminConsolePage() {
                   <thead className={tableCls.thead}>
                     <tr>
                       <th scope="col" className={tableCls.th}>Date et heure</th>
-                      <th scope="col" className={tableCls.th}>Ce qui s&apos;est passé</th>
+                      <th scope="col" className={tableCls.th}>Événement</th>
                       <th scope="col" className={`${tableCls.th} hidden sm:table-cell`}>Adresse IP</th>
                     </tr>
                   </thead>

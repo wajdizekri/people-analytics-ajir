@@ -10,9 +10,29 @@ const ui = await import("@/components/ui");
 const pbi = await import("@/components/charts/pbi");
 const { NAV, Sidebar, MobileNav } = await import("@/components/layout/sidebar");
 const { MobileCollapse } = await import("@/components/ux/mobile-collapse");
+const { InfoTip } = await import("@/components/help/info-tip");
 
 const h = (type: unknown, props: Record<string, unknown> | null, ...children: ReactNode[]) => createElement(type as string, props, ...children);
 const html = (el: unknown) => renderToStaticMarkup(el as ReactElement);
+// Élément <span> complet qui commence à `i`
+const spanAt = (m: string, i: number) => {
+  const re = /<\/?span\b[^>]*>/g;
+  re.lastIndex = i;
+  let depth = 0;
+  for (let t = re.exec(m); t; t = re.exec(m)) {
+    depth += t[0][1] === "/" ? -1 : 1;
+    if (depth === 0) return m.slice(i, re.lastIndex);
+  }
+  return m.slice(i);
+};
+// Texte visible : sans les bulles « ? » (bouton et texte masqué) ; texte des bulles fermées
+const TIP = '<span class="relative inline-flex align-middle';
+const visible = (m: string) => {
+  let out = m;
+  for (let i = out.indexOf(TIP); i >= 0; i = out.indexOf(TIP)) out = out.slice(0, i) + out.slice(i + spanAt(out, i).length);
+  return text(out);
+};
+const bubbles = (m: string) => [...m.matchAll(/<span id="[^"]+" hidden=""/g)].map((x) => text(spanAt(m, x.index)));
 const text = (m: string) => m.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/[  ]/g, " ").replace(/\s+/g, " ").trim();
 
 describe("boutons", () => {
@@ -108,19 +128,44 @@ describe("boutons", () => {
 });
 
 describe("textes", () => {
-  it("PageHeader : titre h1, phrase d'objectif, périmètre et période annoncés", () => {
+  it("PageHeader : titre h1, phrase d'objectif dans la bulle « ? » hors du titre, périmètre et période annoncés", () => {
     const m = html(h(ui.PageHeader, { title: "Absentéisme", subtitle: "Repérer les équipes les plus touchées.", scope: "Toute l'entreprise", period: "sept. 2025 – août 2026", actions: h("a", { href: "/x" }, "Exporter") }));
-    expect(m).toMatch(/<h1[^>]*>Absentéisme<\/h1>/);
-    expect(text(m)).toContain("Périmètre : Toute l'entreprise");
-    expect(text(m)).toContain("Période : sept. 2025 – août 2026");
+    expect(m).toMatch(/<h1[^>]*>Absentéisme<\/h1><span class="relative inline-flex/);
+    expect(visible(m)).toBe("Absentéisme Périmètre : Toute l'entreprise Période : sept. 2025 – août 2026 Exporter");
+    expect(text(m)).toContain("Aide : Absentéisme");
+    expect(bubbles(m)).toEqual(["Absentéisme : Repérer les équipes les plus touchées."]);
+    const bare = html(h(ui.PageHeader, { title: "Alertes", badge: h(ui.StatusBadge, { tone: "warning" }, "Prévision indicative") }));
+    expect(bare).not.toContain("<button");
+    expect(text(bare)).toBe("Alertes Prévision indicative");
   });
 
-  it("SectionHeader, EmptyState (quoi + pourquoi + action, titre h1 possible)", () => {
-    expect(html(h(ui.SectionHeader, { title: "Tendances", id: "tendances", level: 3 }))).toMatch(/<h3 id="tendances"/);
+  it("SectionHeader : description dans la bulle, ajoutée à la bulle fournie (une seule), titre seul nom de la section", () => {
+    expect(html(h(ui.SectionHeader, { title: "Tendances", id: "tendances", level: 3 }))).toMatch(/<h3 id="tendances" class="[^"]*">Tendances<\/h3><\/div>/);
+    const own = html(h(ui.SectionHeader, { title: "Tendances", description: "Évolution sur 12 mois." }));
+    expect(visible(own)).toBe("Tendances");
+    expect(bubbles(own)).toEqual(["Tendances : Évolution sur 12 mois."]);
+    const merged = html(h(ui.SectionHeader, { title: "Turnover", id: "t", description: "Sur 12 mois.", tip: h(InfoTip, { label: "Turnover" }, "Sorties rapportées à l'effectif.") }));
+    expect(merged.match(/<button/g)).toHaveLength(1);
+    expect(merged).toMatch(/<h2 id="t" class="[^"]*">Turnover<\/h2>/);
+    expect(bubbles(merged)).toEqual(["Turnover : Sorties rapportées à l'effectif. Sur 12 mois."]);
+    const sec = html(h(ui.Section, { id: "imports", title: "Imports", intro: "Historique des imports." }, "…"));
+    expect(visible(sec)).toBe("Imports …");
+    expect(bubbles(sec)).toEqual(["Imports : Historique des imports."]);
+  });
+
+  it("EmptyState : titre + action visibles, pourquoi dans la bulle « ? », titre h1 possible", () => {
     const e = html(h(ui.EmptyState, { title: "Aucune alerte nouvelle", actions: h(ui.ButtonLink, { href: "/alerts" }, "Voir toutes les alertes"), headingLevel: 1 }, "Les alertes apparaissent après le calcul mensuel."));
     expect(e).toMatch(/<h1[^>]*>Aucune alerte nouvelle<\/h1>/);
-    expect(text(e)).toContain("Les alertes apparaissent après le calcul mensuel. Voir toutes les alertes");
+    expect(visible(e)).toBe("Aucune alerte nouvelle Voir toutes les alertes");
+    expect(bubbles(e)).toEqual(["Aucune alerte nouvelle : Les alertes apparaissent après le calcul mensuel."]);
     expect(html(h(ui.EmptyState, { title: "Vide" }))).toMatch(/<p class="[^"]*font-semibold/);
+    expect(html(h(ui.EmptyState, { title: "Vide" }))).not.toContain("<button");
+  });
+
+  it("Card : description dans la bulle « ? » du titre", () => {
+    const c = html(h(ui.Card, { title: "Imports récents", description: "Trois derniers imports AJIR." }, "…"));
+    expect(visible(c)).toBe("Imports récents …");
+    expect(bubbles(c)).toEqual(["Imports récents : Trois derniers imports AJIR."]);
   });
 
   it("Notice / Alert : rôles annoncés, anciens tons acceptés, préfixe pour lecteur d'écran", () => {
@@ -166,15 +211,20 @@ describe("blocs de lecture rapide", () => {
     expect(ia).toContain('role="img" aria-label="Sur 100 collaborateurs, 14 en risque élevé"');
     expect((ia.match(/<span /g) ?? []).length).toBe(100);
     expect(html(h(ui.KpiTile, { label: "Imports", value: "3", detailHref: "/data-health" }))).toMatch(/<a href="\/data-health"[^>]*>Voir le détail/);
+    const tile = html(h(ui.KpiTile, { label: "Imports", value: "3", period: "30 derniers jours", hint: "Dont 1 en échec", href: "/data-health" }));
+    expect(visible(tile)).toBe("Imports 3 Voir le détail ›");
+    expect(bubbles(tile)).toEqual(["Imports : 30 derniers jours Dont 1 en échec"]);
+    expect(tile).not.toMatch(/<a[^>]*>(?:(?!<\/a>)[\s\S])*<button/);
   });
 });
 
 describe("indicateurs et visuels", () => {
-  it("KpiCard : valeur + unité + période, variation avec flèche, texte et jugement écrit", () => {
+  it("KpiCard : libellé, valeur + unité, variation avec flèche, texte et jugement écrit ; période dans la bulle", () => {
     const m = html(h(pbi.KpiCard, { label: "Turnover glissant", period: "12 mois, fin août 2026", value: "10,9", unit: "%", delta: { value: 0.4, label: "+0,4 pt", reference: "vs sept. 2025", good: "down" } }));
-    const t = text(m);
-    expect(t).toContain("Turnover glissant 12 mois, fin août 2026 10,9 %");
+    const t = visible(m);
+    expect(t).toContain("Turnover glissant 10,9 %");
     expect(t).toContain("En hausse : +0,4 pt vs sept. 2025 à surveiller");
+    expect(bubbles(m)).toEqual(["Turnover glissant : 12 mois, fin août 2026"]);
     expect(m).toMatch(/aria-hidden="true"[^>]*>▲/);
     expect(text(html(h(pbi.KpiCard, { label: "Effectif", value: "1 069", delta: { value: -9, label: "−9", good: "neutral" } })))).not.toMatch(/favorable|surveiller/);
     expect(text(html(h(pbi.KpiCard, { label: "x", value: "1", delta: { value: -1, label: "−1", good: "down" } })))).toContain("favorable");
@@ -187,11 +237,12 @@ describe("indicateurs et visuels", () => {
     expect(foot).toMatch(/<div[^>]*>.*<a href="\/absenteeism"[^>]*>Voir le détail/);
   });
 
-  it("ChartCard : titre-message, sous-titre mesure · périmètre · période, graphique résumé et tableau « Voir les données »", () => {
+  it("ChartCard : titre seul, mesure · périmètre · période dans la bulle, graphique résumé et tableau « Voir les données »", () => {
     const chart = pbi.lineChart({ categories: ["juil. 2026", "août 2026"], series: [{ name: "Taux d'absence", values: [1, 0.8] }], measure: "Taux d'absence", unit: "%" });
-    const m = html(h(pbi.ChartCard, { title: "L'absentéisme baisse depuis juillet", measure: "Taux d'absence", unit: "%", scope: "Toute l'entreprise", period: "juil. – août 2026", chart }));
-    expect(m).toMatch(/<h2[^>]*>L&#x27;absentéisme baisse depuis juillet<\/h2>/);
-    expect(text(m)).toContain("Taux d'absence (%) · , Toute l'entreprise · , juil. – août 2026");
+    const m = html(h(pbi.ChartCard, { title: "Absentéisme mensuel (%)", measure: "Taux d'absence", unit: "%", scope: "Toute l'entreprise", period: "juil. – août 2026", chart }));
+    expect(m).toMatch(/<h2[^>]*>Absentéisme mensuel \(%\)<\/h2>/);
+    expect(visible(m)).not.toContain("Toute l'entreprise");
+    expect(bubbles(m)).toEqual(["Absentéisme mensuel (%) : Taux d'absence (%) · , Toute l'entreprise · , juil. – août 2026"]);
     expect(m).toMatch(/role="img" aria-label="Courbe d&#x27;évolution/);
     expect(m).toContain("<details");
     expect(text(m)).toContain("Voir les données");

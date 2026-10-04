@@ -58,10 +58,9 @@ describe("tableau de bord : lecture en 5 secondes", () => {
     ].map(at);
     expect(order).toEqual([...order].sort((a, b) => a - b));
     expect(out).toContain('href="/synthese"');
-    // encart d'aide en une phrase (charte : pas de bloc de plus de 3 lignes)
-    const intro = /<section aria-labelledby="page-intro-titre"[\s\S]*?<\/section>/.exec(out)?.[0] ?? "";
-    expect(intro).toContain("À quoi sert cette page");
-    expect(intro).not.toContain("<ul");
+    // titres seuls : plus d'encart « À quoi sert cette page »
+    expect(out).not.toContain("page-intro-titre");
+    expect(out).not.toContain("À quoi sert cette page");
   });
 
   it("filtres : un seul repli sous 640 px, période par défaut ni surlignée ni comptée, boutons repliés avec les listes", async () => {

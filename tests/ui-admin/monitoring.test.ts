@@ -129,7 +129,7 @@ describe("options ECharts et page /admin", () => {
     const Page = (await import("@/app/(app)/admin/page")).default;
     session.current = { userId: fx.users.admin, login: "admin", role: "ADMIN", employeeId: null } as SessionUser;
     const html = renderToStaticMarkup((await Page()) as ReactElement);
-    for (const text of ["Console d&#x27;administration", "Connexions réussies et échecs", "Refus d&#x27;accès par action", "Comptes actifs par rôle", "Derniers refus d&#x27;accès", "/admin/audit?outcome=REFUSE"])
+    for (const text of ["Console d&#x27;administration", "Connexions par jour", "Refus d&#x27;accès par action", "Comptes actifs par rôle", "Derniers refus d&#x27;accès", "/admin/audit?outcome=REFUSE"])
       expect(html).toContain(text);
     expect(html).not.toMatch(/Nom (DG|MGR|E\d)/);
     session.current = { userId: fx.users.rh, login: "rh", role: "RH", employeeId: null } as SessionUser;

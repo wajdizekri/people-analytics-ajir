@@ -4,6 +4,7 @@ import ReactECharts from "echarts-for-react";
 import type { DefaultLabelFormatterCallbackParams, EChartsOption, TreeSeriesOption } from "echarts";
 import { useMemo, useState } from "react";
 import { CHART_FONT, escapeHtml } from "@/components/charts/theme";
+import { InfoTip } from "@/components/help/info-tip";
 import { Button } from "@/components/ui";
 import { useTheme } from "@/components/ui/theme";
 import type { OrgColorBy, OrgNode } from "@/lib/dal/org-chart";
@@ -28,7 +29,7 @@ function tooltipHtml(n: OrgNode, tier: string): string {
     `Risque élevé ou moyen : ${escapeHtml(riskText(n.subtree))}`,
     `Absentéisme (3 mois) : ${escapeHtml(absenteeismText(n.subtree))}`,
     `Couleur : ${escapeHtml(tier)}`,
-    n.children.length ? `<em>Clic : détail, et déplier ou replier ${int(n.children.length)} équipe${n.children.length > 1 ? "s" : ""}</em>` : "<em>Clic : afficher le détail</em>",
+    `<em>Clic : détail${n.children.length ? ` · ${int(n.children.length)} équipe${n.children.length > 1 ? "s" : ""}` : ""}</em>`,
   ];
   return rows.filter(Boolean).join("<br/>");
 }
@@ -128,7 +129,9 @@ export function OrgTreeChart({
   return (
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[13px] text-fg-muted">Clic sur un nœud : détail et dépliage. Molette ou pincement : zoom. Glisser : déplacement.</p>
+        <InfoTip label="Commandes du graphique" prefix="Aide" align="start">
+          Clic sur un nœud : détail et dépliage. Molette ou pincement : zoom. Glisser : déplacement.
+        </InfoTip>
         <Button size="sm" variant="tertiary" icon="refresh" onClick={() => setReset((r) => r + 1)}>
           Recentrer le graphique
         </Button>

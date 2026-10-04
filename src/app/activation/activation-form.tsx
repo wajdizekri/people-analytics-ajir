@@ -30,7 +30,7 @@ export function ActivationForm({ token, login }: { token: string; login: string 
     return (
       <div className="space-y-4">
         <Notice role="status" tone="success">
-          Mot de passe enregistré pour {state.login}. Ce lien ne peut plus servir : connectez-vous désormais avec votre identifiant et ce mot de passe.
+          Mot de passe enregistré pour {state.login}
         </Notice>
         <ButtonLink href="/login" variant="primary" size="lg" fullWidth>
           Se connecter

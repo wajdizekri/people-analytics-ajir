@@ -1,10 +1,11 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import type { EChartsOption } from "echarts";
 import { EChart } from "./echart";
 import type { ChartSpec, ChartTable } from "./builders";
 import { CHART_INK, NBSP, SEMANTIC, axisName, cssChartColor, escapeHtml, formatShort, formatValue, frNumber, type Tone, type ValueFormat } from "./theme";
 import { cardCls } from "@/components/ui/classes";
+import { DetailTip } from "@/components/help/info-tip";
 
 // Kit visuel « Power BI » : conteneurs de visuels, cartes KPI à sparkline et options ECharts de base.
 // Options sérialisables uniquement (aucune fonction) : construites côté serveur, rendues par le wrapper client
@@ -41,7 +42,7 @@ export function legendFor(names: string[]) {
   return names.length > 1 ? { ...LEGEND, data: names } : undefined;
 }
 
-// Sous-titre d'un visuel : mesure (unité) · périmètre · période
+// Détail d'un visuel (lu dans sa bulle « ? ») : mesure (unité) · périmètre · période
 export function chartSubtitle(p: { measure?: string; unit?: string; scope?: ReactNode; period?: ReactNode }): ReactNode {
   const parts: ReactNode[] = [];
   if (p.measure) parts.push(p.unit ? `${p.measure} (${p.unit})` : p.measure);
@@ -124,14 +125,16 @@ export function Chart({ spec, ariaLabel, height }: { spec: ChartSpec; ariaLabel?
   return <EChart option={spec.option} format={spec.format} height={height ?? spec.height} mobileHeight={spec.mobileHeight} ariaLabel={ariaLabel ?? spec.ariaLabel} />;
 }
 
-// Cadre d'un visuel : titre = le message (« L'absentéisme baisse depuis mars »), sous-titre = mesure, unité, périmètre, période.
-// Avec `chart`, le graphique et le tableau « Voir les données » sont rendus automatiquement.
+// Cadre d'un visuel : titre seul, groupe nominal qui nomme le contenu (« Effectif par département », « Absentéisme mensuel (%) »).
+// Sous-titre, mesure, unité, périmètre, période et note ne sont pas affichés : ils sont lus dans la bulle « ? » après le titre.
+// Le titre nomme la section ; avec `chart`, le graphique et le tableau « Voir les données » sont rendus automatiquement.
 export function VisualCard({
   title,
   subtitle,
   children,
   className = "",
   actions,
+  badge,
   chart,
   measure,
   unit,
@@ -142,36 +145,52 @@ export function VisualCard({
   id,
 }: {
   title: string;
+  /** Bulle « ? » (remplace mesure · périmètre · période). */
   subtitle?: ReactNode;
   children?: ReactNode;
   className?: string;
   /** Liens ou boutons de l'en-tête : à droite du titre, dessous sous 640 px. */
   actions?: ReactNode;
+  /** Mention courte à côté du titre : <StatusBadge tone="warning">Prévision indicative</StatusBadge>. */
+  badge?: ReactNode;
   chart?: ChartSpec;
+  /** Bulle « ? » : mesure (unité) · périmètre · période. */
   measure?: string;
   unit?: string;
   scope?: ReactNode;
   period?: ReactNode;
-  /** Note sous le visuel : source, exclusions, « fourchette probable à 80 % ». */
+  /** Bulle « ? » : source, exclusions, « fourchette probable à 80 % ». */
   footnote?: ReactNode;
   headingLevel?: 2 | 3;
   id?: string;
 }) {
   const Heading = headingLevel === 3 ? "h3" : "h2";
+  const headingId = useId();
   const sub = subtitle ?? chartSubtitle({ measure, unit, scope, period });
+  const heading = (
+    <div className="flex min-w-0 items-start gap-1">
+      <Heading id={headingId} className="min-w-0 break-words text-base font-semibold leading-snug text-heading">
+        {title}
+      </Heading>
+      <DetailTip label={title} details={[sub, footnote]} className="-mt-px" />
+    </div>
+  );
   return (
-    <section id={id} className={`${cardCls} min-w-0 scroll-mt-4 p-4 sm:p-5 ${className}`}>
+    <section id={id} aria-labelledby={headingId} className={`${cardCls} min-w-0 scroll-mt-4 p-4 sm:p-5 ${className}`}>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-        <div className="min-w-0">
-          <Heading className="text-base font-semibold leading-snug text-heading">{title}</Heading>
-          {sub && <p className="mt-0.5 text-[13px] leading-snug text-fg-muted">{sub}</p>}
-        </div>
+        {badge ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            {heading}
+            {badge}
+          </div>
+        ) : (
+          heading
+        )}
         {actions && <div className="flex shrink-0 flex-wrap items-center gap-2 text-[13px]">{actions}</div>}
       </div>
       {chart && <Chart spec={chart} />}
       {children}
       {chart && <ChartData table={chart.table} caption={title} />}
-      {footnote && <p className="mt-2 text-xs leading-relaxed text-fg-muted">{footnote}</p>}
     </section>
   );
 }
@@ -239,7 +258,10 @@ const TILE_TONE: Partial<Record<Status, { frame: string; value: string }>> = {
   attention: { frame: "border-warning! ring-1 ring-inset ring-warning", value: "text-warning" },
 };
 
-// Carte KPI : libellé, période, valeur + unité, variation, comparaison, tendance, définition « ? » et lien « Voir le détail ».
+const shown = (n: ReactNode) => n != null && n !== false && n !== "";
+
+// Carte KPI : libellé, valeur + unité, variation ; tendance, statut et lien « Voir le détail » en plus.
+// Période et aide ne sont pas affichées : elles sont lues dans la bulle « ? » du coin (ajoutées à `tip` s'il est fourni).
 // Dans une grille, les cartes d'une rangée ont la même hauteur ; tendance et lien sont calés en pied de carte.
 export function KpiCard({
   label,
@@ -265,8 +287,9 @@ export function KpiCard({
   value: ReactNode;
   /** Unité écrite après la valeur, en plus petit : « % », « TND », « collaborateurs ». */
   unit?: string;
-  /** Période ou date de la valeur : « fin août 2026 », « 12 derniers mois ». */
+  /** Bulle « ? » : période ou date de la valeur (« fin août 2026 », « 12 derniers mois »). */
   period?: ReactNode;
+  /** Bulle « ? » : précision ou motif (« Aucun calcul publié »). */
   hint?: ReactNode;
   delta?: Delta | null;
   /** Tendance : courbe en retrait, dernier point marqué. */
@@ -276,7 +299,7 @@ export function KpiCard({
   /** Couleur de toute la mini-courbe quand la série a un sens (échecs : « defavorable »). Défaut : courbe grise, dernier point bleu. */
   sparkTone?: Tone | Status;
   status?: { tone: Status; label: string };
-  /** Tuile à traiter : « critique » (cadre et valeur rouges) ou « attention » (ambre). À accompagner d'un `status` ou d'un `hint` écrit. */
+  /** Tuile à traiter : « critique » (cadre et valeur rouges) ou « attention » (ambre). À accompagner d'un `status` (le mot reste visible). */
   tone?: Status;
   /** Toute la carte devient un lien. */
   href?: string;
@@ -286,7 +309,7 @@ export function KpiCard({
   detailLabel?: string;
   /** Alias de detailLabel. */
   linkLabel?: string;
-  /** Bulle de définition (« ? »), par exemple <TermTip term="turnover" role={role} align="end" />. */
+  /** Bulle de définition (« ? »), par exemple <TermTip term="turnover" role={role} align="end" /> ; période et aide s'y ajoutent. */
   tip?: ReactNode;
   /** Mention de l'état sans valeur : « Non évalué » (défaut quand value est null), « Masqué », « Aucun import ». */
   emptyLabel?: string;
@@ -309,7 +332,6 @@ export function KpiCard({
           </span>
         )}
       </div>
-      {period && <p className="text-xs text-fg-subtle">{period}</p>}
       <p className={`mt-1.5 flex flex-wrap text-2xl font-semibold leading-tight tabular-nums sm:text-[28px] ${empty ? "items-center gap-x-2" : "items-baseline gap-x-1"} ${toned?.value ?? "text-heading"}`}>
         {empty ? (
           <>
@@ -326,7 +348,6 @@ export function KpiCard({
         )}
       </p>
       {delta && !missing && <DeltaLine delta={delta} />}
-      {hint && <p className="mt-1 text-xs leading-snug text-fg-muted">{hint}</p>}
       {(trend || href || detailHref) && (
         <div className="mt-auto pt-2">
           {trend && (
@@ -354,7 +375,8 @@ export function KpiCard({
       )}
     </>
   );
-  const cls = `flex h-full flex-col ${cardCls} min-w-0 p-4 ${tip ? "pr-10" : ""} ${toned?.frame ?? ""}`;
+  const help = shown(tip) || shown(period) || shown(hint);
+  const cls = `flex h-full flex-col ${cardCls} min-w-0 p-4 ${help ? "pr-10" : ""} ${toned?.frame ?? ""}`;
   const card = href ? (
     <a href={href} className={`group ${cls} transition duration-200 hover:-translate-y-px ${toned ? "" : "hover:border-primary/50"} hover:shadow-pop active:translate-y-0`}>
       {body}
@@ -362,12 +384,14 @@ export function KpiCard({
   ) : (
     <div className={cls}>{body}</div>
   );
-  if (!tip) return card;
+  if (!help) return card;
   // La bulle est posée à côté du lien, jamais dedans (un bouton ne peut pas être imbriqué dans un lien)
   return (
     <div className="relative h-full">
       {card}
-      <span className="absolute right-2 top-2.5">{tip}</span>
+      <span className="absolute right-2 top-2.5">
+        <DetailTip label={label} tip={tip} details={[period, hint]} align="end" />
+      </span>
     </div>
   );
 }

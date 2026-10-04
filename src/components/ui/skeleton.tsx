@@ -32,7 +32,6 @@ function KpiShape() {
   return (
     <div className={`${cardCls} p-4`}>
       <Skeleton className="h-3.5 w-3/5" />
-      <Skeleton className="mt-1.5 h-3 w-2/5" />
       <Skeleton className="mt-3 h-7 w-1/2" />
       <Skeleton className="mt-3 h-3 w-4/5" />
     </div>
@@ -81,12 +80,7 @@ const BARS = [45, 70, 55, 85, 60, 75, 40, 90, 65, 50];
 export function SkeletonChart({ height = 280, title = true, className = "" }: { height?: number; title?: boolean; className?: string }) {
   return (
     <div aria-hidden="true" className={`${cardCls} p-4 sm:p-5 ${className}`}>
-      {title && (
-        <>
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="mt-2 h-3 w-1/3" />
-        </>
-      )}
+      {title && <Skeleton className="h-4 w-1/2" />}
       <div className="mt-4 flex items-end gap-2 border-b border-l border-line pl-2" style={{ height }}>
         {BARS.map((b, i) => (
           <div key={i} className="flex-1 animate-pulse rounded-t-[4px] bg-surface-3 motion-reduce:animate-none" style={{ height: `${b}%` }} />
@@ -96,7 +90,7 @@ export function SkeletonChart({ height = 280, title = true, className = "" }: { 
   );
 }
 
-/** Forme d'un PageHeader (titre, phrase, périmètre ; bouton d'action à droite) pour composer un squelette de page sur mesure. */
+/** Forme d'un PageHeader (titre, périmètre ; bouton d'action à droite) pour composer un squelette de page sur mesure. */
 export function SkeletonHeader({ avatar = false, actions = true }: { avatar?: boolean; actions?: boolean }) {
   return (
     <div aria-hidden="true" className="mb-6 flex items-start justify-between gap-4">
@@ -104,7 +98,6 @@ export function SkeletonHeader({ avatar = false, actions = true }: { avatar?: bo
         {avatar && <Skeleton className="h-12 w-12 shrink-0 rounded-full" />}
         <div className="min-w-0 flex-1">
           <Skeleton className="h-7 w-2/3 max-w-xs" />
-          <Skeleton className="mt-2 h-4 w-full max-w-lg" />
           <Skeleton className="mt-2 h-3 w-1/2 max-w-56" />
         </div>
       </div>

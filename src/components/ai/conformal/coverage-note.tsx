@@ -1,8 +1,10 @@
-import { TermTip } from "@/components/help/term-tip";
+import { InfoTip } from "@/components/help/info-tip";
+import { StatusBadge } from "@/components/ui";
 import type { CoverageCell } from "@/lib/ai/conformal";
+import { TERMS } from "@/lib/help/terms";
 
-// Ligne « fourchette calibrée » sous une prévision : couverture mesurée sur la fenêtre de test du modèle (champ `conformal`).
-// Rien n'est affiché pour un modèle sans calibration conforme.
+// Badge « Fourchette calibrée » sous une prévision : couverture mesurée sur la fenêtre de test du modèle (champ `conformal`),
+// phrase complète et définition dans la bulle « ? ». Rien n'est affiché pour un modèle sans calibration conforme.
 
 const NBSP = " ";
 
@@ -29,14 +31,15 @@ export function coverageSentence(cell: CoverageCell): { text: string; below: boo
 
 export function CoverageNote({ cell, note, className = "" }: { cell: CoverageCell | null | undefined; note?: string; className?: string }) {
   const s = cell ? coverageSentence(cell) : null;
-  if (!s) return null;
+  if (!cell || !s) return null;
   return (
-    <p className={`mt-2 flex items-start gap-1 text-xs leading-relaxed text-fg-muted ${className}`} data-couverture={s.below ? "sous-la-cible" : "atteinte"}>
-      <span className="pt-1">
-        {s.text}
-        {note ? ` ${note}` : ""}
-      </span>
-      <TermTip term="fourchetteCalibree" align="end" />
+    <p className={`mt-2 flex flex-wrap items-center gap-1 text-xs text-fg-muted ${className}`} data-couverture={s.below ? "sous-la-cible" : "atteinte"}>
+      <StatusBadge tone={s.below ? "warning" : "neutral"}>
+        {`Fourchette calibrée · ${coveragePct(cell.coverage!, cell.target)} (cible ${Math.round(cell.target * 100)}${NBSP}%)`}
+      </StatusBadge>
+      <InfoTip label={TERMS.fourchetteCalibree.label} align="end">
+        {`${s.text}${note ? ` ${note}` : ""} ${TERMS.fourchetteCalibree.text}`}
+      </InfoTip>
     </p>
   );
 }

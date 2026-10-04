@@ -106,7 +106,7 @@ export function Journey({ data, className = "" }: { data: EmployeeJourneyDto; cl
       id="parcours"
       title="Parcours"
       icon="journey"
-      hint={`${data.events.length} évènement${data.events.length > 1 ? "s" : ""}, du plus récent au plus ancien`}
+      hint={`${data.events.length} évènement${data.events.length > 1 ? "s" : ""}`}
       className={className}
       aside={
         <InfoTip label="Parcours" align="end">
@@ -119,7 +119,7 @@ export function Journey({ data, className = "" }: { data: EmployeeJourneyDto; cl
       }
     >
       {data.events.length === 0 ? (
-        <p className="text-sm text-fg-muted">Aucun évènement enregistré.</p>
+        <p className="text-sm text-fg-muted">Aucun évènement enregistré</p>
       ) : (
         <>
           <ol className="ml-1.5 border-l-2 border-line">

@@ -12,9 +12,7 @@ export default function AlertNotFound() {
             Revenir à la liste des alertes
           </ButtonLink>
         }
-      >
-        Cette alerte n&apos;existe pas ou plus. Le lien est peut-être ancien ou mal copié.
-      </EmptyState>
+      />
     </div>
   );
 }

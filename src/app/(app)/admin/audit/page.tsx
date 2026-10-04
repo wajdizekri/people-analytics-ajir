@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { pageContext } from "@/lib/dal/context";
 import { auditFiltersSchema, listAudit, listUsers } from "@/lib/dal/admin";
-import { Button, ButtonLink, EmptyState, Notice, PageHeader, cardCls, fmt, tableCls } from "@/components/ui";
+import { Button, ButtonLink, EmptyState, Notice, PageHeader, StatusBadge, cardCls, fmt, tableCls } from "@/components/ui";
 import { ActiveFilters, Pagination, buildHref } from "@/components/pilotage/filters";
 import { MobileCollapse } from "@/components/ux/mobile-collapse";
 import { Icon, OUTCOME, OutcomeBadge, fieldCls, labelCls } from "@/components/admin/admin-ui";
@@ -77,7 +77,11 @@ export default async function AuditPage({ searchParams }: { searchParams: SP }) 
       <PageHeader
         eyebrow="Administration"
         title="Journal d'audit"
-        subtitle="Qui a fait quoi, et quand : connexions, consultations sensibles, modifications et refus d'accès. Les entrées ne peuvent être ni modifiées ni supprimées."
+        badge={
+          <StatusBadge tone="info" dot={false}>
+            Entrées non modifiables
+          </StatusBadge>
+        }
       />
 
       <section aria-labelledby="af-title" className={`${cardCls} mb-4 p-4`}>
@@ -164,7 +168,7 @@ export default async function AuditPage({ searchParams }: { searchParams: SP }) 
       <ActiveFilters filters={active} />
       {!parsed.success && (
         <div className="mb-4">
-          <Notice tone="warning">Filtres invalides ignorés : saisissez les dates au format jj/mm/aaaa avec le calendrier.</Notice>
+          <Notice tone="warning">Filtres invalides ignorés (dates au format jj/mm/aaaa)</Notice>
         </div>
       )}
 
@@ -176,18 +180,16 @@ export default async function AuditPage({ searchParams }: { searchParams: SP }) 
               Afficher tout le journal
             </ButtonLink>
           }
-        >
-          Élargissez la période ou retirez un filtre.
-        </EmptyState>
+        />
       ) : (
         <section aria-labelledby="al-title" className={`${cardCls} min-w-0 overflow-hidden p-4`}>
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="al-title" className="text-base font-semibold text-heading">
               {fmt.int(data.total)} entrée{data.total > 1 ? "s" : ""}
-              {active.length > 0 && <span className="font-normal text-fg-muted"> correspondant aux filtres</span>}
+              {active.length > 0 && <span className="font-normal text-fg-muted"> (filtrées)</span>}
             </h2>
             <p className="text-xs tabular-nums text-fg-muted">
-              {fmt.int(first)}–{fmt.int(last)} sur {fmt.int(data.total)} · les plus récentes d&apos;abord
+              {fmt.int(first)}–{fmt.int(last)} sur {fmt.int(data.total)} · plus récentes d&apos;abord
             </p>
           </div>
           <div className="md:overflow-x-auto">
@@ -198,7 +200,7 @@ export default async function AuditPage({ searchParams }: { searchParams: SP }) 
               <thead className={`${tableCls.thead} hidden md:table-header-group`}>
                 <tr>
                   <th scope="col" className={tableCls.th}>Date et heure</th>
-                  <th scope="col" className={tableCls.th}>Ce qui s&apos;est passé</th>
+                  <th scope="col" className={tableCls.th}>Événement</th>
                   <th scope="col" className={tableCls.th}>Résultat</th>
                   <th scope="col" className={`${tableCls.th} hidden lg:table-cell`}>Adresse IP</th>
                 </tr>

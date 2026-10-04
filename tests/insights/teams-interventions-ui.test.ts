@@ -38,24 +38,25 @@ const text = (el: unknown) =>
     .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ");
 
-describe("équipes : raison du niveau en mots", () => {
-  it("une phrase par signal, avec la valeur de l'équipe", () => {
+describe("équipes : signaux du niveau en libellé + valeur", () => {
+  it("un libellé + valeur par signal, avec la valeur de l'équipe", () => {
     const t = getTeams(ctxOf(f).rh, {}, meta);
     const r = t.teams.find((x) => x.managerId === f.ids.R)!;
     const s = reasonSentence(tensionReasons(r, t.total, "entreprise"));
-    expect(s).toBe("3 collaborateurs sur 6 en risque de départ élevé ou moyen (dont 2 élevé) ; 2 recommandations en attente de décision.");
-    expect(reasonSentence([])).toBe("Aucun signal de difficulté.");
+    expect(s).toBe("Risque élevé ou moyen : 3 sur 6 (élevé : 2) ; Recommandations en attente : 2");
+    expect(reasonSentence([])).toBe("Aucun signal");
   });
 
-  it("RH : tableau trié avec la colonne « Pourquoi » et carte expliquée", async () => {
+  it("RH : tableau trié avec la colonne « Signaux » et carte avec légende", async () => {
     as("RH");
     const page = (await import("@/app/(app)/equipes/page")).default;
     const s = text(await page(sp()));
-    expect(s).toContain("Équipes triées par niveau de tension");
-    expect(s).toContain("Pourquoi");
-    expect(s).toContain("2 recommandations en attente de décision");
-    expect(s).toContain("Comment lire la carte : 1 rectangle = 1 équipe · surface = effectif · couleur = niveau de tension");
-    expect(s).toContain("3 équipes sur 3 présentent au moins un signal de difficulté");
+    expect(s).toContain("Équipes par niveau de tension");
+    expect(s).toContain("Signaux");
+    expect(s).toContain("Recommandations en attente : 2");
+    expect(s).toContain("Carte des équipes par tension");
+    expect(s).toContain("Forte tension (3 signaux ou plus)");
+    expect(s).not.toContain("Comment lire la carte");
   });
 
   it("MANAGER : indicateurs masqués, aucune rémunération", async () => {
@@ -73,9 +74,9 @@ describe("interventions : avant / après lisible", () => {
     as("RH");
     const page = (await import("@/app/(app)/interventions/page")).default;
     const s = text(await page(sp()));
-    expect(s).toContain("Observation, pas un effet causal.");
-    expect(s).toContain("Statut des recommandations par type d'action");
-    expect(s).toContain("Ce qui change après l'action, par type d'action");
+    expect(s).toContain("Observation non causale");
+    expect(s).toContain("Statut des recommandations par action (%)");
+    expect(s).toContain("Avant / après par type d'action");
     expect(s).toContain("Entretien de rétention");
     expect(s).toContain("Niveau en baisse");
   });

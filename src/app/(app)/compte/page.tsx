@@ -3,6 +3,7 @@ import { pageContext } from "@/lib/dal/context";
 import { getAccount } from "@/lib/dal/account";
 import type { Role } from "@/db/schema";
 import { EmptyState, Initials, Notice, PageHeader, ThemeToggle, cardCls, fmt, tableCls } from "@/components/ui";
+import { InfoTip } from "@/components/help";
 import { Icon, OutcomeBadge, ROLE_LABEL, RoleBadge } from "@/components/admin/admin-ui";
 import { describeAudit } from "@/components/admin/audit-labels";
 import { PasswordForm } from "./password-form";
@@ -16,7 +17,7 @@ const RIGHTS: Record<Role, { can: string[]; cannot: string[]; why: string }> = {
       "Régler les paramètres de calcul et de contrôle",
       "Consulter le journal d'audit et les refus d'accès",
       "Importer les exports AJIR et suivre les calculs",
-      "Suivre le modèle et sa fiabilité (mise en service par une procédure tracée, hors de l'interface)",
+      "Suivre le modèle et sa fiabilité",
     ],
     cannot: ["Fiches collaborateurs, salaires et estimations individuelles", "Tableaux de bord RH, absentéisme et recommandations"],
     why: "L'administrateur gère l'outil sans voir les données des collaborateurs : c'est la séparation des tâches.",
@@ -43,15 +44,36 @@ const RIGHTS: Record<Role, { can: string[]; cannot: string[]; why: string }> = {
   },
 };
 
-function Panel({ id, title, icon, children, className = "" }: { id: string; title: string; icon: "id" | "check" | "lock" | "clock" | "sliders"; children: ReactNode; className?: string }) {
+function Panel({
+  id,
+  title,
+  icon,
+  tip,
+  children,
+  className = "",
+}: {
+  id: string;
+  title: string;
+  icon: "id" | "check" | "lock" | "clock" | "sliders";
+  tip?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <section aria-labelledby={id} className={`${cardCls} min-w-0 p-5 ${className}`}>
-      <h2 id={id} className="mb-4 flex scroll-mt-4 items-center gap-2 text-base font-semibold text-heading">
-        <span aria-hidden="true" className="inline-flex h-8 w-8 items-center justify-center rounded-control bg-primary-soft text-link ring-1 ring-inset ring-primary/25">
-          <Icon name={icon} />
-        </span>
-        {title}
-      </h2>
+      <div className="mb-4 flex items-center gap-1">
+        <h2 id={id} className="flex scroll-mt-4 items-center gap-2 text-base font-semibold text-heading">
+          <span aria-hidden="true" className="inline-flex h-8 w-8 items-center justify-center rounded-control bg-primary-soft text-link ring-1 ring-inset ring-primary/25">
+            <Icon name={icon} />
+          </span>
+          {title}
+        </h2>
+        {tip && (
+          <InfoTip label={title} prefix="Aide" align="start">
+            {tip}
+          </InfoTip>
+        )}
+      </div>
       {children}
     </section>
   );
@@ -76,35 +98,36 @@ export default async function AccountPage() {
   }));
   const scope =
     a.role === "ADMIN"
-      ? "Administration de l'outil, sans accès aux données RH nominatives"
+      ? "Administration de l'outil, sans données RH"
       : a.role === "RH"
         ? "Toute l'entreprise"
         : `Votre équipe : ${fmt.int(a.teamSize)} collaborateur${(a.teamSize ?? 0) > 1 ? "s" : ""}`;
 
   return (
     <>
-      <PageHeader eyebrow="Aide et compte" title="Mon compte" subtitle="Vos informations, ce que votre rôle permet de voir et la sécurité de votre accès." />
+      <PageHeader eyebrow="Aide et compte" title="Mon compte" />
 
       <div className="mb-4">
-        <Notice tone="info" title="Votre accès est protégé.">
-          Une session se ferme après 2 heures sans activité. Vos actions sensibles sont tracées dans un journal que personne ne peut modifier.
-          {a.lastLoginAt && (
-            <>
-              {" "}
-              Connexion précédente : le {fmt.dateTime(a.lastLoginAt)} ; si ce n&apos;était pas vous,{" "}
-              <a href="#cp-mdp" className="font-medium text-link underline underline-offset-2 hover:decoration-2">
-                changez votre mot de passe
-              </a>
-              .
-            </>
-          )}
+        <Notice tone="info" title="Accès protégé">
+          <ul className="flex flex-wrap gap-x-5 gap-y-1">
+            <li>Session fermée après 2 h d&apos;inactivité</li>
+            <li>Actions sensibles tracées</li>
+            {a.lastLoginAt && (
+              <li>
+                Connexion précédente : {fmt.dateTime(a.lastLoginAt)} ·{" "}
+                <a href="#cp-mdp" className="font-medium text-link underline underline-offset-2 hover:decoration-2">
+                  Pas vous ? Changer le mot de passe
+                </a>
+              </li>
+            )}
+          </ul>
         </Notice>
       </div>
 
       {/* Deux colonnes indépendantes (hauteurs libres) ; sur mobile : profil, affichage, mot de passe, droits, activité */}
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <div className="min-w-0 space-y-4">
-          <Panel id="cp-profil" title="Profil" icon="id">
+          <Panel id="cp-profil" title="Profil" icon="id" tip="Correction : administrateur de l'outil. Fiche collaborateur : dans AJIR.">
             <div className="flex items-center gap-4 rounded-lg bg-linear-to-r from-primary-soft to-surface p-3 ring-1 ring-inset ring-primary/20">
               <Initials name={a.employee?.name || a.login} className="size-14! bg-primary! text-lg! text-primary-fg! ring-4 ring-accent/40" />
               <div className="min-w-0">
@@ -119,7 +142,7 @@ export default async function AccountPage() {
                 <span className="font-mono font-medium">{a.login}</span>
               </Field>
               <Field label="Rôle">{ROLE_LABEL[a.role]}</Field>
-              <Field label="Ce que vous voyez" wide>
+              <Field label="Périmètre" wide>
                 {scope}
               </Field>
               <Field label="E-mail">{a.email ? <span className="break-all">{a.email}</span> : <span className="text-fg-muted">non renseigné</span>}</Field>
@@ -138,28 +161,22 @@ export default async function AccountPage() {
                 <span className="text-fg-muted"> (dont celle-ci)</span>
               </Field>
             </dl>
-            <p className="mt-4 border-t border-line pt-3 text-xs text-fg-muted">
-              Une information est inexacte ? L&apos;administrateur de l&apos;outil peut la corriger ; votre fiche collaborateur se corrige dans AJIR.
-            </p>
           </Panel>
 
-          <Panel id="cp-affichage" title="Affichage" icon="sliders">
+          <Panel id="cp-affichage" title="Affichage" icon="sliders" tip="« Système » suit le réglage de l'ordinateur. Choix mémorisé sur cet appareil.">
             <ThemeToggle variant="segmented" />
-            <p className="mt-2 text-xs text-fg-muted">
-              « Système » suit le réglage clair ou sombre de votre ordinateur. Le choix s&apos;applique tout de suite et reste mémorisé sur cet appareil.
-            </p>
           </Panel>
 
-          <Panel id="cp-mdp" title="Changer mon mot de passe" icon="lock">
+          <Panel id="cp-mdp" title="Mot de passe" icon="lock">
             <PasswordForm login={a.login} otherSessions={Math.max(0, a.openSessions - 1)} />
           </Panel>
 
         </div>
         <div className="min-w-0 space-y-4">
-          <Panel id="cp-droits" title="Ce que votre rôle permet" icon="check">
+          <Panel id="cp-droits" title="Droits du rôle" icon="check" tip={rights.why}>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-lg bg-success-soft/60 p-3 ring-1 ring-inset ring-success/20">
-                <h3 className="text-sm font-semibold text-success">Vous pouvez</h3>
+                <h3 className="text-sm font-semibold text-success">Autorisé</h3>
                 <ul className="mt-2 space-y-2 text-sm text-fg">
                   {rights.can.map((r) => (
                     <li key={r} className="flex gap-2">
@@ -183,15 +200,11 @@ export default async function AccountPage() {
                 </ul>
               </div>
             </div>
-            <p className="mt-3 text-sm text-fg-muted">{rights.why}</p>
           </Panel>
 
-          <Panel id="cp-activite" title="Mon activité récente" icon="clock">
-            <p className="-mt-2 mb-3 text-sm text-fg-muted">Vos 10 dernières actions enregistrées. Une action que vous ne reconnaissez pas ? Changez votre mot de passe et prévenez l&apos;administrateur.</p>
+          <Panel id="cp-activite" title="Activité récente" icon="clock" tip="Vos 10 dernières actions. Action inconnue : changez votre mot de passe et prévenez l'administrateur.">
             {a.activity.length === 0 ? (
-              <EmptyState compact title="Aucune activité enregistrée pour l'instant">
-                Vos connexions et vos actions sensibles (consultations, modifications) apparaîtront ici.
-              </EmptyState>
+              <EmptyState compact title="Aucune activité enregistrée" />
             ) : (
               // Panneau étroit (mobile, deux colonnes à 1024 px) : une ligne par action ; tableau dès 448 px de large
               <div className="@container">

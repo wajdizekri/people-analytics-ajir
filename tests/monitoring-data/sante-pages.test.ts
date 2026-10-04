@@ -77,19 +77,20 @@ const NAMES = /Nom (DG|MGR2?|SUB|E[1-4])/;
 describe("Santé des données : un seul import", () => {
   it("RH : indicateurs, puis Pareto titré par son message, tableau compact des contrôles, historique, tendances", async () => {
     const { s, charts: figs } = await health("RH");
-    expect(inOrder(s, ["Score qualité du dernier import", "des lignes signalées sont écartées", "Que faire", "Comprendre chaque contrôle", "Historique des imports et des traitements", "Tendances des imports et des traitements"])).toBe(true);
-    expect(s).toContain("45 % des lignes signalées sont écartées, d'abord par « Pointage en double »");
+    expect(inOrder(s, ["Qualité du dernier import", "Lignes signalées par contrôle", "Effet sur la ligne", "Détail des contrôles", "Imports et traitements", "Qualité des imports (%)"])).toBe(true);
+    expect(s).not.toContain("À quoi sert cette page");
     const pareto = figs.find((c) => c.label.startsWith("Barres horizontales triées : lignes signalées par contrôle"))!;
     expect(pareto.option.yAxis.data).toEqual(["Pointage sans heure de sortie", "Pointage en double", "Salaire de base inférieur au SMIG (salaire minimum légal)", "Grade inconnu (grade ignoré)"]);
     expect(pareto.option.series[0].data.map((d: Any) => d.value)).toEqual([5, 3, 2, 1]);
     // tableau compact : effet, part, action en une ligne ; l'action complète reste dans le bloc replié
-    expect(inOrder(s, ["Effet sur la ligne", "Part du total", "POINTAGE_DUPLIQUE", "27,3 %", "Aucune correction nécessaire pour les analyses.", "Comprendre chaque contrôle"])).toBe(true);
+    expect(inOrder(s, ["Effet sur la ligne", "Part du total", "POINTAGE_DUPLIQUE", "27,3 %", "Aucune correction nécessaire pour les analyses", "Détail des contrôles"])).toBe(true);
     expect(s).toContain("Signaler à l'équipe AJIR si le volume augmente");
     // un seul import : barre de niveau face au seuil, pas de courbe
-    expect(s).toContain("Un seul import : la tendance apparaîtra au 3e import");
+    expect(s).toContain("Qualité des imports (%)");
+    expect(s).toContain("Seuil de blocage : 95 %");
     expect(figs.some((c) => c.label.startsWith("Courbe du score qualité"))).toBe(false);
     expect(figs.some((c) => c.label.startsWith("Import n° 1. Barre de niveau : Score qualité"))).toBe(true);
-    expect(s).toContain("2,0 % des lignes lues écartées (20 sur 1 000)");
+    expect(s).toContain("Lignes écartées : 2,0 % (20 sur 1 000)");
     expect(s).not.toContain("Voir les données");
     expect(s).toContain("Salaire de base 300 TND");
     expect(s).not.toContain("Lancer l'import");
@@ -97,7 +98,7 @@ describe("Santé des données : un seul import", () => {
 
   it("ADMIN : même lecture, import guidé après les contrôles, aucun montant ni nom", async () => {
     const { s } = await health("ADMIN");
-    expect(inOrder(s, ["des lignes signalées sont écartées", "Que faire", "Étape 1 : Choisir les fichiers", "Historique des imports et des traitements"])).toBe(true);
+    expect(inOrder(s, ["Lignes signalées par contrôle", "Effet sur la ligne", "Étape 1 : Choisir les fichiers", "Imports et traitements"])).toBe(true);
     expect(s).not.toContain("300 TND");
     expect(s).not.toMatch(NAMES);
   });
@@ -112,9 +113,8 @@ describe("Dérive des données : sans variable calculée", () => {
   it("états vides explicites, indicateurs sans valeur, aucune donnée nominative", async () => {
     for (const role of ["RH", "ADMIN"] as const) {
       const { s, charts: figs, markup } = await drift(role);
-      expect(s).toContain("En attente de données Dérive non calculable pour l'instant.");
-      expect(s).toContain("Il faut deux mois de variables calculées");
-      expect(s).toContain("Pas encore de cohorte suivie 6 mois");
+      expect(s).toContain("En attente de données Dérive non calculable Action : Attendre le prochain calcul mensuel");
+      expect(s).toContain("Aucune cohorte suivie 6 mois");
       expect(s).not.toContain("Feu vert");
       expect(s.match(/— Non calculé/g)).toHaveLength(3);
       expect(s).toContain("— En attente");
@@ -136,14 +136,14 @@ describe("Santé des données : trois imports", () => {
 
   it("courbe bornée avec seuil annoté, cumul des contrôles sur 90 jours, traitements, un tableau par visuel", async () => {
     const { s, charts: figs } = await health("RH");
-    expect(s).toContain("Qualité de 98,5 % au dernier import, au-dessus du seuil de blocage");
-    expect(s).not.toContain("la tendance apparaîtra");
+    expect(s).toContain("Qualité des imports (%)");
+    expect(s).toContain("3 derniers imports · seuil de blocage : 95 %");
     const line = figs.find((c) => c.label.startsWith("Courbe du score qualité sur les 3 derniers imports"))!;
     expect([line.option.yAxis.min, line.option.yAxis.max]).toEqual([90, 100]);
     expect(text(line.option.series[0].markLine.label.formatter)).toBe("Seuil de blocage : 95 %");
-    expect(s).toContain("« Pointage en double » : contrôle le plus signalé sur 90 jours");
-    expect(s).toContain("cumul des 3 imports des 90 derniers jours");
-    expect(s).toContain("2 traitements en 30 jours, dont 1 en échec");
+    expect(s).toContain("Lignes signalées par contrôle (90 jours)");
+    expect(s).toContain("Cumul de 3 imports");
+    expect(s).toContain("Traitements (30 jours)");
     expect(s.match(/Voir les données par (import|contrôle|traitement)/g)).toEqual(["Voir les données par import", "Voir les données par contrôle", "Voir les données par traitement"]);
     // dernier import avec un seul contrôle : le tableau suffit, pas de graphique à une barre
     expect(figs.some((c) => c.label.startsWith("Barres horizontales triées : lignes signalées par contrôle. En tête"))).toBe(false);
@@ -154,7 +154,7 @@ describe("Santé des données : trois imports", () => {
     const { s, charts: figs } = await health("ADMIN", { batch: "1" });
     expect(s).toContain("Contrôles de l'import n° 1");
     expect(figs.some((c) => c.label.startsWith("Barres horizontales triées : lignes signalées par contrôle. En tête"))).toBe(true);
-    expect(s).toContain("Contrôles affichés ci-dessus");
+    expect(s).toContain("Affiché");
     expect(s).not.toContain("300 TND");
   });
 });

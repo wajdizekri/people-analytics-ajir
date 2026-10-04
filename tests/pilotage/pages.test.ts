@@ -69,12 +69,13 @@ describe("pages de pilotage", () => {
     expect(list).toContain("Probabilité à 6 mois");
     const id = inScopeScored();
     const detail = html(await p.detail({ params: Promise.resolve({ id: String(id) }) }));
-    for (const s of ["Faits</h2>", "Estimation</h2>", "Suggestions</h2>", "Estimation, pas une certitude. Facteurs associés, pas des causes.", "Absences pour raison de santé", "TND", "Probabilité à 6 mois"])
+    for (const s of ["Faits</h2>", "Estimation</h2>", "Suggestions</h2>", "Estimation, pas une certitude", "Absences santé (hors estimation)", "TND", "Probabilité à 6 mois"])
       expect(detail).toContain(s);
-    // Repère sur la probabilité (horizon = calcul + 6 mois) et bulle de définition
-    expect(detail).toMatch(/Sur 100 collaborateurs avec cette estimation, environ \d+ part(ent)? d&#x27;ici fin [a-zéû]+ \d{4} et \d+ restent\./);
+    // Repère sur la probabilité (horizon = calcul + 6 mois), en libellé + valeur, et bulle de définition
+    expect(detail).toMatch(/Départs estimés :<\/span> environ \d+ sur 100 d&#x27;ici fin [a-zéû]+ \d{4}<\/p>/);
+    expect(detail).not.toContain("Sur 100 collaborateurs");
     expect(detail).toContain("Définition : Probabilité à 6 mois");
-    // Suggestions : « Pourquoi » chiffré (facteur déclencheur à la hausse) et « Que faire »
+    // Suggestions : « Facteur principal » chiffré (facteur déclencheur à la hausse) et « Action », en libellé + valeur
     const trigger = db()
       .prepare(
         `SELECT f.phrase_rh AS phrase FROM recommendation r JOIN prediction p ON p.run_id = ? AND p.employee_id = r.employee_id
@@ -83,16 +84,19 @@ describe("pages de pilotage", () => {
       )
       .get(seed.currentRunId, id) as { phrase: string } | undefined;
     expect(trigger).toBeDefined();
-    expect(detail).toContain(`Pourquoi :</span> ${trigger!.phrase.replace(/'/g, "&#x27;")} (calcul du `);
-    expect(detail).toContain("Que faire :</span>");
+    const lc = trigger!.phrase.charAt(0).toLocaleLowerCase("fr-FR") + trigger!.phrase.slice(1);
+    expect(detail).toContain(`Facteur principal :</span> ${lc.replace(/'/g, "&#x27;")}</p>`);
+    expect(detail).toContain("Action :</span>");
+    expect(detail).not.toContain("Pourquoi :");
     // Résumé en tête (niveau + facteurs principaux), sens des facteurs en mots, courbe des niveaux avec tableau de données
     expect(detail).toContain("En bref");
-    expect(detail).toMatch(/Risque (Élevé|Moyen|Faible) —/);
+    expect(detail).toMatch(/Risque (Élevé|Moyen|Faible)/);
+    expect(detail).toMatch(/Facteurs? principa(l|ux) :/);
     expect(detail).toMatch(/Fait (monter|baisser) le risque/);
     expect(detail).toContain("Niveau de risque par mois");
     const absRh = html(await p.absenteeism(sp({ axe: "equipe", granularite: "mois" })));
     expect(absRh).toContain("Signaux individuels à vérifier");
-    expect(absRh).toContain("est-il sous contrôle ?");
+    expect(absRh).toContain("État de l&#x27;absentéisme");
     expect(absRh).toMatch(/Sous contrôle|À surveiller|Hausse à traiter|Pas de données/);
     expect(html(await p.recommendations(sp({ statut: "PROPOSEE" })))).toContain("Taux d&#x27;adoption");
   });
@@ -113,9 +117,9 @@ describe("pages de pilotage", () => {
     expect(list).not.toContain("Probabilité");
     const detail = html(await p.detail({ params: Promise.resolve({ id: String(inScopeScored()) }) }));
     expect(detail).toContain("Catégories de facteurs associés");
-    expect(detail).toMatch(/Risque (Élevé|Moyen|Faible) — (domaines? qui f(on|ai)t monter|aucun domaine)/);
-    expect(detail).toMatch(/Domaines qui font monter l&#x27;estimation|Aucun domaine ne fait nettement monter l&#x27;estimation\./);
-    expect(detail).toContain("Le niveau sert à choisir avec qui échanger en premier, jamais à juger une personne. Parlez-en avec la RH.");
+    expect(detail).toMatch(/Risque (Élevé|Moyen|Faible)/);
+    expect(detail).toMatch(/Domaines? en hausse :/);
+    expect(detail).toContain("Aide à l&#x27;échange, pas un jugement");
     for (const s of [
       "TND",
       "Probabilité",
@@ -127,13 +131,14 @@ describe("pages de pilotage", () => {
       "Rejeter avec motif",
       "Pourquoi :",
       "Sur 100 collaborateurs",
+      "Départs estimés",
       "Actions proposées pour ce collaborateur",
     ])
       expect(detail).not.toContain(s);
     const abs = html(await p.absenteeism(sp()));
     expect(abs).not.toContain("Signaux individuels");
     expect(abs).not.toContain("Bradford");
-    expect(abs).toContain("est-il sous contrôle ?");
+    expect(abs).toContain("État de l&#x27;absentéisme");
 
     const out = db().prepare("SELECT id FROM employee WHERE department_id <> (SELECT department_id FROM employee WHERE id = ?) LIMIT 1").get(seed.managerEmployeeId) as { id: number };
     await expect(p.detail({ params: Promise.resolve({ id: String(out.id) }) })).rejects.toThrow("REDIRECT:/interdit");
@@ -203,7 +208,7 @@ describe("pages de pilotage", () => {
     const recos = html(await p.recommendations(sp({ statut: "PROPOSEE" })));
     expect(recos).toContain("Marquer comme réalisée");
     expect(recos).toContain("Rejeter");
-    expect(recos).toMatch(/Pour qui[\s\S]*Pourquoi[\s\S]*Que faire/);
+    expect(recos).toMatch(/Pour qui[\s\S]*(Facteur principal|Déclencheur)[\s\S]*Action/);
     expect(recos).toContain('href="/recommendations?statut=PROPOSEE"');
     expect(recos).toContain("Niveau de risque actuel");
   });
@@ -222,11 +227,11 @@ describe("pages de pilotage", () => {
       const p = await pages();
       const dept = (db().prepare("SELECT department_id AS d FROM employee WHERE id = ?").get(id) as { d: number }).d;
       const recos = html(await p.recommendations(sp({ statut: "REJETEE", action: "PLAN_FORMATION", departement: String(dept) })));
-      expect(recos).toContain("1 remplacée par un nouveau calcul, hors du taux.");
-      expect(recos).toContain("Remplacée par un nouveau calcul le 30/09/2026, sans décision de la RH");
+      expect(recos).toContain("Remplacées par un nouveau calcul");
+      expect(recos).toContain("Remplacée par un nouveau calcul le 30/09/2026");
       expect(recos).not.toContain(SUPERSEDED_COMMENT);
       const detail = html(await p.detail({ params: Promise.resolve({ id: String(id) }) }));
-      expect(detail).toContain("Remplacée par un nouveau calcul du risque, sans décision de la RH.");
+      expect(detail).toContain("Remplacée par un nouveau calcul</li>");
       expect(detail).not.toContain(SUPERSEDED_COMMENT);
     } finally {
       db().prepare("DELETE FROM recommendation WHERE id = ?").run(reco);

@@ -95,12 +95,11 @@ describe("liste des collaborateurs", () => {
     expect(html(await page(sp({ retour: "//evil.example/equipes" })))).not.toContain("evil.example");
   });
 
-  it("état vide filtré : quoi, pourquoi, quoi faire", async () => {
+  it("état vide filtré : titre et action", async () => {
     asRh();
     const page = (await import("@/app/(app)/employees/(liste)/page")).default;
     const h = html(await page(sp({ q: "zzzz-personne" })));
     expect(h).toContain("Aucun collaborateur ne correspond aux critères");
-    expect(h).toContain("Retirez un filtre ou réinitialisez-les.");
     expect(h).toContain("Réinitialiser les filtres");
   });
 });
@@ -129,7 +128,7 @@ describe("organigramme", () => {
     expect(html(await page(sp()))).toContain("Voir mes équipes");
   });
 
-  it("vue liste : lignes repérables au clavier et aide affichée", async () => {
+  it("vue liste : lignes repérables au clavier, aide clavier en bulle « ? »", async () => {
     const { getOrgChart } = await import("@/lib/dal/org-chart");
     const { indexTree } = await import("@/components/org-chart/tree-index");
     const { OrgTreeList } = await import("@/components/org-chart/org-tree-list");
@@ -147,6 +146,7 @@ describe("organigramme", () => {
     );
     expect(h).toContain(`data-tree="${dto.root.key}"`);
     expect(h).toContain("Au clavier : flèches haut et bas");
+    expect(h).toMatch(/<span class="sr-only">Aide : Navigation au clavier<\/span>/);
     expect(h).toMatch(/<ul aria-label="Organigramme en liste" aria-describedby="[^"]+"/);
   });
 

@@ -85,7 +85,7 @@ export function QuestionAnswer({
   verdict: { tone: Verdict; label: string; text: ReactNode };
   /** Périmètre et période de la réponse. */
   scope: ReactNode;
-  /** Contenu de la bulle « Comment cette réponse est établie ». */
+  /** Contenu de la bulle « Méthode ». */
   method?: ReactNode;
   children?: ReactNode;
 }) {
@@ -98,7 +98,7 @@ export function QuestionAnswer({
           </h2>
           <StatusPill tone={verdict.tone} label={verdict.label} />
           {method && (
-            <InfoTip label="Comment cette réponse est établie" align="start">
+            <InfoTip label="Méthode" prefix="Aide" align="start">
               {method}
             </InfoTip>
           )}
@@ -111,7 +111,7 @@ export function QuestionAnswer({
   );
 }
 
-// Section de page : <section id aria-labelledby> + SectionHeader (titre, phrase d'introduction, bulle, actions)
+// Section de page : <section id aria-labelledby> + SectionHeader (titre, bulle « ? », actions)
 export function Section({
   id,
   title,
@@ -125,6 +125,7 @@ export function Section({
 }: {
   id: string;
   title: string;
+  /** Bulle « ? » du titre. */
   intro?: ReactNode;
   /** Alias de intro. */
   description?: ReactNode;

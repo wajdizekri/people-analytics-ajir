@@ -36,7 +36,7 @@ describe("page Rétention : section Profils de départs", () => {
     expect(html).toContain('id="profils-departs"');
     expect(html.indexOf("Courbe de maintien en escalier")).toBeLessThan(html.indexOf('id="profils-departs"'));
     expect(html).toContain("Trop peu de départs volontaires pour décrire des profils");
-    expect(html).toContain("0 départ classé à ce jour");
+    expect(html).toContain("0 départ classé · 30 requis");
   });
 
   it("manager : aucune section Profils de départs", async () => {

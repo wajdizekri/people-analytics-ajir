@@ -60,9 +60,9 @@ test.describe("Alertes — RH", () => {
     const alert = pickAlert("audience <> 'ADMIN' AND type IN ('ABSENTEISME','DONNEES')");
     await page.goto(`/alerts/${alert.id}`);
     const form = statusForm(page);
-    await expect(page.getByText("(facultatif ; obligatoire pour un rejet)")).toBeVisible();
+    await expect(page.getByText("(obligatoire pour un rejet)")).toBeVisible();
     await expect(form.getByRole("button", { name: "Rejeter l'alerte" })).toBeDisabled();
-    await expect(form.getByText(/Pour rejeter, expliquez pourquoi/)).toBeVisible();
+    await expect(form.getByText("Rejet : commentaire de 3 caractères minimum")).toBeVisible();
     expect(statusOf(alert.id).status).toBe("NOUVELLE");
 
     await applyStep(page, "Rejeter l'alerte", "Faux positif vérifié avec le manager (E2E)");
@@ -111,7 +111,7 @@ test.describe("Alertes — manager", () => {
     const turnover = seeded("e2e-turnover-mgr");
     const absence = seeded("e2e-absence-indiv-mgr");
     await page.goto("/alerts");
-    await expect(page.getByText("Les signaux individuels d'absentéisme restent réservés à la RH.")).toBeVisible();
+    await expect(page.getByText("Sans signal individuel d'absence")).toBeVisible();
     await expect(page.getByText(turnover.title, { exact: true })).toBeVisible();
     await expect(page.getByText(absence.title)).toHaveCount(0);
     await expect(page.getByText(/Absences répétées à vérifier/)).toHaveCount(0);

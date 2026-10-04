@@ -13,7 +13,7 @@ import { seedDefaultSettings, setSetting } from "@/lib/settings";
 import { FEATURES, GROUPS } from "@/lib/features/spec";
 import { FAQ, FAQ_TOPICS, GLOSSARY, KPIS, SCREENS, SECTIONS, START, VARIABLE_HELP, factorGroups, forRole } from "@/lib/help/content";
 import { TERMS, termFor, type TermId } from "@/lib/help/terms";
-import { CornerTip, Definition, DefinitionList, InfoTip, LevelExplainer, PageIntro, TermTip } from "@/components/help";
+import { CornerTip, Definition, DefinitionList, DetailTip, InfoTip, LevelExplainer, PageIntro, TermTip } from "@/components/help";
 
 const session: { current: SessionUser | null } = { current: null };
 vi.mock("@/lib/auth/session", () => ({ readSession: async () => session.current, clientIp: () => "test" }));
@@ -51,16 +51,29 @@ afterAll(() => {
 });
 
 describe("composants d'aide", () => {
-  it("InfoTip : bouton nommé, relié à son texte, fermé par défaut, texte présent pour les lecteurs d'écran", () => {
+  it("InfoTip : bouton nommé, fermé par défaut, texte masqué présent dans le DOM, pas de description vers un contenu non rendu", () => {
     const out = html(h(InfoTip, { label: "Turnover" }, "Sorties sur 12 mois."));
     expect(out).toMatch(/<button[^>]*type="button"/);
     expect(out).toContain('aria-expanded="false"');
     const controls = out.match(/aria-controls="([^"]+)"/)?.[1];
     expect(controls).toBeTruthy();
-    expect(out).toContain(`aria-describedby="${controls}"`);
+    expect(out).not.toContain("aria-describedby");
     expect(out).toMatch(new RegExp(`id="${controls!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*hidden`));
     expect(out).toContain("Définition : Turnover");
     expect(out).toContain("Sorties sur 12 mois.");
+    expect(text(html(h(InfoTip, { label: "Effectif fin de mois", prefix: "Détails" }, "x")))).toContain("Détails : Effectif fin de mois");
+  });
+
+  it("DetailTip : une seule bulle ; détails ajoutés à la bulle fournie (TermTip), bulle propre sinon, rien si tout est vide", () => {
+    const merged = html(h(DetailTip, { label: "Turnover glissant", tip: createElement(TermTip, { term: "turnover" }), details: ["12 derniers mois", null, ""] }));
+    expect(merged.match(/<button/g)).toHaveLength(1);
+    expect(merged).toContain(TERMS.turnover.text.slice(0, 40));
+    expect(merged).toMatch(/border-t border-line pt-1\.5"><span class="block">12 derniers mois<\/span><\/span>/);
+    const own = html(h(DetailTip, { label: "Effectif par département", details: "Toute l'entreprise · août 2026" }));
+    expect(text(own)).toContain("Détails : Effectif par département");
+    expect(own).toContain("Toute l&#x27;entreprise · août 2026");
+    expect(html(h(DetailTip, { label: "x", details: [undefined, false] }))).toBe("");
+    expect(html(h(DetailTip, { label: "x", tip: createElement(TermTip, { term: "turnover" }) }))).not.toContain("border-t");
   });
 
   it("TermTip : texte du vocabulaire commun, rien pour un rôle non destinataire", () => {
@@ -76,12 +89,12 @@ describe("composants d'aide", () => {
     expect(out).toContain("<button");
   });
 
-  it("PageIntro : titre fixe, repères et lien vers l'aide", () => {
+  it("PageIntro : plus d'encart, simple lien « Aide » vers la rubrique ; rien sans rubrique", () => {
     const out = html(h(PageIntro, { helpHref: "/aide#risque", points: ["Un", "Deux"] }, "Sert à suivre."));
-    expect(out).toContain("À quoi sert cette page");
-    expect(out).toContain('aria-labelledby="page-intro-titre"');
-    expect(out).toContain("<li>Deux</li>");
-    expect(out).toContain('href="/aide#risque"');
+    expect(out).toMatch(/^<p class="mb-4"><a href="\/aide#risque"/);
+    expect(text(out).trim()).toBe("Aide sur cette page");
+    expect(out).not.toMatch(/À quoi sert cette page|Sert à suivre|<li|<section/);
+    expect(html(h(PageIntro, null, "Sert à suivre."))).toBe("");
   });
 
   it("Definition : calcul, périmètre, exclusions, unité et période dans une liste de définitions", () => {
@@ -207,11 +220,11 @@ describe("page d'accès refusé", () => {
 
   it("dit le rôle, la raison et l'action suivante, sans renvoyer l'administrateur vers lui-même", async () => {
     const mgr = await forbidden("MANAGER");
-    for (const s of ["Accès refusé", "rôle : Manager", "Revenir au tableau de bord", "Voir ce que mon rôle permet", "Demandez-le à l'administrateur"]) expect(mgr, s).toContain(s);
+    for (const s of ["Accès refusé", "rôle : Manager", "Revenir au tableau de bord", "Voir ce que mon rôle permet", "Demande d'accès : administrateur de l'outil"]) expect(mgr, s).toContain(s);
     const adm = await forbidden("ADMIN");
     expect(adm).toContain("Revenir à la console");
-    expect(adm).toContain("séparation des tâches");
-    expect(adm).not.toContain("Demandez-le à l'administrateur");
+    expect(adm).toContain("Séparation des tâches");
+    expect(adm).not.toContain("Demande d'accès");
     const anon = await forbidden(null);
     expect(anon).toContain("Se connecter");
   });

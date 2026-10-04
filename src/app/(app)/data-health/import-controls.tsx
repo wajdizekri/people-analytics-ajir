@@ -20,34 +20,34 @@ const SEVERITY_GROUP: Record<string, string> = {
 
 const plural = (n: number, word: string) => `${fmt.int(n)} ${word}${n > 1 ? "s" : ""}`;
 
-// Titre-message du Pareto : la part des lignes signalées qui sont réellement écartées, et le contrôle qui en écarte le plus
-export function paretoHeadline(shares: ControlShare[]): string {
-  const total = shares.reduce((s, r) => s + r.n, 0);
-  const rejects = shares.filter((r) => r.severity === "REJET");
-  const rejected = rejects.reduce((s, r) => s + r.n, 0);
-  if (!rejected) return total > 1 ? `Aucune ligne écartée : ${fmt.int(total)} lignes signalées, toutes importées` : "Aucune ligne écartée : 1 ligne signalée, importée";
-  const share = fmt.pct(rejected / total, 0);
-  return rejects.length === 1
-    ? `« ${rejects[0].label} » écarte ${share} des lignes signalées`
-    : `${share} des lignes signalées sont écartées, d'abord par « ${rejects[0].label} »`;
-}
-
-// Phrase d'introduction de la section : statut et volumes de l'import affiché
+// Statut et volumes de l'import affiché, au format libellé : valeur
 export function ImportLead({ detail }: { detail: ImportDetailDTO }) {
   const b = detail.batch;
   const read = b.rowsOk + b.rowsRejected;
   const others = detail.bySeverity.filter((s) => s.severity !== "REJET").reduce((t, s) => t + s.n, 0);
+  const facts: [string, string][] = [
+    ["Date", fmt.date(b.startedAt)],
+    ["Importées", fmt.int(b.rowsOk)],
+    ["Écartées", `${fmt.int(b.rowsRejected)}${read ? ` (${fmt.pct(b.rowsRejected / read, 1)})` : ""}`],
+    ...(others > 0 ? ([["Corrigées ou à vérifier", fmt.int(others)]] as [string, string][]) : []),
+    ["Qualité", fmt.pct(b.qualityScore, 1)],
+  ];
   return (
-    <>
-      <StatusBadge tone={IMPORT_STATUS[b.status].tone}>{IMPORT_STATUS[b.status].label}</StatusBadge> Import du {fmt.date(b.startedAt)} :{" "}
-      <strong className="tabular-nums">{fmt.int(b.rowsOk)}</strong> lignes importées, <strong className="tabular-nums">{fmt.int(b.rowsRejected)}</strong> écartées
-      {read ? ` (${fmt.pct(b.rowsRejected / read, 1)} des lignes lues)` : ""}, score qualité <strong className="tabular-nums">{fmt.pct(b.qualityScore, 1)}</strong>.
-      {others > 0 && ` ${fmt.int(others)} ${others > 1 ? "autres lignes sont importées" : "autre ligne est importée"} avec une correction ou un avertissement.`}
-    </>
+    <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+      <StatusBadge tone={IMPORT_STATUS[b.status].tone}>{IMPORT_STATUS[b.status].label}</StatusBadge>
+      <dl className="flex flex-wrap gap-x-5 gap-y-1">
+        {facts.map(([k, v]) => (
+          <div key={k} className="flex gap-1">
+            <dt className="text-fg-muted">{k} :</dt>
+            <dd className="font-semibold tabular-nums text-fg">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
-function ControlsPareto({ startedAt, shares }: { startedAt: string; shares: ControlShare[] }) {
+function ControlsPareto({ shares }: { shares: ControlShare[] }) {
   const bars = Math.min(shares.length, PARETO_BARS);
   const legend = [...SEVERITY_ORDER.filter((s) => shares.some((r) => r.severity === s)), ...(shares.some((r) => !SEVERITY_ORDER.includes(r.severity)) ? ["AUTRE"] : [])];
   const top = shares
@@ -57,10 +57,8 @@ function ControlsPareto({ startedAt, shares }: { startedAt: string; shares: Cont
   return (
     <VisualCard
       headingLevel={3}
-      title={paretoHeadline(shares)}
-      subtitle={`Lignes signalées par contrôle à l'import du ${fmt.date(startedAt)} · nombre et part du total signalé${
-        shares.length > PARETO_BARS ? ` · ${PARETO_BARS - 1} contrôles les plus signalés, les autres regroupés` : ""
-      }`}
+      title="Lignes signalées par contrôle"
+      subtitle={shares.length > PARETO_BARS ? `${PARETO_BARS - 1} premiers contrôles, autres regroupés` : undefined}
       actions={<TermTip term="gravite" align="end" />}
     >
       <ColorLegend items={legend.map(severityStyle)} />
@@ -87,7 +85,7 @@ function ControlsTable({ shares }: { shares: ControlShare[] }) {
         { key: "effet", label: "Effet sur la ligne" },
         { key: "lignes", label: "Lignes signalées", numeric: true },
         { key: "part", label: "Part du total", numeric: true },
-        { key: "action", label: "Que faire", sortable: false, cardBlock: true },
+        { key: "action", label: "Action", sortable: false, cardBlock: true },
       ]}
       rows={shares.map((r) => {
         const eff = SEVERITY_EFFECT[r.severity];
@@ -108,7 +106,7 @@ function ControlsTable({ shares }: { shares: ControlShare[] }) {
             ),
             lignes: fmt.int(r.n),
             part: fmt.pct(r.share, 1),
-            action: shortAction(r.rule) ?? "Voir les exemples de lignes ci-dessous.",
+            action: shortAction(r.rule) ?? "Voir les exemples de lignes",
           },
           sort: { controle: r.label, effet: SEVERITY_ORDER.indexOf(r.severity), lignes: r.n, part: r.share },
         };
@@ -155,24 +153,18 @@ function RuleExplanations({ detail }: { detail: ImportDetailDTO }) {
                           {files.length > 1 ? "Fichiers" : "Fichier"} : {files.map((f) => `${fileLabel(f)} (${f})`).join(", ")}
                         </p>
                       )}
-                      <p className="mt-0.5 font-mono text-[11px] text-fg-subtle">Code du contrôle : {r.rule}</p>
+                      <p className="mt-0.5 font-mono text-[11px] text-fg-subtle">Code : {r.rule}</p>
                     </div>
-                    <div className="min-w-0 text-sm text-fg-muted">
-                      {help ? (
-                        <>
-                          <p>
-                            <span className="font-semibold text-fg">Ce que cela veut dire : </span>
-                            {help.meaning}
-                          </p>
-                          <p className="mt-1.5">
-                            <span className="font-semibold text-info">Que faire : </span>
-                            {help.action}
-                          </p>
-                        </>
-                      ) : (
-                        <p>Contrôle sans explication détaillée : voir les exemples de lignes.</p>
-                      )}
-                    </div>
+                    <dl className="min-w-0 space-y-1.5 text-sm text-fg-muted">
+                      <div>
+                        <dt className="inline font-semibold text-fg">Signification : </dt>
+                        <dd className="inline">{help?.meaning ?? "—"}</dd>
+                      </div>
+                      <div>
+                        <dt className="inline font-semibold text-info">Action : </dt>
+                        <dd className="inline">{help?.action ?? "Voir les exemples de lignes"}</dd>
+                      </div>
+                    </dl>
                   </li>
                 );
               })}
@@ -186,11 +178,14 @@ function RuleExplanations({ detail }: { detail: ImportDetailDTO }) {
 
 function Samples({ detail }: { detail: ImportDetailDTO }) {
   return (
-    <Disclosure className="mt-3" summary="Voir des exemples de lignes concernées (100 au plus)">
-      <p className="mb-2 text-xs text-fg-muted">
-        Rejets d&apos;abord. Le contenu brut n&apos;est pas affiché : retrouvez la ligne dans l&apos;export par son fichier et son numéro.
-        {detail.countsSource === "detail" && " Comptages issus du détail conservé (1 000 lignes au plus par fichier et par contrôle)."}
-      </p>
+    <Disclosure className="mt-3" summary="Exemples de lignes (100 max)">
+      {detail.countsSource === "detail" && (
+        <p className="mb-2">
+          <StatusBadge tone="neutral" dot={false}>
+            Comptages : détail conservé (1 000 lignes max)
+          </StatusBadge>
+        </p>
+      )}
       <div className="relative max-h-96 overflow-auto" tabIndex={0} role="region" aria-label="Exemples de lignes en échec (zone défilante)">
         <table className={tableCls.table}>
           <caption className="sr-only">Exemples de lignes en échec</caption>
@@ -227,23 +222,23 @@ function ReportSummary({ s }: { s: ImportReportSummary }) {
     ["Part de lignes valides (moyenne par fichier)", s.rowScore != null ? fmt.pct(s.rowScore, 1) : "—"],
     [
       "Complétude de la paie",
-      s.activeCount ? `${s.payrollMonth ?? "—"} : ${plural(s.activeWithoutPayroll ?? 0, "collaborateur")} en poste sans paie sur ${fmt.int(s.activeCount)}` : "—",
+      s.activeCount ? `${s.payrollMonth ?? "—"} · ${fmt.int(s.activeWithoutPayroll ?? 0)} sans paie sur ${plural(s.activeCount, "collaborateur")} en poste` : "—",
     ],
     ...(s.users
       ? ([
           [
             "Comptes utilisateurs synchronisés",
-            `${fmt.int(s.users.created)} créés, ${fmt.int(s.users.reactivated)} réactivés, ${fmt.int(s.users.deactivated)} désactivés, ${fmt.int(s.users.updated)} mis à jour`,
+            `${fmt.int(s.users.created)} créés · ${fmt.int(s.users.reactivated)} réactivés · ${fmt.int(s.users.deactivated)} désactivés · ${fmt.int(s.users.updated)} mis à jour`,
           ],
         ] as [string, string][])
       : []),
     ["Durée du traitement", s.durationMs != null ? `${fmt.num(s.durationMs / 1000, 1)} s` : "—"],
   ];
   return (
-    <Disclosure className="mt-3" summary="Voir le rapport complet par fichier (lignes lues, importées, rejetées)">
+    <Disclosure className="mt-3" summary="Rapport par fichier">
       {s.error && (
         <div className="mb-3">
-          <Notice tone="error">L&apos;import s&apos;est arrêté : {s.error}</Notice>
+          <Notice tone="error">Import arrêté : {s.error}</Notice>
         </div>
       )}
       <dl className="mb-4 grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-[max-content_1fr]">
@@ -276,7 +271,7 @@ function ReportSummary({ s }: { s: ImportReportSummary }) {
                 <td className={`${tableCls.td} ${tableCls.num}`}>{f.present ? fmt.int(f.rows) : "—"}</td>
                 <td className={`${tableCls.td} ${tableCls.num}`}>{f.present ? fmt.int(f.ok) : "—"}</td>
                 <td className={`${tableCls.td} ${tableCls.num}`}>{f.present ? fmt.int(f.rejected) : "—"}</td>
-                <td className={`${tableCls.td} text-xs`}>{f.headerError ?? (f.present ? "" : "Absent de l'export")}</td>
+                <td className={`${tableCls.td} text-xs`}>{f.headerError ?? (f.present ? "" : "Absent")}</td>
               </tr>
             ))}
           </tbody>
@@ -291,13 +286,13 @@ export function ImportControls({ detail }: { detail: ImportDetailDTO }) {
   return (
     <>
       {shares.length === 0 ? (
-        <EmptyState title="Aucun contrôle en échec sur cet import">Toutes les lignes lues ont été importées sans correction.</EmptyState>
+        <EmptyState title="Aucun contrôle en échec" />
       ) : (
         <>
           {/* Une seule barre ne fait pas un graphique : le tableau suffit */}
-          {shares.length > 1 && <ControlsPareto startedAt={detail.batch.startedAt} shares={shares} />}
+          {shares.length > 1 && <ControlsPareto shares={shares} />}
           <ControlsTable shares={shares} />
-          <Disclosure className="mt-4" summary="Comprendre chaque contrôle : signification, fichiers concernés, action complète">
+          <Disclosure className="mt-4" summary="Détail des contrôles">
             <RuleExplanations detail={detail} />
           </Disclosure>
           <Samples detail={detail} />

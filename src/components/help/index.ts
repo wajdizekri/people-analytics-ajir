@@ -1,4 +1,4 @@
-export { InfoTip } from "./info-tip";
+export { InfoTip, DetailTip } from "./info-tip";
 export { TermTip, CornerTip } from "./term-tip";
 export { PageIntro } from "./page-intro";
 export { Definition, DefinitionList } from "./definition";

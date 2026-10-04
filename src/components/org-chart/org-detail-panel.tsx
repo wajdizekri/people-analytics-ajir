@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { Ref } from "react";
+import { InfoTip } from "@/components/help/info-tip";
 import { Badge, ButtonLink, RiskBadge, cardCls } from "@/components/ui";
 import { MIN_GROUP_SIZE } from "@/lib/dal/pilotage-metrics";
 import type { OrgMetrics, OrgNode } from "@/lib/dal/org-chart";
@@ -53,13 +54,13 @@ export function OrgDetailPanel({
   const childKey = new Map(node.children.map((c) => [c.employeeId, c.key]));
   return (
     <section aria-labelledby="org-detail-title" className={`${cardCls} min-w-0 p-4 sm:p-5 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto`}>
-      <p className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">Détail du nœud sélectionné</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">Sélection</p>
       <h2 id="org-detail-title" ref={headingRef} tabIndex={-1} className="mt-1 text-lg font-semibold leading-snug text-heading focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
         {node.name}
         {isSelf && <span className="ml-1 text-sm font-normal text-fg-muted">(vous)</span>}
       </h2>
       {meta && <p className="text-sm text-fg-muted">{meta}</p>}
-      {virtual && <p className="text-sm text-fg-muted">{rh ? "Racine virtuelle : regroupe les responsables sans manager dans AJIR." : "Aucun collaborateur n'est rattaché à votre compte."}</p>}
+      {virtual && <p className="text-sm text-fg-muted">{rh ? "Responsables sans manager dans AJIR" : "Aucun collaborateur rattaché"}</p>}
       {!virtual && !isSelf && (
         <p className="mt-2">
           <RiskBadge level={node.level} />
@@ -80,7 +81,14 @@ export function OrgDetailPanel({
         </div>
       </dl>
 
-      <table className="mt-4 w-full text-sm text-fg">
+      <div className="mt-4 flex items-center gap-1">
+        <h3 className="text-sm font-semibold text-heading">Indicateurs</h3>
+        <InfoTip label="Indicateurs" prefix="Détails" align="end">
+          Absentéisme hors maladie et maternité.
+          {rh ? ` « Petit effectif » : moins de ${MIN_GROUP_SIZE} personnes, taux peu fiable.` : ` Aucun taux sous ${MIN_GROUP_SIZE} personnes.`}
+        </InfoTip>
+      </div>
+      <table className="mt-1 w-full text-sm text-fg">
         <caption className="sr-only">Indicateurs de l&apos;équipe directe et de l&apos;ensemble rattaché</caption>
         <thead className="border-b-2 border-line text-xs text-fg-muted">
           <tr>
@@ -100,10 +108,6 @@ export function OrgDetailPanel({
           <Indicator label="Absentéisme hors santé (3 mois)" team={node.team} subtree={node.subtree} text={absenteeismText} rh={rh} />
         </tbody>
       </table>
-      <p className="mt-1 text-xs text-fg-subtle">
-        Maladie et maternité exclues.
-        {rh ? ` « Petit effectif » : moins de ${MIN_GROUP_SIZE} personnes, taux peu fiable.` : ` Aucun taux n'est affiché sur un groupe de moins de ${MIN_GROUP_SIZE} personnes.`}
-      </p>
 
       {!virtual && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -140,7 +144,8 @@ export function OrgDetailPanel({
                       onClick={() => onSelect(key)}
                       className="mt-0.5 inline-flex min-h-8 items-center gap-1 rounded-control text-xs font-medium text-link underline-offset-2 transition-colors hover:underline"
                     >
-                      Responsable d&apos;équipe : afficher son détail<span aria-hidden="true">›</span>
+                      Détail de l&apos;équipe<span className="sr-only"> de {m.name}</span>
+                      <span aria-hidden="true">›</span>
                     </button>
                   )}
                 </div>

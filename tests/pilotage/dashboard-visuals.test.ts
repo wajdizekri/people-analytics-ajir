@@ -6,7 +6,7 @@ import { dashboardQuerySchema, getDashboard, toManagerDashboardDto, type Dashboa
 import { RISK_LEVELS, rateLinesOption, riskByDepartmentOption, shortDepartment } from "@/components/pilotage/chart-options";
 import { SEMANTIC } from "@/components/charts/pbi";
 import { withFrenchFormat } from "@/components/insights/fr-chart";
-import { absenteeismTitle, countDelta, headcountTitle, rateDelta, riskByDepartmentTitle, riskTitle, turnoverTitle } from "@/app/(app)/dashboard/messages";
+import { countDelta, rateDelta } from "@/app/(app)/dashboard/messages";
 import type { SeedResult } from "../../scripts/seed-dev-ui";
 import { cleanupDb, findLeaks, managerCtx, rhCtx, sensitiveValues, setupSeededDb } from "./setup";
 import { visibleEmployeeIds } from "@/lib/dal/context";
@@ -159,21 +159,8 @@ describe("options ECharts du tableau de bord", () => {
   });
 });
 
-describe("titres-messages et variations", () => {
+describe("variations des cartes KPI", () => {
   const NBSP = " ";
-
-  it("le titre dit ce qu'il faut retenir", () => {
-    expect(headcountTitle(1078, 1069, "depuis fin sept. 2025")).toBe("L'effectif recule de 9 personnes depuis fin sept. 2025");
-    expect(headcountTitle(7, 7, "depuis fin sept. 2025")).toBe("L'effectif est stable depuis fin sept. 2025 : 7 collaborateurs");
-    expect(turnoverTitle(0.111, 0.109, "sept. 2025")).toBe(`Le turnover reste stable, autour de 10,9${NBSP}%`);
-    expect(turnoverTitle(0, 0.145, "sept. 2025")).toBe(`Le turnover augmente : 14,5${NBSP}% contre 0,0${NBSP}% en sept. 2025`);
-    expect(absenteeismTitle(0.006, 0.008, "août 2026")).toBe(`En août 2026, l'absentéisme (0,60${NBSP}%) est sous la moyenne de la période`);
-    expect(riskTitle({ ELEVE: 19, MOYEN: 30, FAIBLE: 938, nonScored: 181 })).toBe(`19 collaborateurs en risque élevé, soit 1,9${NBSP}% des évalués`);
-    expect(riskTitle({ ELEVE: 0, MOYEN: 0, FAIBLE: 6, nonScored: 3 })).toBe("Aucun collaborateur en risque élevé");
-    expect(riskByDepartmentTitle([{ name: "Production", ELEVE: 6 }, { name: "Achats", ELEVE: 5 }])).toBe("Production compte le plus de risques élevés : 6 sur 11");
-    expect(riskByDepartmentTitle([{ name: "Production", ELEVE: 3 }, { name: "Achats", ELEVE: 0 }])).toBe("Production concentre les 3 risques élevés");
-    expect(riskByDepartmentTitle([{ name: "Qualité", ELEVE: 0 }])).toBe("Qualité : aucun risque élevé");
-  });
 
   it("variation calculée sur les valeurs affichées (jamais « 0,6 % contre 0,7 % : 0,0 pt »), signe moins typographique", () => {
     expect(rateDelta(0.0066, 0.0055, "vs juil. 2026", "down")).toEqual({ value: -0.1, label: "−0,1 pt vs juil. 2026", good: "down" });
@@ -193,15 +180,25 @@ describe("rendu de la page", () => {
     const page = (await import("@/app/(app)/dashboard/page")).default;
     session.current = { userId: seed.rhUserId, login: "rh.demo", role: "RH", employeeId: null };
     const rh = html(await page(sp()));
-    for (const t of ["Effectif fin de mois", "Turnover glissant 12 mois", "Répartition des niveaux de risque", "Effectif par département", "Absentéisme par département", "Masse salariale", "Lire la synthèse du mois"])
+    for (const t of [
+      "Effectif fin de mois",
+      "Turnover sur 12 mois (%)",
+      "Absentéisme mensuel (%)",
+      "Collaborateurs par niveau de risque",
+      "Effectif par département",
+      "Absentéisme par département (%)",
+      "Comparaison des départements",
+      "Masse salariale",
+      "Lire la synthèse du mois",
+    ])
       expect(rh).toContain(t);
-    // titres-messages : un constat chiffré, pas seulement le nom de la mesure ; pluriels accordés
-    expect(rh).toMatch(/collaborateurs? en risque élevé, soit [\d,]+ % des évalués|Aucun collaborateur en risque élevé/);
-    expect(rh).toMatch(/L&#x27;effectif (recule|progresse|est stable)/);
+    // titres descriptifs : ni titre-message ni encart d'explication
+    expect(rh).not.toMatch(/L&#x27;effectif (recule|progresse|est stable)|Le turnover (reste|augmente|baisse)|regroupe [\d,]+.% de l&#x27;effectif/);
+    expect(rh).not.toContain("À quoi sert cette page");
     expect(rh).not.toContain("(s)");
     session.current = { userId: seed.managerUserId, login: "mgr.demo", role: "MANAGER", employeeId: seed.managerEmployeeId };
     const m = html(await page(sp()));
-    for (const t of ["Effectif fin de mois", "Turnover glissant 12 mois", "Répartition des niveaux de risque", "Votre équipe"]) expect(m).toContain(t);
+    for (const t of ["Effectif fin de mois", "Turnover sur 12 mois (%)", "Collaborateurs par niveau de risque", "Votre équipe"]) expect(m).toContain(t);
     for (const t of ["Effectif par département", "Absentéisme par département", "Masse salariale", "TND", "Lift", "Niveaux de risque : modèle"]) expect(m).not.toContain(t);
   });
 });

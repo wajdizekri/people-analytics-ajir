@@ -106,7 +106,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
   // Le manager n'a pas de tri par probabilité (la DAL retombe sur le niveau de risque)
   const sortKey: SortKey = !rh && q.tri === "probabilite" ? "risque" : q.tri;
   const sortDir = q.ordre ?? defaultDir(sortKey);
-  const sortSentence = `Trié par ${SORT_TEXT[sortKey].label}, ${SORT_TEXT[sortKey][sortDir]}.`;
+  const sortSentence = `Tri : ${SORT_TEXT[sortKey].label}, ${SORT_TEXT[sortKey][sortDir]}`;
   const sortHref = (key: SortKey) => {
     const next = sortKey === key ? (sortDir === "asc" ? "desc" : "asc") : defaultDir(key);
     return { next, href: buildHref("/employees", { ...params, tri: key, ordre: next, page: undefined }) };
@@ -157,7 +157,6 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
       {retour && <Breadcrumb items={[{ label: retourLabel, href: retour }, { label: title }]} />}
       <PageHeader
         title={title}
-        subtitle={rh ? "Retrouver un collaborateur, voir son niveau de risque et ouvrir sa fiche." : "Suivre les collaborateurs de votre équipe et ouvrir leur fiche."}
         scope={rh ? "Toute l'entreprise, collaborateurs actifs" : "Votre périmètre hiérarchique, collaborateurs actifs"}
         period={asOf ? `Niveaux de risque estimés au ${asOf}` : "Aucun calcul de risque publié"}
         actions={list.total > 0 ? <ExportButton kind="employees" searchParams={raw} total={list.total} /> : undefined}
@@ -182,7 +181,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
       <ActiveFilters filters={active} ignored={ignored} />
       {!list.run && (
         <div className="mb-4">
-          <Notice tone="warning">Aucun calcul de risque publié : les niveaux de risque ne sont pas affichés. Ils apparaîtront après le prochain calcul mensuel.</Notice>
+          <Notice tone="warning">Aucun calcul de risque publié</Notice>
         </div>
       )}
 
@@ -191,23 +190,14 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
           title={active.length > 0 ? "Aucun collaborateur ne correspond aux critères" : "Aucun collaborateur actif"}
           icon={active.length > 0 ? "search" : "users"}
           action={active.length > 0 ? <ButtonLink href={resetHref} variant="secondary" icon="refresh">Réinitialiser les filtres</ButtonLink> : undefined}
-        >
-          {active.length > 0
-            ? "Les filtres actifs excluent tous les collaborateurs. Retirez un filtre ou réinitialisez-les."
-            : rh
-              ? "Aucun collaborateur actif à la date de référence. La liste se remplit après l'import d'un export AJIR."
-              : "Aucun collaborateur actif ne vous est rattaché dans le dernier import AJIR. Si c'est une erreur, contactez la RH."}
-        </EmptyState>
+        />
       ) : (
         <section className={`${cardCls} @container overflow-hidden`} aria-label={title}>
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-3">
             <p className="text-sm text-fg-muted">
               <span className="text-lg font-semibold tabular-nums text-heading">{fmt.int(list.total)}</span> résultat{list.total > 1 ? "s" : ""}
             </p>
-            <p className="text-sm text-fg-muted">
-              {sortSentence}
-              <span className="hidden @2xl:inline"> Cliquez sur un en-tête de colonne pour changer le tri.</span>
-            </p>
+            <p className="text-sm text-fg-muted">{sortSentence}</p>
           </div>
 
           <nav aria-label="Trier la liste" className="relative flex items-center gap-2 overflow-x-auto border-b border-line px-4 py-2.5 @2xl:hidden">

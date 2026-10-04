@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
-import { ButtonLink, EmptyState, KpiTile, Notice, PageHeader, fmt } from "@/components/ui";
-import { PageIntro } from "@/components/help";
+import { ButtonLink, EmptyState, Notice, PageHeader, fmt } from "@/components/ui";
 import { OrgChartView } from "@/components/org-chart/org-chart-view";
 import { formatDate, formatMonth } from "@/components/pilotage/labels";
 import { clientIp } from "@/lib/auth/session";
@@ -19,13 +18,21 @@ export default async function OrgChartPage({ searchParams }: { searchParams: Pro
   const { stats } = dto;
   const fixes = stats.reattached + stats.cycles + stats.flattened;
   const window = `${formatMonth(dto.window.from.slice(0, 7))} – ${formatMonth(dto.window.to.slice(0, 7))}`;
+  const figures = [
+    { label: "Responsables d'équipe", value: stats.managers },
+    { label: "Niveaux hiérarchiques", value: stats.depth },
+  ];
 
   return (
     <>
       <PageHeader
         eyebrow="Collaborateurs"
         title="Organigramme"
-        subtitle={rh ? "La hiérarchie de l'entreprise, équipe par équipe, avec l'effectif, le risque de départ et l'absentéisme." : "Votre hiérarchie, équipe par équipe, avec l'effectif, le risque de départ et l'absentéisme, hors rémunération."}
+        subtitle={
+          rh
+            ? `Un nœud = un responsable d'équipe. Moins de ${MIN_GROUP_SIZE} personnes : « petit effectif », taux peu fiable.`
+            : `Un nœud = un responsable d'équipe. Hors rémunération ; aucun taux sous ${MIN_GROUP_SIZE} personnes.`
+        }
         scope={`${rh ? "Toute l'entreprise" : "Votre hiérarchie"} : ${fmt.int(stats.people)} collaborateur${stats.people > 1 ? "s" : ""} actif${stats.people > 1 ? "s" : ""}`}
         period={`Données au ${formatDate(dto.referenceDate)} · absentéisme sur ${window}${dto.runAsOf ? ` · risque calculé au ${formatDate(dto.runAsOf)}` : ""}`}
         actions={
@@ -36,40 +43,27 @@ export default async function OrgChartPage({ searchParams }: { searchParams: Pro
           ) : undefined
         }
       />
-      <PageIntro
-        points={[
-          "Chaque nœud est un responsable d'équipe ; ses collaborateurs sans équipe sont comptés dans son effectif.",
-          "La couleur suit l'indicateur choisi ; sa valeur figure dans l'infobulle, la légende et le panneau de détail.",
-          rh
-            ? `Un groupe de moins de ${MIN_GROUP_SIZE} personnes est signalé « petit effectif » : ses taux sont peu fiables.`
-            : `Aucun taux n'est affiché sur un groupe de moins de ${MIN_GROUP_SIZE} personnes, ni quand il permettrait de le déduire.`,
-        ]}
-      >
-        Visualiser qui encadre qui, et repérer les équipes où le risque de départ ou l&apos;absentéisme se concentre.
-      </PageIntro>
-      <div className="mb-4 space-y-3">
-        {ignored.length > 0 && <Notice tone="warning">Paramètre d&apos;adresse non reconnu, ignoré : {ignored.join(", ")}. L&apos;organigramme est coloré selon l&apos;effectif.</Notice>}
-        {!dto.runAsOf && <Notice tone="info">Aucun calcul de risque n&apos;est publié : la part de collaborateurs en risque élevé ou moyen n&apos;est pas disponible.</Notice>}
+      <div className="mb-4 space-y-3 empty:hidden">
+        {ignored.length > 0 && <Notice tone="warning">Paramètre ignoré : {ignored.join(", ")}</Notice>}
+        {!dto.runAsOf && <Notice tone="info">Risque de départ non calculé</Notice>}
         {rh && fixes > 0 && (
-          <Notice tone="info">
-            {fmt.int(fixes)} rattachement{fixes > 1 ? "s" : ""} corrigé{fixes > 1 ? "s" : ""} à l&apos;affichage : manager sorti ou absent de l&apos;import (collaborateur placé sous le plus proche
-            responsable actif, sinon à la racine){stats.cycles > 0 ? `, boucle dans la hiérarchie (${fmt.int(stats.cycles)})` : ""}. À corriger dans AJIR.
+          <Notice tone="info" title={`${fmt.int(fixes)} rattachement${fixes > 1 ? "s" : ""} corrigé${fixes > 1 ? "s" : ""} à l'affichage`}>
+            Manager sorti ou absent de l&apos;import{stats.cycles > 0 ? ` · boucle hiérarchique (${fmt.int(stats.cycles)})` : ""} · à corriger dans AJIR
           </Notice>
         )}
       </div>
       {stats.people === 0 ? (
-        <EmptyState title="Aucun collaborateur actif rattaché" headingLevel={2}>
-          {rh
-            ? "Aucun collaborateur actif à la date de référence. Importez un export AJIR pour construire l'organigramme."
-            : "Aucun collaborateur actif ne vous est rattaché dans le dernier import AJIR. Si c'est une erreur, contactez la RH."}
-        </EmptyState>
+        <EmptyState title="Aucun collaborateur actif rattaché" headingLevel={2} />
       ) : (
         <>
-          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-            <KpiTile label="Collaborateurs actifs" value={fmt.int(stats.people)} period={`Au ${formatDate(dto.referenceDate)}`} />
-            <KpiTile label="Responsables d'équipe" value={fmt.int(stats.managers)} hint="Personnes ayant au moins un collaborateur actif rattaché" />
-            <KpiTile label="Niveaux hiérarchiques" value={fmt.int(stats.depth)} hint={rh ? "Sous la racine « Entreprise »" : "Sous vous"} />
-          </div>
+          <dl className="mb-4 flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            {figures.map((f) => (
+              <div key={f.label} className="flex items-baseline gap-1.5">
+                <dt className="text-fg-muted">{f.label}</dt>
+                <dd className="font-semibold tabular-nums text-heading">{fmt.int(f.value)}</dd>
+              </div>
+            ))}
+          </dl>
           <OrgChartView dto={dto} colorBy={q.couleur} />
         </>
       )}

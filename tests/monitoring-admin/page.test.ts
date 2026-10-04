@@ -55,16 +55,16 @@ async function render() {
 const NOMINATIVE = /Nom (DG|MGR|SUB|E\d)|TND|[Ss]alaire|Risque (élevé|moyen|faible)/;
 
 describe("console d'administration : rendu statique (ADMIN)", () => {
-  it("base sans activité : chaque visuel affiche un état vide dans sa carte (quoi, pourquoi, action)", async () => {
+  it("base sans activité : chaque visuel affiche un état vide dans sa carte (titre et action)", async () => {
     const { html, t } = await render();
     for (const s of [
-      "Aucune tentative de connexion sur 30 jours Les connexions apparaissent ici dès qu'un utilisateur ouvre une session. Voir les comptes",
-      "Aucun traitement lancé sur 30 jours Les traitements apparaissent après un import ou un calcul mensuel. Importer un export AJIR",
-      "Aucun refus d'accès sur 30 jours Personne n'a tenté d'ouvrir une page ou une fiche hors de son rôle. Consulter le journal d'audit",
+      "Aucune tentative de connexion sur 30 jours Voir les comptes",
+      "Aucun traitement lancé sur 30 jours Importer un export AJIR",
+      "Aucun refus d'accès sur 30 jours Consulter le journal d'audit",
       "Aucun refus d'accès enregistré",
     ])
       expect(t).toContain(s);
-    expect(headings(html, 3)).toEqual(["Connexions des 30 derniers jours", "Traitements des 30 derniers jours", "Refus d'accès des 30 derniers jours", "Derniers refus d'accès"]);
+    expect(headings(html, 3)).toEqual(["Connexions par jour", "Traitements par type et statut", "Refus d'accès par action", "Derniers refus d'accès"]);
     for (const once of ["Aucune tentative de connexion", "Aucun traitement lancé", "Aucun refus d'accès sur"]) expect(count(t, once), once).toBe(1);
     expect(count(t, "Voir les données")).toBe(0);
     expect(count(html, 'role="img"')).toBe(3);
@@ -80,11 +80,11 @@ describe("console d'administration : rendu statique (ADMIN)", () => {
     job(1, "SCORING", "ECHEC", 5);
     const { html, t } = await render();
 
-    expect(t).toContain("2 points demandent votre attention.");
+    expect(t).toContain("2 points d'attention");
     expect(html).toContain("bg-danger-soft");
-    const stopped = t.indexOf("Le service de calcul est arrêté (aucun signal reçu). Voir la santé des données");
+    const stopped = t.indexOf("Service de calcul : arrêté (aucun signal reçu) Voir la santé des données");
     expect(stopped).toBeGreaterThan(-1);
-    expect(stopped).toBeLessThan(t.indexOf("Aucun export AJIR n'a encore été importé. Importer un export AJIR"));
+    expect(stopped).toBeLessThan(t.indexOf("Export AJIR : aucun import Importer un export AJIR"));
 
     expect(count(html, "ring-inset ring-danger")).toBe(1);
     expect(html).toMatch(/<a href="\/data-health" class="[^"]*ring-inset ring-danger[^"]*">[\s\S]*?Service de calcul[\s\S]*?Critique[\s\S]*?text-danger[^"]*"><span>Arrêté<\/span>[\s\S]*?Voir la santé des données/);
@@ -95,12 +95,9 @@ describe("console d'administration : rendu statique (ADMIN)", () => {
     const { html, t } = await render();
     expect(headings(html, 1)).toEqual(["Console d'administration"]);
     expect(headings(html, 2)).toEqual(["Tâches fréquentes", "État de l'outil", "Sécurité des accès", "Activité sur 30 jours"]);
-    expect(headings(html, 3)).toEqual([
-      "5 connexions réussies et 2 échecs en 30 jours",
-      "2 traitements en 30 jours, dont 1 en échec",
-      "Le plus refusé : « Ouvrir une page réservée »",
-      "Derniers refus d'accès",
-    ]);
+    expect(headings(html, 3)).toEqual(["Connexions par jour", "Traitements par type et statut", "Refus d'accès par action", "Derniers refus d'accès"]);
+    expect(t).toContain("Connexions par jour : 5 connexions réussies · 2 échecs");
+    expect(t).toContain("Traitements par type et statut : 2 traitements");
 
     const tiles = ["Service de calcul", "Dernier import AJIR", "Alertes à traiter", "Comptes actifs"].map((label) => t.indexOf(label, t.indexOf("État de l'outil")));
     expect(tiles.every((i) => i > -1)).toBe(true);
@@ -109,9 +106,9 @@ describe("console d'administration : rendu statique (ADMIN)", () => {
     expect(t).toContain("Comptes actifs par rôle : 2 managers · 1 responsable RH · 1 administrateur");
 
     for (const label of ["Connexions réussies", "Échecs de connexion", "Refus d'accès"]) expect(html).toContain(`aria-label="Tendance : ${label.replace("'", "&#x27;")}"`);
-    expect(t).toMatch(/Connexions réussies 5 .*?\+5 par rapport aux 7 jours précédents favorable/);
-    expect(t).toMatch(/Échecs de connexion 2 .*?\+2 par rapport aux 7 jours précédents à surveiller/);
-    expect(t).toMatch(/Refus d'accès 4 .*?\+4 par rapport aux 7 jours précédents à surveiller/);
+    expect(t).toMatch(/Connexions réussies 5 .*?\+5 vs 7 jours précédents favorable/);
+    expect(t).toMatch(/Échecs de connexion 2 .*?\+2 vs 7 jours précédents à surveiller/);
+    expect(t).toMatch(/Refus d'accès 4 .*?\+4 vs 7 jours précédents à surveiller/);
 
     expect(count(html, 'role="img"')).toBe(6);
     expect(count(t, "Voir les données")).toBe(3);
@@ -127,12 +124,12 @@ describe("console d'administration : rendu statique (ADMIN)", () => {
     sqlite.prepare("INSERT INTO app_setting (key, value) VALUES ('worker_heartbeat', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(new Date().toISOString());
     sqlite.prepare("INSERT INTO import_batch (source, started_at, finished_at, status, rows_ok, rows_rejected, quality_score) VALUES ('test', ?, ?, 'OK', 1000, 12, 0.981)").run(noon(1), noon(1));
     const { html, t } = await render();
-    expect(t).toContain("Tout fonctionne normalement.");
-    expect(t).toMatch(/Dernier import conforme \(98,1 % de qualité, le \d{2}\/\d{2}\/\d{4}\), service de calcul actif, 4 comptes actifs\./);
+    expect(t).toContain("Tout fonctionne normalement Tâches fréquentes");
+    expect(t).not.toContain("point d'attention");
     expect(html).not.toContain("ring-inset ring-danger");
     expect(html).not.toContain("bg-danger-soft text-fg");
-    expect(t).toMatch(/Service de calcul Normal Actif Dernier signal il y a \d+ s : imports et calculs traités Voir la santé des données/);
-    expect(t).toMatch(/Dernier import AJIR Conforme 98,1 % de qualité N° \d+ du \d{2}\/\d{2}\/\d{4} · 12 lignes rejetées Voir les contrôles de l'import/);
+    expect(t).toMatch(/Service de calcul Normal Actif Voir la santé des données .*?Dernier signal il y a \d+ s/);
+    expect(t).toMatch(/Dernier import AJIR Conforme 98,1 % de qualité Voir les contrôles de l'import .*?N° \d+ du \d{2}\/\d{2}\/\d{4} · 12 lignes rejetées/);
     expect(t).not.toMatch(NOMINATIVE);
   });
 

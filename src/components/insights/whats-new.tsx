@@ -23,24 +23,25 @@ function text(i: NewsItem, d: EmployeeNewsDto): ReactNode {
   const P = shortMonth(d.previousMonth);
   switch (i.kind) {
     case "OPPOSITION":
-      return "Opposition au traitement prédictif : aucun niveau de risque n'est calculé pour ce collaborateur.";
+      return "Opposition au traitement prédictif : non évalué";
     case "RISQUE":
       if (i.before && i.after && i.before === i.after)
         return (
           <>
-            Niveau de risque inchangé depuis {P} : <RiskBadge level={i.after} />
+            Inchangé depuis {P} : <RiskBadge level={i.after} />
           </>
         );
-      if (!i.after) return <>N&apos;est plus évalué au calcul de {M} (niveau précédent : {LEVEL_LABELS[i.before!]}).</>;
+      if (!i.after) return <>Non évalué en {M} (avant : {LEVEL_LABELS[i.before!]})</>;
       if (!i.before)
         return (
           <>
-            Évalué au calcul de {M} sans niveau en {P} : <RiskBadge level={i.after} />
+            Premier niveau ({M}) : <RiskBadge level={i.after} />
           </>
         );
       return (
         <>
-          Niveau de risque : {LEVEL_LABELS[i.before]} en {P}, puis <RiskBadge level={i.after} /> en {M}.
+          {LEVEL_LABELS[i.before]} ({P}) <span aria-hidden="true">→</span>
+          <span className="sr-only">puis</span> <RiskBadge level={i.after} /> ({M})
         </>
       );
     case "FACTEUR":
@@ -54,7 +55,7 @@ function text(i: NewsItem, d: EmployeeNewsDto): ReactNode {
         </>
       ) : (
         <>
-          Formation obligatoire arrivée à échéance le {formatDate(i.date)} sans être terminée : {i.title}
+          Échéance dépassée le {formatDate(i.date)} : {i.title}
         </>
       );
     case "EVALUATION":
@@ -67,13 +68,13 @@ function text(i: NewsItem, d: EmployeeNewsDto): ReactNode {
     case "ABSENCE":
       return (
         <>
-          Absences hors santé non planifiées : {formatDays(i.now)} en {M}, contre {formatDays(i.before)} en {P}.
+          Absences hors santé : {formatDays(i.before)} ({P}) → {formatDays(i.now)} ({M})
         </>
       );
     case "HEURES_SUP":
       return (
         <>
-          Heures supplémentaires pointées : {formatHours(i.now)} en {M}, contre {formatHours(i.before)} en {P}.
+          Heures supplémentaires : {formatHours(i.before)} ({P}) → {formatHours(i.now)} ({M})
         </>
       );
     case "RECOMMANDATION":
@@ -135,7 +136,7 @@ export function WhatsNew({ data, className = "" }: { data: EmployeeNewsDto; clas
       id="quoi-de-neuf"
       title="Quoi de neuf"
       icon="news"
-      hint={`Changements entre le ${formatDate(data.window.from)} et le ${formatDate(data.window.to)}`}
+      hint={`${formatDate(data.window.from)} – ${formatDate(data.window.to)}`}
       className={className}
       aside={
         <InfoTip label="Quoi de neuf" align="end">
@@ -146,7 +147,7 @@ export function WhatsNew({ data, className = "" }: { data: EmployeeNewsDto; clas
       }
     >
       {data.items.length === 0 ? (
-        <p className="text-sm text-fg-muted">Rien de nouveau pour ce collaborateur depuis le calcul de {shortMonth(data.previousMonth)}.</p>
+        <p className="text-sm text-fg-muted">Aucun changement depuis {shortMonth(data.previousMonth)}</p>
       ) : (
         <ul className="divide-y divide-line">
           {data.items.map((i, k) => (

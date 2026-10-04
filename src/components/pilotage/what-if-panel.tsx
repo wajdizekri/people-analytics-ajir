@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
-import { Button, FormActions, Notice, RiskBadge, Skeleton, cardCls, fieldCls, fmt, tableCls, toast } from "@/components/ui";
+import { Badge, Button, FormActions, Notice, RiskBadge, Skeleton, StatusBadge, cardCls, fieldCls, fmt, tableCls, toast } from "@/components/ui";
+import { InfoTip } from "@/components/help/info-tip";
 import type { LeverSearchDto, WhatIfDto } from "@/lib/dal/whatif";
 import { formatDate, formatLiftWords, formatPoints, formatProb } from "./labels";
 
@@ -34,11 +35,11 @@ function Icon({ name, className = "h-4 w-4" }: { name: keyof typeof ICONS; class
   );
 }
 
-// Un levier = une question (« … le salaire augmente ? »), un champ, ses bornes et un aperçu de la valeur obtenue
+// Un levier = un titre, un champ, ses bornes et un aperçu de la valeur obtenue
 function Lever({
   id,
   icon,
-  question,
+  title,
   label,
   unit,
   hint,
@@ -48,7 +49,7 @@ function Lever({
 }: {
   id: string;
   icon: keyof typeof ICONS;
-  question: string;
+  title: string;
   label: string;
   unit: string;
   hint: string;
@@ -62,7 +63,7 @@ function Lever({
         <span aria-hidden="true" className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface text-link ring-1 ring-inset ring-line">
           <Icon name={icon} className="h-3.5 w-3.5" />
         </span>
-        <span className="pt-0.5">{question}</span>
+        <span className="pt-0.5">{title}</span>
       </p>
       <label htmlFor={id} className="mt-2 block text-xs font-medium text-fg-muted">
         {label}
@@ -105,8 +106,8 @@ function Estimate({ title, r, kind, max, highlight = false }: { title: string; r
         <div className={`h-2.5 rounded-full ${highlight ? "bg-primary" : "bg-fg-subtle"}`} style={{ width: `${Math.max(2, Math.round((r.score / max) * 100))}%` }} />
       </div>
       <p className="mt-1.5 text-xs text-fg-muted">
-        {ordinal(r.rank)} rang sur {fmt.int(r.population)} collaborateurs évalués (1er = le plus exposé)
-        {!b0 && `, ${formatLiftWords(r.lift)}`}
+        Rang : {ordinal(r.rank)} sur {fmt.int(r.population)} (1er = le plus exposé)
+        {!b0 && ` · ${formatLiftWords(r.lift)}`}
       </p>
     </div>
   );
@@ -128,11 +129,11 @@ function Headline({ r }: { r: WhatIfDto }) {
       <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-lg font-semibold text-heading">
         {moved === 0 ? (
           <>
-            Le niveau de risque resterait <RiskBadge level={after.level} />
+            Niveau de risque inchangé : <RiskBadge level={after.level} />
           </>
         ) : (
           <>
-            Le niveau de risque passerait de <RiskBadge level={before.level} /> à <RiskBadge level={after.level} />
+            Niveau de risque : <RiskBadge level={before.level} /> <span aria-hidden="true">→</span> <RiskBadge level={after.level} />
             <span className="sr-only">
               {" "}
               ({LEVEL_WORD[before.level]} vers {LEVEL_WORD[after.level]})
@@ -142,14 +143,12 @@ function Headline({ r }: { r: WhatIfDto }) {
       </p>
       <p className="mt-1 text-sm text-fg-muted">
         {b0 ? "Score à règles" : "Probabilité à 6 mois"} : {value(before)} <span aria-hidden="true">→</span>
-        <span className="sr-only">puis</span> <span className="font-semibold text-heading">{value(after)}</span> ({change}, {sense}).
+        <span className="sr-only">puis</span> <span className="font-semibold text-heading">{value(after)}</span> ({change}, {sense})
       </p>
       <p className="mt-2 text-sm text-fg-muted">
         Coût annuel estimé : <span className="text-xl font-semibold tabular-nums text-heading">{fmt.tnd(r.cost.annual)}</span>
       </p>
-      <p className="text-xs text-fg-muted">
-        Hausse de salaire × 12, charges patronales comprises ({dec(r.cost.chargeRate * 100, 2)} %) ; hors coût de la formation.
-      </p>
+      <p className="text-xs text-fg-muted">Hausse de salaire × 12, charges {dec(r.cost.chargeRate * 100, 2)} % comprises, hors formation</p>
     </div>
   );
 }
@@ -169,7 +168,7 @@ export function WhatIfResult({ r, headingRef, outdated = false }: { r: WhatIfDto
       </h3>
       {outdated && (
         <Notice tone="warning" title="Résultat à mettre à jour">
-          Les actions ont été modifiées depuis ce calcul : le résultat ci-dessous porte sur les valeurs précédentes. Relancez la simulation pour l&apos;actualiser.
+          Actions modifiées depuis ce calcul
         </Notice>
       )}
       <Headline r={r} />
@@ -183,9 +182,9 @@ export function WhatIfResult({ r, headingRef, outdated = false }: { r: WhatIfDto
 
       <div className="grid gap-3 md:grid-cols-2">
         <div className={panelCls}>
-          <h4 className={panelTitle}>Ce qui change dans le dossier</h4>
+          <h4 className={panelTitle}>Données modifiées</h4>
           {r.changes.length === 0 ? (
-            <p className="text-sm text-fg-muted">Aucune donnée du calcul n&apos;est modifiée par ces actions.</p>
+            <p className="text-sm text-fg-muted">Aucune donnée modifiée</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {r.changes.map((c) => (
@@ -206,7 +205,7 @@ export function WhatIfResult({ r, headingRef, outdated = false }: { r: WhatIfDto
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${less ? "bg-success-soft text-success ring-success/40" : "bg-danger-soft text-danger ring-danger/40"}`}
                   >
                     <Icon name={less ? "down" : "up"} className="h-3 w-3" />
-                    {g.label} : {less ? "pèse moins sur le risque" : "pèse davantage sur le risque"}
+                    {g.label} : {less ? "poids en baisse" : "poids en hausse"}
                   </li>
                 );
               })}
@@ -228,7 +227,7 @@ export function WhatIfResult({ r, headingRef, outdated = false }: { r: WhatIfDto
             )}
             {r.levers.overtimeCutH > 0 && <li>Heures supplémentaires retirées : {dec(a.overtimeRemovedH)} h sur les 3 derniers mois</li>}
             {a.trainingHours > 0 && <li>Formation ajoutée : {dec(a.trainingHours, 0)} h</li>}
-            {!a.salary && !a.grade && r.levers.overtimeCutH <= 0 && a.trainingHours <= 0 && <li className="text-fg-muted">Aucune action appliquée.</li>}
+            {!a.salary && !a.grade && r.levers.overtimeCutH <= 0 && a.trainingHours <= 0 && <li className="text-fg-muted">Aucune action appliquée</li>}
           </ul>
         </div>
       </div>
@@ -275,7 +274,7 @@ export function WhatIfResult({ r, headingRef, outdated = false }: { r: WhatIfDto
           </table>
         </div>
         <p className="mt-2 text-xs text-fg-muted">
-          Calcul avec le {fmt.model(r.model.version)}, situation au {formatDate(r.asOf)}. Niveau et rang recalculés parmi les collaborateurs évalués ce mois-ci.
+          {fmt.model(r.model.version).replace(/^m/, "M")} · situation au {formatDate(r.asOf)}
         </p>
       </details>
       {r.notes.map((n) => (
@@ -343,7 +342,7 @@ function ProposalCard({ p, index, r, onApply }: { p: Proposal; index: number; r:
           </li>
         ))}
       </ul>
-      {p.applied.salary && <p className="mt-1 text-xs text-fg-muted">Nouveau salaire de base : {fmt.tnd(p.applied.salary.after)} par mois.</p>}
+      {p.applied.salary && <p className="mt-1 text-xs text-fg-muted">Nouveau salaire de base : {fmt.tnd(p.applied.salary.after)} / mois</p>}
       <p className="mt-2 text-sm text-fg-muted">
         {b0 ? "Score à règles" : "Probabilité à 6 mois"} : {value(r.before)} <span aria-hidden="true">→</span>
         <span className="sr-only">puis</span> <span className="font-semibold text-heading">{value(p.after)}</span>
@@ -352,8 +351,8 @@ function ProposalCard({ p, index, r, onApply }: { p: Proposal; index: number; r:
         Niveau atteint : <RiskBadge level={p.after.level} />
       </p>
       <p className="mt-1 text-xs text-fg-muted">
-        {p.cost.annual > 0 ? `Hausse de salaire : ${fmt.tnd(p.cost.annual)} par an, charges comprises.` : "Sans hausse de salaire."}
-        {p.levers.trainingHours > 0 ? " Hors coût de la formation." : ""}
+        Coût : {p.cost.annual > 0 ? `${fmt.tnd(p.cost.annual)} / an, charges comprises` : "aucune hausse de salaire"}
+        {p.levers.trainingHours > 0 ? ", hors formation" : ""}
       </p>
       <div className="mt-auto pt-3">
         <Button size="sm" icon="edit" onClick={() => onApply(p.levers)}>
@@ -557,9 +556,9 @@ export function WhatIfPanel({
   const opposed = error?.code === "OPPOSITION";
   const salaryPreview =
     baseSalary != null && form.salaryPct > 0
-      ? `Soit environ ${fmt.tnd(baseSalary * (1 + form.salaryPct / 100))} par mois (+${fmt.tnd((baseSalary * form.salaryPct) / 100)}).`
+      ? `Nouveau : ≈ ${fmt.tnd(baseSalary * (1 + form.salaryPct / 100))} / mois (+${fmt.tnd((baseSalary * form.salaryPct) / 100)})`
       : baseSalary != null
-        ? `Salaire de base actuel : ${fmt.tnd(baseSalary)} par mois.`
+        ? `Actuel : ${fmt.tnd(baseSalary)} / mois`
         : undefined;
   return (
     <section id="simulation" aria-labelledby={`${id}-title`} className={`${cardCls} mt-6 scroll-mt-4 p-4 sm:p-5`}>
@@ -567,22 +566,27 @@ export function WhatIfPanel({
         <span aria-hidden="true" className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-link">
           <Icon name="flask" className="h-4 w-4" />
         </span>
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
           <h2 id={`${id}-title`} className="text-lg font-semibold leading-8 text-heading">
             Simulation « et si ? »
           </h2>
-          <p className="text-sm text-fg-muted">
-            Testez l&apos;effet estimé d&apos;une action avant de la décider. Calcul sur les données au jour du calcul publié ; rien n&apos;est enregistré.
-          </p>
+          <StatusBadge tone="warning" dot={false}>
+            Estimation non causale
+          </StatusBadge>
+          <Badge>Rien n&apos;est enregistré</Badge>
+          <InfoTip label="Simulation « et si ? »" align="end">
+            Effet estimé d&apos;une action avant de la décider, sur les données au jour du calcul publié. {notice}
+          </InfoTip>
         </div>
       </header>
-      <Notice tone="warning">{notice}</Notice>
-      <div className="mt-4 rounded-control bg-surface-2 p-3.5 ring-1 ring-inset ring-line">
+      <div className="rounded-control bg-surface-2 p-3.5 ring-1 ring-inset ring-line">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h3 className="text-base font-semibold text-heading">Par où commencer ?</h3>
-            <p className="text-sm text-fg-muted">L&apos;outil cherche les plus petites combinaisons d&apos;actions qui feraient baisser le niveau de risque.</p>
-            <p className="mt-1 text-sm font-medium text-fg">{SEARCH_FRAMING}</p>
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+            <h3 className="text-base font-semibold text-heading">Recherche de leviers</h3>
+            <Badge>Pistes à discuter</Badge>
+            <InfoTip label="Recherche de leviers">
+              Plus petites combinaisons d&apos;actions qui feraient baisser le niveau de risque. {SEARCH_FRAMING}
+            </InfoTip>
           </div>
           <Button icon="search" onClick={findLevers} pending={searching} pendingLabel="Recherche en cours…" disabled={opposed}>
             Trouver les leviers les plus efficaces
@@ -593,13 +597,12 @@ export function WhatIfPanel({
       </div>
       <form onSubmit={submit} className="mt-4 space-y-3">
         <fieldset>
-          <legend className="text-base font-semibold text-heading">1. Que se passe-t-il si… ?</legend>
-          <p className="text-sm text-fg-muted">Choisissez une ou plusieurs actions.</p>
+          <legend className="text-base font-semibold text-heading">1. Actions à simuler</legend>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Lever
               id={`${id}-salary`}
               icon="money"
-              question="…le salaire de base augmente ?"
+              title="Salaire de base"
               label="Augmentation du salaire de base (%)"
               unit="%"
               hint={`De 0 à ${limits.salaryPct} %`}
@@ -621,8 +624,8 @@ export function WhatIfPanel({
             <Lever
               id={`${id}-overtime`}
               icon="clock"
-              question="…les heures supplémentaires baissent ?"
-              label="Heures supplémentaires en moins par mois (moyenne des 3 derniers mois)"
+              title="Heures supplémentaires"
+              label="Heures en moins par mois (moyenne sur 3 mois)"
               unit="h / mois"
               hint={`De 0 à ${limits.overtimeCutH} h par mois`}
               active={form.overtimeCutH > 0}
@@ -642,7 +645,7 @@ export function WhatIfPanel({
             <Lever
               id={`${id}-training`}
               icon="training"
-              question="…le collaborateur suit plus de formation ?"
+              title="Formation"
               label="Heures de formation ajoutées"
               unit="h"
               hint={`De 0 à ${limits.trainingHours} h`}
@@ -665,7 +668,8 @@ export function WhatIfPanel({
                 <span aria-hidden="true" className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface text-link ring-1 ring-inset ring-line">
                   <Icon name="grade" className="h-3.5 w-3.5" />
                 </span>
-                <span className="pt-0.5">…le collaborateur est promu ?</span>
+                <span className="pt-0.5">Promotion</span>
+                <InfoTip label="Promotion">Salaire porté au moins à la médiane du nouveau grade, même famille de métier.</InfoTip>
               </p>
               <label className="mt-2 flex min-h-10 cursor-pointer items-center gap-2.5 rounded-control bg-surface px-2.5 py-2 text-sm ring-1 ring-inset ring-line-strong transition-colors hover:bg-surface-3">
                 <input
@@ -678,7 +682,7 @@ export function WhatIfPanel({
                 <span className="font-medium text-fg">Promotion au grade supérieur</span>
               </label>
               <p id={`${id}-promotion-hint`} className="mt-1 text-xs text-fg-muted">
-                {grade ? `Grade actuel : ${grade}. ` : ""}Salaire porté au moins à la médiane du nouveau grade, même famille de métier.
+                Grade actuel : {grade ?? "—"}
               </p>
             </div>
           </div>
@@ -727,7 +731,7 @@ export function WhatIfPanel({
               </span>
             </div>
             <p id={`${id}-charges-hint`} className="mt-1 text-xs text-fg-muted">
-              Par défaut : {dec(defaultChargeRatePct, 2)} %. Sert seulement au calcul du coût.
+              Par défaut : {dec(defaultChargeRatePct, 2)} %
             </p>
           </div>
         </details>

@@ -27,7 +27,7 @@ import { TermTip } from "@/components/help";
 import { AbsenteeismForecastCard, readForecast } from "@/components/ai/absenteeism/forecast-section";
 import { AbsRecoBoard } from "@/components/ai/absenteeism/reco-status-form";
 import { groupBars, trendChart } from "@/components/ai/absenteeism/chart";
-import { Def, ReadingGuide, fr, type Answer } from "@/components/ai/workload/insight-kit";
+import { Def, fr, type Answer } from "@/components/ai/workload/insight-kit";
 
 export const metadata = { title: "Absentéisme — People Analytics AJIR" };
 
@@ -37,7 +37,6 @@ const mean = (xs: (number | null)[]) => {
   return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
 };
 const days = (n: number | null) => (n == null ? "—" : n.toLocaleString("fr-FR", { maximumFractionDigits: 1 }));
-const plural = (n: number, one: string, many: string) => (n > 1 ? many : one);
 const SIGNAL_COLUMNS: DataTableColumn[] = [
   { key: "name", label: "Collaborateur" },
   { key: "dept", label: "Département" },
@@ -67,9 +66,8 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
     ...(deptLabel ? [{ label: "Département", value: deptLabel }] : []),
   ];
   const scopeLabel = rh ? (deptLabel ?? "Toute l'entreprise") : `Vos équipes (${fmt.int(a.total.activeMembers)} collaborateurs)`;
-  const tooSmall = `Groupe trop petit pour être affiché (moins de ${MIN_GROUP_SIZE} personnes)`;
+  const tooSmall = `Taux masqués : moins de ${MIN_GROUP_SIZE} personnes`;
   const ranked = a.series.filter((g): g is AbsSeries & { rate: number } => !g.masked && g.rate != null);
-  const worst = [...ranked].sort((x, y) => y.rate - x.rate)[0];
   const hasData = !a.total.masked && (a.total.workableDays ?? 0) > 0;
 
   // Tendance récente : moyenne des 4 dernières semaines (3 derniers mois) comparée aux périodes précédentes
@@ -84,40 +82,18 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
   const preferKey = rh ? (q.departement ? `D${q.departement}` : "E") : undefined;
   const unit = f.units.find((u) => u.key === preferKey) ?? f.units[0];
   const fc = unit ? readForecast(unit) : null;
-  const until = unit?.forecast.length ? fr.monthLong(unit.forecast[unit.forecast.length - 1].month) : "";
   const n = a.collective.length;
 
   let verdict: Answer;
-  if (a.total.masked)
-    verdict = {
-      tone: "neutre",
-      label: "Non affiché",
-      text: `Votre périmètre compte moins de ${MIN_GROUP_SIZE} personnes : aucun taux n'est affiché, pour protéger l'anonymat.`,
-    };
-  else if (!hasData)
-    verdict = { tone: "neutre", label: "Pas de données", text: "Aucune donnée d'absence sur la période : la réponse ne peut pas être établie." };
+  if (a.total.masked) verdict = { tone: "neutre", label: "Non affiché", text: null };
+  else if (!hasData) verdict = { tone: "neutre", label: "Pas de données", text: null };
   else {
     const up = trend === "hausse";
     const fcUp = fc?.trend === "hausse";
     const tone = up && (n > 0 || fcUp) ? "critique" : up || n > 0 || fcUp ? "attention" : "bon";
-    const level =
-      trend === "stable"
-        ? `le taux est stable (${fr.rate(a.total.rate)} sur la période)`
-        : `le taux ${trend === "hausse" ? "augmente" : "baisse"} (${fr.points(delta!)} sur les ${recentLabel})`;
-    const anomalies =
-      n === 0 ? "aucune hausse inhabituelle n'est détectée" : `${n} ${plural(n, "hausse inhabituelle est", "hausses inhabituelles sont")} à examiner`;
-    const outlook = !fc ? null : fc.trend === "stable" ? `la prévision reste stable d'ici ${until}` : `une ${fc.trend} est prévue d'ici ${until}`;
-    verdict = {
-      tone,
-      label: tone === "bon" ? "Sous contrôle" : tone === "attention" ? "À surveiller" : "Hausse à traiter",
-      text: `${tone === "bon" ? "Oui" : tone === "attention" ? "Globalement oui" : "Pas entièrement"} : ${[level, anomalies, outlook].filter(Boolean).join(", ")}.`,
-    };
+    verdict = { tone, label: tone === "bon" ? "Sous contrôle" : tone === "attention" ? "À surveiller" : "Hausse à traiter", text: null };
   }
 
-  const trendTitle =
-    trend === "stable"
-      ? `Absentéisme stable : ${fr.rate(a.total.rate)} en moyenne sur les ${periodShort}`
-      : `L'absentéisme ${trend === "hausse" ? "augmente" : "baisse"} sur les ${recentLabel}`;
   const above = ranked.filter((g) => a.total.rate != null && g.rate > a.total.rate).length;
   const averageLabel = rh ? (deptLabel ? "Moyenne du département" : "Moyenne entreprise") : "Moyenne de votre périmètre";
   // Filtrage croisé : département → ses équipes ; équipe → ses collaborateurs. Seuls les groupes affichés (non masqués) sont cliquables.
@@ -148,7 +124,6 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
       {retour && <Breadcrumb items={[{ label: "Tableau de bord", href: retour }, { label: "Absentéisme" }]} />}
       <PageHeader
         title="Absentéisme"
-        subtitle="Repérer les hausses d'absences non planifiées, hors santé et congés annuels, et décider des actions collectives."
         scope={scopeLabel}
         period={`Données au ${formatDate(a.referenceDate)}`}
         actions={
@@ -191,14 +166,16 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
 
       <QuestionAnswer
         id="reponse-absenteisme"
-        question="L'absentéisme est-il sous contrôle ?"
+        question="État de l'absentéisme"
         verdict={verdict}
-        scope={`${scopeLabel} · ${period} · maladie, maternité et congés annuels exclus.`}
+        scope={`${scopeLabel} · ${periodShort} · hors santé et congés annuels`}
         method={
           <>
             Trois repères : la tendance des {recentLabel} (un écart de moins de 0,2 point ou de moins de 20 % est jugé stable), les hausses inhabituelles
             d&apos;équipe ou de département détectées sur la période, et la prévision des 3 prochains mois comparée aux 12 derniers. « À surveiller » dès
-            qu&apos;un repère se dégrade.
+            qu&apos;un repère se dégrade. Taux = jours d&apos;absence injustifiée, de congé sans solde ou d&apos;autre absence, divisés par les jours ouvrables ;
+            maladie, maternité et congés annuels exclus. Calendrier tunisien pris en compte (Ramadan, jours fériés, ponts, séance unique). Aucun taux pour un
+            groupe de moins de {MIN_GROUP_SIZE} personnes.
           </>
         }
       >
@@ -230,8 +207,8 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
             fc?.next && fc.next.lower != null && fc.next.upper != null
               ? `Fourchette probable à 80 % : ${fr.rate(fc.next.lower)} à ${fr.rate(fc.next.upper)}`
               : f.teamTooSmall
-                ? `Non affichée : équipe de moins de ${MIN_GROUP_SIZE} personnes`
-                : "Pas encore de prévision pour ce périmètre"
+                ? `Masquée : moins de ${MIN_GROUP_SIZE} personnes`
+                : "Aucune prévision"
           }
           detailHref={fc ? "#prevision" : undefined}
           detailLabel="Voir la prévision"
@@ -260,7 +237,7 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
       </QuestionAnswer>
 
       {a.total.masked ? (
-        <Notice tone="warning">{tooSmall} : les taux de votre périmètre ne sont pas affichés.</Notice>
+        <Notice tone="warning">{tooSmall}</Notice>
       ) : !hasData ? (
         <EmptyState
           title="Aucune donnée d'absence sur la période"
@@ -274,23 +251,19 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
               <ButtonLink href="/data-health">Vérifier le dernier import</ButtonLink>
             ) : undefined
           }
-        >
-          {rh
-            ? "Si la période devrait contenir des pointages, vérifiez le dernier import AJIR."
-            : "Si la période devrait contenir des pointages, signalez-le à la RH."}
-        </EmptyState>
+        />
       ) : (
         <div className="grid gap-4 xl:grid-cols-5">
           <VisualCard
-            title={trendTitle}
-            subtitle={`Taux d'absence par ${weekly ? "semaine" : "mois"} (% des jours ouvrables) · ${a.total.label.toLowerCase()} · ${periodShort} · tirets : moyenne de la période`}
+            title={`Absentéisme ${weekly ? "hebdomadaire" : "mensuel"} (%)`}
+            subtitle={`% des jours ouvrables · ${a.total.label.toLowerCase()} · ${periodShort} · tirets : moyenne de la période`}
             className={ranked.length >= 2 ? "xl:col-span-3" : "xl:col-span-5"}
             chart={trendChart({ labels, rates: a.total.rates, average: a.total.rate, seriesName: a.total.label, weekly })}
           />
           {ranked.length >= 2 && (
             <VisualCard
-              title={`${worst.label} : le taux le plus élevé (${fr.rate(worst.rate)})`}
-              subtitle={`Taux d'absence sur les ${periodShort} (%), par ${axisWord} · ${scopeLabel} · en ambre : au-dessus de la moyenne (${above} sur ${ranked.length})`}
+              title={`Absentéisme par ${axisWord} (%)`}
+              subtitle={`${periodShort} · ${scopeLabel} · ambre : au-dessus de la moyenne (${above} sur ${ranked.length})`}
               className="xl:col-span-2"
               chart={withDrillSpec(
                 groupBars({
@@ -309,10 +282,8 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
               footnote={
                 a.hiddenSeries > 0 || !rh ? (
                   <>
-                    {a.hiddenSeries > 0 &&
-                      `${a.hiddenSeries} autre${a.hiddenSeries > 1 ? "s" : ""} ${axisWord}${a.hiddenSeries > 1 ? "s" : ""} au taux plus faible, non affiché${a.hiddenSeries > 1 ? "s" : ""}. `}
-                    {!rh &&
-                      `Un taux n'est affiché que pour un groupe d'au moins ${MIN_GROUP_SIZE} personnes, et jamais s'il permettrait d'en déduire celui d'un groupe plus petit.`}
+                    {a.hiddenSeries > 0 && `Non affichés (taux plus faibles) : ${a.hiddenSeries} ${axisWord}${a.hiddenSeries > 1 ? "s" : ""}. `}
+                    {!rh && `Taux affiché pour un groupe d'au moins ${MIN_GROUP_SIZE} personnes.`}
                   </>
                 ) : undefined
               }
@@ -325,46 +296,22 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
         <AbsenteeismForecastCard d={f} preferKey={preferKey} coverage={readConformal("absenteeism", f.modelVersion)?.coverage} />
       </div>
 
-      <SectionHeader
-        id="actions"
-        title="Que faire ?"
-        description="Actions proposées pour une équipe, un département ou l'entreprise, jamais pour une personne."
-        className="mt-8"
-      />
+      <SectionHeader id="actions" title="Actions proposées" className="mt-8" />
       <div className={`${cardCls} p-4 sm:p-5`}>
-        <AbsRecoBoard
-          items={recoItems}
-          emptyTitle="Aucune action à traiter sur l'absentéisme"
-          emptyText={
-            rh
-              ? "Des actions sont proposées après le calcul mensuel quand une hausse est prévue pour une équipe, un département ou l'entreprise."
-              : "Une action vous est proposée après le calcul mensuel si une hausse est prévue dans votre équipe."
-          }
-        />
+        <AbsRecoBoard items={recoItems} emptyTitle="Aucune action à traiter" />
       </div>
 
-      <SectionHeader
-        title="Détail"
-        description={
-          rh
-            ? "Hausses inhabituelles détectées sur la période et signaux individuels à vérifier."
-            : "Hausses inhabituelles détectées sur la période dans vos équipes."
-        }
-        className="mt-8"
-      />
+      <SectionHeader title="Détail" className="mt-8" />
       <section id="anomalies" aria-labelledby="anomalies-titre" className="scroll-mt-4">
         <SectionHeader
           id="anomalies-titre"
           level={3}
-          title={`Hausses inhabituelles d'équipe ou de département (${fmt.int(n)})`}
+          title={`Hausses inhabituelles (${fmt.int(n)})`}
           tip={<TermTip term="anomalieCollective" role={ctx.role} align="start" />}
         />
         <div className={`${cardCls} px-4 py-2 sm:px-5`}>
           {n === 0 ? (
-            <EmptyState title="Aucune hausse inhabituelle détectée sur la période" icon="success" compact>
-              Elles sont recherchées chaque semaine pour les groupes d&apos;au moins {MIN_GROUP_SIZE} personnes, en tenant compte du calendrier (Ramadan, jours
-              fériés, ponts).
-            </EmptyState>
+            <EmptyState title="Aucune hausse inhabituelle sur la période" icon="success" compact />
           ) : (
             <ul className="divide-y divide-line">
               {a.collective.map((c) => (
@@ -391,11 +338,13 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
             level={3}
             title={`Signaux individuels à vérifier (${fmt.int(a.individual.length)})`}
             tip={<TermTip term="bradford" role={ctx.role} align="start" />}
+            actions={
+              <>
+                <StatusBadge>Réservé RH</StatusBadge>
+                <StatusBadge tone="warning">À vérifier, pas un constat</StatusBadge>
+              </>
+            }
           />
-          <Notice tone="warning">
-            Réservés à la RH. Ce sont des signaux statistiques à vérifier avant toute démarche, pas des constats. Les absences pour raison de santé en sont
-            exclues.
-          </Notice>
           <DataTable
             className="mt-3"
             columns={SIGNAL_COLUMNS}
@@ -431,18 +380,6 @@ export default async function AbsenteeismPage({ searchParams }: { searchParams: 
           />
         </section>
       )}
-
-      <ReadingGuide helpHref="/aide#absenteisme">
-        <li>
-          Taux = jours d&apos;absence injustifiée, de congé sans solde ou d&apos;autre absence, divisés par les jours ouvrables. Maladie, maternité et congés
-          annuels ne sont jamais comptés.
-        </li>
-        <li>Le calendrier tunisien est pris en compte : Ramadan, jours fériés, ponts et séance unique.</li>
-        <li>
-          Aucun taux n&apos;est affiché pour un groupe de moins de {MIN_GROUP_SIZE} personnes.
-          {rh && " Un signal individuel est à vérifier avec la personne avant toute démarche."}
-        </li>
-      </ReadingGuide>
     </>
   );
 }

@@ -44,12 +44,14 @@ describe("/formations : liens vers la fiche", () => {
     expect(m).toMatch(LATE);
   });
 
-  it("manager : mêmes liens pour sa hiérarchie, sans probabilité ; sous-titres avec le périmètre", async () => {
+  it("manager : mêmes liens pour sa hiérarchie, sans probabilité ; titres courts, périmètre dans le sous-titre", async () => {
     as("mgr");
     const m = await render();
     expect(m).toMatch(AT_RISK);
     expect(m).toMatch(LATE);
     expect(m).not.toMatch(/Probabilit/);
-    expect(m).toContain("par mois d&#x27;échéance (nombre) · Votre équipe");
+    expect(m).toContain("Échéances à venir par mois");
+    expect(m).toContain("Formations à risque par intitulé");
+    expect(m).toContain("Formations obligatoires non terminées (nombre) · Votre équipe");
   });
 });

@@ -69,9 +69,6 @@ export function SettingRow({
             </>
           )}
         </div>
-        <p id={`${id}-help`} className="mt-0.5 text-xs text-fg-muted">
-          {ui.short}
-        </p>
       </div>
       <div className="w-48 max-w-full @lg:justify-self-end">
         <div className={`flex rounded-control transition-shadow duration-200 ${changed && !error ? "ring-2 ring-accent" : ""}`}>
@@ -87,7 +84,7 @@ export function SettingRow({
             onChange={(e) => onChange(e.target.value)}
             required
             aria-invalid={!!error}
-            aria-describedby={`${error ? `${id}-err ` : ""}${id}-help ${id}-bornes ${id}-meta ${id}-effect`}
+            aria-describedby={`${error ? `${id}-err ` : ""}${id}-bornes ${id}-meta ${id}-effect`}
             className={`${inputCls} ${error ? "border-danger focus:ring-danger/25" : "border-line-strong hover:border-fg-muted focus:border-primary focus:ring-primary/25"}`}
           />
           <span aria-hidden="true" className="inline-flex w-20 shrink-0 items-center justify-center rounded-r-control border border-l-0 border-line-strong bg-surface-2 px-1 text-xs font-medium text-fg-muted">
@@ -126,7 +123,7 @@ export function SettingRow({
         </div>
         <p id={`${id}-effect`} className="text-xs text-fg-muted">
           <span className="font-semibold text-fg">Effet : </span>
-          {effect ?? "saisissez une valeur valide pour le voir."}
+          {effect ?? "—"}
         </p>
       </div>
     </div>

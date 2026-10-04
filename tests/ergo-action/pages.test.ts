@@ -75,7 +75,7 @@ describe("alertes : liste", () => {
     const { header, list } = await alertsList();
     expect(text(header)).toContain("Toute l'entreprise");
     const t = text(list);
-    expect(t).toContain("nouvelles et en cours d'abord, les plus graves en tête");
+    expect(t).not.toContain("nouvelles et en cours d'abord, les plus graves en tête");
     expect(t).not.toContain("les plus récentes d'abord");
     expect(list.indexOf("Exporter (CSV)")).toBeGreaterThan(list.indexOf('id="alertes-liste"'));
     expect(list).toContain(`href="/employees/${ids.emp}?retour=%2Falerts"`);
@@ -100,15 +100,15 @@ describe("alertes : liste", () => {
     expect(mgr).not.toContain('value="SYSTEME"');
   });
 
-  it("états vides : « aucune alerte nouvelle » expliqué, titres sans point final, action pour élargir", async () => {
+  it("états vides : titre seul, sans point final, action pour élargir", async () => {
     as("MANAGER");
     const none = text((await alertsList({ status: "NOUVELLE" })).list);
     expect(none).toContain("Aucune alerte nouvelle");
-    expect(none).toContain("Toutes les alertes ont été prises en charge.");
+    expect(none).not.toContain("Toutes les alertes ont été prises en charge.");
     expect(none).toContain("Afficher toutes les alertes");
     as("RH");
     const filtered = text((await alertsList({ type: "SYSTEME" })).list);
-    expect(filtered).toContain("Aucune alerte ne correspond à ces filtres Retirez un filtre");
+    expect(filtered).toContain("Aucune alerte ne correspond à ces filtres Afficher toutes les alertes");
   });
 });
 
@@ -118,7 +118,7 @@ describe("alertes : détail", () => {
     const sel = await alertDetail(ids.absOpen, "/alerts?type=ABSENTEISME");
     expect(sel).toContain(`href="/alerts/${ids.absNew}?retour=%2Falerts%3Ftype%3DABSENTEISME"`);
     expect(sel).not.toContain(`href="/alerts/${ids.turnover}`);
-    expect(text(sel)).toContain("Dans la même sélection que la liste");
+    expect(text(sel)).toContain("Traiter l'alerte nouvelle suivante");
     // sans sélection : la plus urgente des nouvelles (gravité « Attention » avant « Information »)
     const all = await alertDetail(ids.absOpen);
     expect(all).toContain(`href="/alerts/${ids.turnover}"`);
@@ -128,7 +128,7 @@ describe("alertes : détail", () => {
     as("RH");
     const done = await alertDetail(ids.absOpen, "/alerts?type=ABSENTEISME&severity=CRITIQUE");
     const t = text(done);
-    expect(t).toContain("Aucune autre alerte nouvelle dans cette sélection.");
+    expect(t).toContain("Aucune autre alerte nouvelle dans cette sélection");
     expect(done).toMatch(/href="\/alerts\?type=ABSENTEISME&amp;severity=CRITIQUE"[^>]*>Revenir à la liste/);
     const name = ids.deptName.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     expect(done).toMatch(new RegExp(`<dd[^>]*><a href="/absenteeism\\?departement=${ids.dept}"[^>]*>${name}</a>`));
@@ -175,7 +175,7 @@ describe("recommandations", () => {
     const Page = (await import("@/app/(app)/recommendations/page")).default;
     const t = text(html(await Page({ searchParams: sp({ statut: "PROPOSEE" }) })));
     expect(t).toContain("Aucune recommandation en attente de décision");
-    expect(t).toContain("Toutes les recommandations ont été décidées.");
+    expect(t).not.toContain("Toutes les recommandations ont été décidées.");
     expect(t).toContain("Afficher toutes les recommandations");
   });
 });

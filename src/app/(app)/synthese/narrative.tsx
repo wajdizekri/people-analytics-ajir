@@ -1,4 +1,4 @@
-import { SectionHeader, cardCls } from "@/components/ui";
+import { Badge, SectionHeader, cardCls } from "@/components/ui";
 import { InfoTip } from "@/components/help";
 import type { Narrative } from "@/lib/ai/narrative";
 import type { AccessContext } from "@/lib/dal/context";
@@ -11,17 +11,21 @@ function sourceLine(n: Narrative, pending: boolean): string {
   return n.fallback ? "Rédaction par phrases types : la reformulation par IA générative n'a pas abouti." : "Rédaction par phrases types, sans IA générative.";
 }
 
-// Encadré « Synthèse du mois en quelques phrases » : une phrase par ligne, méthode de rédaction toujours indiquée
+const sourceBadge = (n: Narrative, pending: boolean) => (pending ? "Reformulation en cours" : n.source === "IA" ? "IA générative" : "Phrases types");
+
+// Encadré « Synthèse du mois » : une puce par constat ; méthode de rédaction en pastille, détail dans la bulle « ? »
 export function NarrativeBox({ narrative, pending = false }: { narrative: Narrative; pending?: boolean }) {
   return (
     <section aria-labelledby="synthese-redigee-titre" aria-busy={pending || undefined} className={`${cardCls} p-4 sm:p-5`}>
       <SectionHeader
         id="synthese-redigee-titre"
-        title="Synthèse du mois en quelques phrases"
+        title="Synthèse du mois"
+        actions={<Badge tone={narrative.source === "IA" && !pending ? "info" : "neutral"}>{sourceBadge(narrative, pending)}</Badge>}
         tip={
           <InfoTip label="Comment ce texte est rédigé">
             Phrases construites à partir des chiffres clés de cette page, pour votre périmètre, sans aucune donnée nominative. Si l&apos;option est activée sur
-            le serveur, une IA générative les reformule à partir des seuls agrégats. Un chiffre non fourni entraîne le retour aux phrases types.
+            le serveur, une IA générative les reformule à partir des seuls agrégats. Un chiffre non fourni entraîne le retour aux phrases types.{" "}
+            {sourceLine(narrative, pending)}
           </InfoTip>
         }
       />
@@ -30,9 +34,6 @@ export function NarrativeBox({ narrative, pending = false }: { narrative: Narrat
           <li key={i}>{t}</li>
         ))}
       </ul>
-      <p className="mt-3 text-xs leading-relaxed text-fg-subtle">
-        Texte rédigé automatiquement à partir des indicateurs ci-dessous. {sourceLine(narrative, pending)}
-      </p>
     </section>
   );
 }

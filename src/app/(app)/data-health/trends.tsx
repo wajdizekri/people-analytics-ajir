@@ -23,7 +23,6 @@ import { MONITORING, type DataMonitoringDTO, type ImportPointDTO } from "@/lib/d
 // Tendances d'un import à l'autre. Une courbe à un ou deux points ressemble à un graphique cassé : en dessous de
 // TREND_MIN_IMPORTS imports, chaque score est montré par une barre de niveau, face au seuil de blocage.
 
-const plural = (n: number, word: string) => `${fmt.int(n)} ${word}${n > 1 ? "s" : ""}`;
 const share = (i: ImportPointDTO) => (i.rowsOk + i.rowsRejected ? i.rowsRejected / (i.rowsOk + i.rowsRejected) : null);
 
 function Figure({ caption, children }: { caption: string; children: ReactNode }) {
@@ -46,7 +45,7 @@ function QualityMarks({ imports, threshold }: { imports: ImportPointDTO[]; thres
           <Chart spec={m.spec} ariaLabel={`Import n° ${m.id}. ${m.spec.ariaLabel}`} />
           {m.read > 0 && (
             <p className="text-xs text-fg-muted">
-              {fmt.pct(m.rejected / m.read, 1)} des lignes lues écartées ({fmt.int(m.rejected)} sur {fmt.int(m.read)}).
+              Lignes écartées : {fmt.pct(m.rejected / m.read, 1)} ({fmt.int(m.rejected)} sur {fmt.int(m.read)})
             </p>
           )}
         </li>
@@ -62,29 +61,21 @@ function QualityCard({ mon }: { mon: DataMonitoringDTO }) {
   const threshold = fmt.pct(mon.qualityThreshold, 0);
   if (!last)
     return (
-      <VisualCard headingLevel={3} title="Qualité des imports" subtitle="Score qualité et part des lignes écartées par import">
-        <EmptyState compact title="Aucun score qualité disponible">
-          Le score apparaît après le premier import terminé.
-        </EmptyState>
+      <VisualCard headingLevel={3} title="Qualité des imports (%)">
+        <EmptyState compact title="Aucun score qualité" />
       </VisualCard>
     );
   if (scored.length < TREND_MIN_IMPORTS)
     return (
-      <VisualCard
-        headingLevel={3}
-        title={`${scored.length === 1 ? "Un seul import" : "Deux imports"} : la tendance apparaîtra au ${TREND_MIN_IMPORTS}e import`}
-        subtitle={`Score qualité de chaque import, situé face au seuil de blocage (${threshold})`}
-        actions={<TermTip term="scoreQualite" align="end" />}
-      >
+      <VisualCard headingLevel={3} title="Qualité des imports (%)" subtitle={`Seuil de blocage : ${threshold}`} actions={<TermTip term="scoreQualite" align="end" />}>
         <QualityMarks imports={scored} threshold={mon.qualityThreshold} />
       </VisualCard>
     );
-  const ok = (last.qualityScore ?? 0) >= mon.qualityThreshold;
   return (
     <VisualCard
       headingLevel={3}
-      title={`Qualité de ${fmt.pct(last.qualityScore, 1)} au dernier import, ${ok ? "au-dessus du" : "sous le"} seuil de blocage`}
-      subtitle={`Score qualité et part des lignes écartées (%), ${n} derniers imports terminés`}
+      title="Qualité des imports (%)"
+      subtitle={`${n} derniers imports · seuil de blocage : ${threshold}`}
       actions={<TermTip term="scoreQualite" align="end" />}
     >
       <div className="grid grid-cols-1 gap-x-6 gap-y-4 xl:grid-cols-2">
@@ -125,8 +116,8 @@ function RecurringControls({ mon }: { mon: DataMonitoringDTO }) {
   return (
     <VisualCard
       headingLevel={3}
-      title={`« ${rows[0].label} » : contrôle le plus signalé sur ${MONITORING.rejectionDays} jours`}
-      subtitle={`Lignes signalées par contrôle, cumul des ${mon.rejectionImports} imports des ${MONITORING.rejectionDays} derniers jours`}
+      title={`Lignes signalées par contrôle (${MONITORING.rejectionDays} jours)`}
+      subtitle={`Cumul de ${mon.rejectionImports} imports`}
       actions={<TermTip term="gravite" align="end" />}
     >
       <ColorLegend items={severities.map(severityStyle)} />
@@ -150,20 +141,9 @@ function RecurringControls({ mon }: { mon: DataMonitoringDTO }) {
 
 function JobsCard({ mon }: { mon: DataMonitoringDTO }) {
   const done = mon.jobs.filter((j) => j.avgDurationSec != null);
-  const total = mon.jobs.reduce((s, j) => s + j.total, 0);
-  const failed = mon.jobs.reduce((s, j) => s + j.byStatus.ECHEC, 0);
   const statuses = Object.keys(JOB_STATUS_STYLE) as (keyof typeof JOB_STATUS_STYLE)[];
   return (
-    <VisualCard
-      headingLevel={3}
-      title={
-        total
-          ? `${plural(total, "traitement")} en ${MONITORING.jobDays} jours, ${failed ? `dont ${fmt.int(failed)} en échec` : "aucun en échec"}`
-          : `Traitements des ${MONITORING.jobDays} derniers jours`
-      }
-      subtitle="Imports et calculs exécutés par le service de calcul, par type"
-      actions={<TermTip term="traitements" align="end" />}
-    >
+    <VisualCard headingLevel={3} title={`Traitements (${MONITORING.jobDays} jours)`} actions={<TermTip term="traitements" align="end" />}>
       {mon.jobs.length ? (
         <>
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 xl:grid-cols-2">
@@ -178,7 +158,7 @@ function JobsCard({ mon }: { mon: DataMonitoringDTO }) {
                   ariaLabel="Barres horizontales : durée moyenne d'exécution des traitements terminés, par type."
                 />
               ) : (
-                <p className="text-sm text-fg-muted">Aucun traitement terminé : la durée moyenne s&apos;affichera après le premier.</p>
+                <p className="text-sm text-fg-muted">Aucun traitement terminé</p>
               )}
             </Figure>
           </div>
@@ -191,9 +171,7 @@ function JobsCard({ mon }: { mon: DataMonitoringDTO }) {
           />
         </>
       ) : (
-        <EmptyState compact title={`Aucun traitement sur ${MONITORING.jobDays} jours`}>
-          Les imports et calculs mensuels lancés apparaîtront ici.
-        </EmptyState>
+        <EmptyState compact title={`Aucun traitement sur ${MONITORING.jobDays} jours`} />
       )}
     </VisualCard>
   );

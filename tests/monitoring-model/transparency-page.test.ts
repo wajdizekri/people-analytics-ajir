@@ -73,9 +73,11 @@ describe("Transparence du modèle : rendu RH", () => {
   });
 
   it("identifiant technique remplacé par un libellé lisible, sauf fiche technique et historique", () => {
-    expect(s).toContain("Comment le risque de départ est estimé, avec quelle fiabilité et dans quelles limites. Modèle mis en service le 30/09/2026.");
-    expect(s).toContain("Modèle dans ses cibles");
-    expect(s).toContain("Régression logistique régularisée en service depuis le 30/09/2026 : 3,3 fois plus de démissions au niveau Élevé ; pourcentages justes en moyenne.");
+    expect(s).toContain("Transparence du modèle Aide à la décision humaine Facteurs associés, non causaux Données agrégées");
+    expect(s).toContain(
+      "Dans la cible Régression logistique régularisée · en service depuis le 30/09/2026 Pouvoir de tri (AUC) : 0,63 · modéré Lift à la capacité : 3,3 × (cible ≥ 3 ×) Observé / prévu : 1,00 (cible 0,8 à 1,25) Pente de calibration : 0,84 (cible 0,8 à 1,2) Action : Aucune",
+    );
+    expect(s).not.toContain("À quoi sert cette page");
     // Le code du modèle n'apparaît qu'avec son libellé : fiche technique puis historique des versions (cartes sous 640 px et tableau)
     expect(count(s, VERSION)).toBe(3);
     expect(s.indexOf(VERSION)).toBeGreaterThan(s.indexOf("Fiche technique du modèle en service"));
@@ -89,18 +91,17 @@ describe("Transparence du modèle : rendu RH", () => {
   });
 
   it("facteurs : titre-message, sens écrit et poids signés ; familles avec le signal en badge", () => {
-    expect(s).toContain("Comment le modèle décide");
-    expect(s).toContain("Le salaire et les absences courtes pèsent le plus");
-    expect(s).toMatch(/Poids relatif de chaque facteur \(%\) · les 10 plus influents sur 25 · ils pèsent \d+ % de la décision/);
+    expect(s).toContain("Fonctionnement du modèle");
+    expect(s).toContain("Poids des principaux facteurs (%)");
+    expect(s).toMatch(/10 facteurs sur 25 · \d+ % du poids total/);
     expect(s).toContain("Salaire plus haut que la médiane du poste Risque plus faible −11 %");
     expect(s).toContain("Plus d'absences courtes Risque plus élevé +11 %");
-    expect(s).toContain("Défavorable, à droite de zéro : associé à un risque plus élevé");
-    expect(s).toContain("Favorable, à gauche de zéro : associé à un risque plus faible");
+    expect(s).toContain("Risque plus élevé Risque plus faible Voir les données");
     const factors = ariaLabels(markup).find((a) => a.startsWith("Barres divergentes"))!;
     expect(factors).toContain("poids relatif de 10 facteurs, du plus influent au moins influent");
     expect(factors).toContain("Salaire plus haut que la médiane du poste : −11 %, risque plus faible");
 
-    expect(s).toMatch(/Absences \(hors santé\) : première famille, \d+ % du poids/);
+    expect(s).toContain("Poids par famille de facteurs (%) Hors absences de santé");
     expect(s).toMatch(/Levier RH (\S+ )*Rémunération/);
     expect(s).toMatch(/Signal à observer (\S+ )*Absences \(hors santé\)/);
     expect(s).toMatch(/Rémunération Levier RH \d+ %/);
@@ -108,27 +109,27 @@ describe("Transparence du modèle : rendu RH", () => {
   });
 
   it("fiabilité : analogies « sur 100 », marges d'incertitude, calibration avec intervalles", () => {
-    expect(s).toContain("14 ont démissionné dans les 6 mois suivants");
-    expect(s).toContain("Marge d'incertitude à 95 % : de 2,4 à 4,3 fois.");
-    expect(s).toContain("7 étaient classés Élevé 6 mois avant leur départ");
-    expect(s).toContain("63 cas sur 100");
+    expect(s).toContain("Évaluation hors apprentissage : mars 2023 – févr. 2026 · 35 621 situations mensuelles");
+    expect(s).toContain("14 sur 100 Démissions à 6 mois");
+    expect(s).toContain("Lift : 3,3 × Dans la cible (≥ 3 ×) IC 95 % : 2,4 à 4,3");
+    expect(s).toContain("7 sur 100 Démissionnaires classés Élevé 6 mois avant Capacité (niveau Élevé) : 2 %");
+    expect(s).toContain("0,63 Modéré IC 95 % : 0,60 à 0,66");
     expect(s).toContain("50 : hasard");
-    expect(s).toContain("AUC 0,63 ; marge à 95 % : 0,60 à 0,66");
-    expect(s).toMatch(/Pour 100 démissions prévues ?, 100 ont été observées/);
-    expect(s).toContain("Marge d'incertitude à 95 % : 0,88 à 1,12.");
-    expect(s).toContain("pente 0,84 (cible de 0,8 à 1,2)");
-    expect(s).toContain("Les points suivent la diagonale : les pourcentages sont fiables");
-    expect(s).toContain("Accord parfait");
-    expect(s).toContain("Écart acceptable : de 0,8 à 1,25 fois le risque annoncé");
+    expect(s).toContain("Calibration du modèle");
+    expect(s).toContain("Observé / prévu 1,00 (cible 0,8 à 1,25) Dans la cible IC 95 % observé / prévu 0,88 à 1,12");
+    expect(s).toContain("Groupe le plus exposé 9,9 % annoncé · 9,3 % observé");
+    expect(s).toContain("Pente de calibration 0,84 (cible 0,8 à 1,2) Dans la cible");
+    expect(s).toContain("Risque annoncé et observé (%)");
+    expect(s).toContain("Dans la cible Modèle (IC 95 %) Accord parfait Écart acceptable (0,8 à 1,25)");
     expect(s).toContain("Risque annoncé (moyenne) Démissions observées Marge d'incertitude à 95 % Observations");
     expect(s).toContain("9,9 % 9,3 % 8,4 à 10,3 % 3 563");
     expect(ariaLabels(markup).some((a) => a.startsWith("Nuage de points") && a.includes("marge d'incertitude à 95 %"))).toBe(true);
   });
 
   it("équité : un visuel et un tableau par axe, jugement en mots", () => {
-    expect(s).toContain("Sexe : risque estimé proche du réel dans chaque groupe");
-    expect(s).toContain("Tranche d'âge : risque estimé proche du réel dans chaque groupe");
-    expect(s).toContain("aucun groupe n'est surestimé ni sous-estimé");
+    expect(s).toContain("Équité entre groupes Sexe et âge non utilisés par le modèle Groupes de moins de 30 masqués Aucun blocage automatique");
+    expect(s).toContain("Sexe Juste pour chaque groupe");
+    expect(s).toContain("Tranche d'âge Juste pour chaque groupe");
     const dots = ariaLabels(markup).filter((a) => a.startsWith("Points par groupe sur une même échelle"));
     expect(dots).toHaveLength(2);
     expect(dots[0]).toContain("Femmes : réel 4,0 %, estimé 4,0 %, juste ; Hommes : réel 4,1 %, estimé 4,1 %, juste");
@@ -138,10 +139,11 @@ describe("Transparence du modèle : rendu RH", () => {
     expect(s).toContain("0,82 à 1,21");
   });
 
-  it("suivi mensuel : trois visuels aux titres-messages", () => {
-    expect(s).toContain("8 collaborateurs évalués en août 2026");
-    expect(s).toContain("En août 2026 : 12,5 % Élevé, 12,5 % Moyen");
-    expect(s).toMatch(/8 collaborateurs sur 10 ont un risque estimé inférieur à \d+ %/);
+  it("suivi mensuel : trois visuels aux titres courts, chiffres clés en bulle", () => {
+    expect(s).toContain("Collaborateurs évalués par calcul");
+    expect(s).toContain("Niveaux de risque par calcul (%)");
+    expect(s).toContain("août 2026 : 12,5 % Élevé · 12,5 % Moyen");
+    expect(s).toMatch(/Risques estimés à 6 mois : Calcul du 31\/08\/2026 · 80 % sous \d+ %/);
     const labels = ariaLabels(markup);
     expect(labels.some((a) => a.includes("Collaborateurs évalués") && a.includes("août 2026"))).toBe(true);
     expect(labels.some((a) => a.startsWith("Barres empilées à 100 %") && a.includes("août 2026 : Élevé 12,5 %, Moyen 12,5 %, Faible 75,0 %"))).toBe(true);
@@ -153,10 +155,10 @@ describe("Transparence du modèle : rendu RH", () => {
       expect(markup).toContain(`href="#${anchor}"`);
       expect(markup).toContain(`<section id="${anchor}"`);
     }
-    expect(count(s, "2,0 % des collaborateurs évalués")).toBe(1);
+    expect(count(s, "2,0 % des évalués")).toBe(1);
     expect(s).toContain("Modèle en service");
-    expect(s).toContain("Historique des versions");
-    expect(s).not.toContain("Modifier la capacité dans Paramètres");
+    expect(s).toContain("Historique des versions Mise en service tracée, hors interface");
+    expect(s).not.toContain("Modifier la capacité");
     // Six blocs repliés : mesures détaillées, lift, courbe de décision, équité, coefficients, modèles par sujet
     const technical = markup.slice(markup.indexOf('<section id="technique"'));
     expect(count(technical, "<details class=\"group/disc")).toBe(6);
@@ -178,11 +180,11 @@ describe("Transparence du modèle : rendu ADMIN", () => {
   it("mêmes mesures agrégées, lien vers les paramètres, aucune donnée nominative", async () => {
     const markup = await render("ADMIN");
     const s = text(markup);
-    expect(s).toContain("Modèle mis en service le 30/09/2026.");
-    expect(s).toContain("Le salaire et les absences courtes pèsent le plus");
-    expect(s).toContain("14 ont démissionné dans les 6 mois suivants");
-    expect(s).toContain("Sexe : risque estimé proche du réel dans chaque groupe");
-    expect(s).toContain("Modifier la capacité dans Paramètres");
+    expect(s).toContain("Régression logistique régularisée · en service depuis le 30/09/2026");
+    expect(s).toContain("Poids des principaux facteurs (%)");
+    expect(s).toContain("14 sur 100 Démissions à 6 mois");
+    expect(s).toContain("Sexe Juste pour chaque groupe");
+    expect(s).toContain("Modifier la capacité");
     expect(count(s, VERSION)).toBe(3);
     // Aucun nom, matricule, lien vers une fiche ni montant
     const { sqlite } = getDb();

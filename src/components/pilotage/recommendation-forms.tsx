@@ -153,11 +153,6 @@ export function DecisionButtons({ recommendationId, action, today }: { recommend
         <p id={`${id}-titre`} className="text-sm font-semibold text-fg">
           {reject ? "Rejeter cette recommandation" : "Marquer cette recommandation comme réalisée"}
         </p>
-        <p className="mt-0.5 text-xs text-fg-muted">
-          {reject
-            ? "Indiquez pourquoi elle ne sera pas suivie. Le motif est enregistré avec la décision."
-            : "Une intervention datée est enregistrée ; son suivi apparaît ensuite dans « Avant / après intervention »."}
-        </p>
       </div>
       {reject ? (
         <div>
@@ -247,7 +242,7 @@ export function FeedbackForm({ recommendationId, action, current }: { recommenda
   return (
     <form action={formAction} className="mt-3 flex flex-wrap items-center gap-2 text-sm">
       <input type="hidden" name="recommendationId" value={recommendationId} />
-      <span className="text-xs text-fg-muted">Cette recommandation était-elle pertinente ?</span>
+      <span className="text-xs font-semibold text-fg-muted">Pertinence :</span>
       {(["PERTINENTE", "NON_PERTINENTE"] as const).map((f) => (
         <button
           key={f}

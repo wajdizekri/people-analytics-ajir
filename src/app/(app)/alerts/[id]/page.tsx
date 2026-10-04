@@ -4,10 +4,10 @@ import { pageContext } from "@/lib/dal/context";
 import { ALERT_TRANSITIONS, alertFiltersSchema, getAlert, listAlerts, type AlertDTO, type AlertStatus } from "@/lib/dal/alerts";
 import { safeReturn } from "@/components/ux/breadcrumb";
 import { HttpError } from "@/lib/dal/errors";
-import { ButtonLink, Card, Icon, Notice, PageHeader, fmt } from "@/components/ui";
+import { Badge, ButtonLink, Card, Icon, Notice, PageHeader, fmt } from "@/components/ui";
 import { buildHref } from "@/components/pilotage/filters";
 import { AlertStatusForm } from "../alert-status-form";
-import { SEVERITY_HINT, SEVERITY_LABEL, STATUS_LABEL, SeverityBadge, StatusBadge, TYPE_LABEL, TypeIcon, concernedLabel, linkLabel, proposedAction, withReturn } from "../labels";
+import { STATUS_LABEL, SeverityBadge, StatusBadge, TYPE_LABEL, TypeIcon, concernedLabel, linkLabel, proposedAction, withReturn } from "../labels";
 
 export const metadata = { title: "Alerte — People Analytics AJIR" };
 
@@ -91,11 +91,12 @@ export default async function AlertDetailPage({
       <PageHeader
         eyebrow={ctx.role === "ADMIN" ? "Administration" : "Vue d'ensemble"}
         title={alert.title}
-        subtitle={`Alerte ${TYPE_LABEL[alert.type].toLowerCase()} · gravité ${SEVERITY_LABEL[alert.severity].toLowerCase()} (${SEVERITY_HINT[alert.severity]}) · créée le ${fmt.dateTime(alert.createdAt)}.`}
+        badge={<Badge>Aide à la décision</Badge>}
+        period={`Créée le ${fmt.dateTime(alert.createdAt)}`}
       />
 
       <div className="grid items-start gap-4 lg:grid-cols-3">
-        <Card title="Ce qui est signalé" className="lg:col-span-2">
+        <Card title="Description" className="lg:col-span-2">
           <p className="whitespace-pre-line text-[15px] leading-relaxed text-fg">{alert.message}</p>
 
           <dl className="mt-4 grid gap-x-6 gap-y-4 rounded-control bg-surface-2 p-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -149,7 +150,7 @@ export default async function AlertDetailPage({
                     {alert.updatedByLogin && ` par ${alert.updatedByLogin}`}
                   </>
                 ) : (
-                  <span className="text-fg-muted">aucune depuis la création</span>
+                  <span className="text-fg-muted">Aucune</span>
                 )}
               </dd>
             </div>
@@ -173,12 +174,10 @@ export default async function AlertDetailPage({
           )}
         </Card>
 
-        <Card title="Suivi de l'alerte" description={closed ? undefined : "Choisissez l'étape suivante. Chaque changement est daté et tracé."}>
+        <Card title="Suivi de l'alerte">
           <Steps status={alert.status} />
           {closed ? (
-            <Notice tone={alert.status === "TRAITEE" ? "success" : "neutral"}>
-              Cette alerte est clôturée ({alert.status === "TRAITEE" ? "traitée" : "rejetée"}). Elle reste consultable dans la liste.
-            </Notice>
+            <Notice tone={alert.status === "TRAITEE" ? "success" : "neutral"}>Alerte clôturée ({alert.status === "TRAITEE" ? "traitée" : "rejetée"})</Notice>
           ) : (
             <AlertStatusForm id={alert.id} next={next} />
           )}
@@ -195,19 +194,17 @@ export default async function AlertDetailPage({
                 Traiter l&apos;alerte nouvelle suivante
                 <span className="sr-only"> : « {following.title} »</span>
               </ButtonLink>
-              {narrowed && <span className="mt-1 block text-center text-xs text-fg-muted">Dans la même sélection que la liste (type, gravité).</span>}
             </p>
           ) : (
             alert.status !== "NOUVELLE" && (
               <p className="mt-4 text-sm text-fg-muted">
-                Aucune autre alerte nouvelle{narrowed ? " dans cette sélection" : ""}.{" "}
+                Aucune autre alerte nouvelle{narrowed ? " dans cette sélection" : ""} ·{" "}
                 <Link href={retour} className="font-medium text-link underline underline-offset-2 hover:decoration-2">
                   Revenir à la liste
                 </Link>
               </p>
             )
           )}
-          <p className="mt-4 border-t border-line pt-3 text-xs text-fg-muted">Une alerte est une aide à la décision : elle signale une situation à examiner, pas une conclusion.</p>
         </Card>
       </div>
     </>

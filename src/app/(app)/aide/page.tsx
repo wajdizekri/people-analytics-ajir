@@ -9,11 +9,20 @@ export const metadata = { title: "Aide — People Analytics AJIR" };
 
 type SP = Promise<Record<string, string | string[] | undefined>>;
 
-const CONTACT = {
-  RH: "Une question sur un compte ou un accès : l'administrateur de l'outil. Une donnée erronée : à corriger dans AJIR.",
-  MANAGER: "Une question sur un collaborateur ou une donnée erronée : la RH. Un problème de compte ou d'accès : l'administrateur de l'outil.",
-  ADMIN: "Une question sur un indicateur ou une donnée RH : la RH. Une anomalie technique persistante : l'équipe qui maintient l'outil.",
-} as const;
+const CONTACT: Record<keyof typeof ROLE_LABEL, [string, string][]> = {
+  RH: [
+    ["Compte ou accès", "administrateur de l'outil"],
+    ["Donnée erronée", "correction dans AJIR"],
+  ],
+  MANAGER: [
+    ["Collaborateur ou donnée erronée", "RH"],
+    ["Compte ou accès", "administrateur de l'outil"],
+  ],
+  ADMIN: [
+    ["Indicateur ou donnée RH", "RH"],
+    ["Anomalie technique persistante", "équipe de maintenance de l'outil"],
+  ],
+};
 
 // Centre d'aide commun aux trois rôles : chaque rôle ne voit que les rubriques des écrans auxquels il a accès.
 export default async function HelpPage({ searchParams }: { searchParams?: SP } = {}) {
@@ -37,7 +46,7 @@ export default async function HelpPage({ searchParams }: { searchParams?: SP } =
 
   return (
     <>
-      <PageHeader title="Aide" subtitle={`Réponses courtes pour utiliser l'outil, adaptées à votre rôle : ${ROLE_LABEL[ctx.role]}.`} />
+      <PageHeader title="Aide" scope={`Rôle : ${ROLE_LABEL[ctx.role]}`} />
       <HelpSearch query={query} results={results} />
       <div className="grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
         <details className={`${cardCls} group p-4 lg:hidden`}>
@@ -66,10 +75,17 @@ export default async function HelpPage({ searchParams }: { searchParams?: SP } =
             );
           })}
           <section aria-labelledby="contact-titre" className="rounded-card border border-primary/30 bg-primary-soft p-5 text-sm text-fg">
-            <h2 id="contact-titre" className="mb-1 text-base font-semibold text-heading">
-              Vous ne trouvez pas la réponse ?
+            <h2 id="contact-titre" className="mb-2 text-base font-semibold text-heading">
+              Contacts
             </h2>
-            <p>{CONTACT[ctx.role]}</p>
+            <dl className="grid gap-x-6 gap-y-1 sm:grid-cols-[max-content_1fr]">
+              {CONTACT[ctx.role].map(([subject, who]) => (
+                <div key={subject} className="contents">
+                  <dt className="font-medium">{subject}</dt>
+                  <dd className="text-fg-muted">{who}</dd>
+                </div>
+              ))}
+            </dl>
           </section>
         </div>
       </div>

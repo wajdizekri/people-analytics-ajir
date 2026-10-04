@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useId, useState, type KeyboardEvent } from "react";
+import { InfoTip } from "@/components/help/info-tip";
 import { Icon, RiskBadge, fieldCls } from "@/components/ui";
 import type { OrgColorBy, OrgNode } from "@/lib/dal/org-chart";
 import { withBack } from "./org-detail-panel";
@@ -49,6 +50,8 @@ export function treeKeyTarget(
 }
 
 const leavesKey = (key: string) => `${key}:collaborateurs`;
+
+const KEYS_HELP = "Au clavier : flèches haut et bas pour passer d'une ligne à l'autre, droite et gauche pour déplier ou replier, Entrée pour ouvrir ou fermer.";
 
 function Mark({ text, on }: { text: string; on: boolean }) {
   return on ? <mark className="rounded-sm bg-warning-soft px-0.5 text-fg">{text}</mark> : <>{text}</>;
@@ -227,11 +230,17 @@ export function OrgTreeList({
           />
         </div>
         <p id={statusId} role="status" className="mt-1 min-h-5 text-xs text-fg-muted">
-          {result ? (result.count ? `${result.count} personne${result.count > 1 ? "s" : ""} trouvée${result.count > 1 ? "s" : ""}, chemin déplié.` : "Aucune personne ne correspond à cette recherche.") : ""}
+          {result ? (result.count ? `${result.count} personne${result.count > 1 ? "s" : ""} trouvée${result.count > 1 ? "s" : ""}` : "Aucune personne trouvée") : ""}
         </p>
       </div>
-      <p id={keysId} className="mb-2 text-xs text-fg-subtle">
-        Au clavier : flèches haut et bas pour passer d&apos;une ligne à l&apos;autre, droite et gauche pour déplier ou replier, Entrée pour ouvrir ou fermer.
+      <p className="mb-1 flex items-center gap-1 text-xs font-medium text-fg-muted">
+        Navigation au clavier
+        <InfoTip label="Navigation au clavier" prefix="Aide" align="start">
+          {KEYS_HELP}
+        </InfoTip>
+      </p>
+      <p id={keysId} className="sr-only">
+        {KEYS_HELP}
       </p>
       <ul aria-label="Organigramme en liste" aria-describedby={keysId} onKeyDown={onTreeKey} className="space-y-0.5 text-sm">
         {renderNode(root)}

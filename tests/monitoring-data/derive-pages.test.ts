@@ -37,12 +37,11 @@ async function drift(role: "RH" | "ADMIN") {
 describe("Dérive des données", () => {
   it("RH : verdict, tuiles par état, indice par variable dans ses zones de seuil, variables groupées par état", async () => {
     const { s, charts: figs, markup } = await drift("RH");
-    expect(s).toContain("Action recommandée Envisager un réentraînement du modèle.");
-    expect(s).toContain("1 variable a fortement changé : contrat CDD.");
-    expect(s).toContain("Démissions observées égales à 0,52 fois le niveau prévu");
-    expect(s).toContain("Que faire : prévenez l'administrateur de l'outil.");
+    expect(s).toContain("Dérive Réentraînement recommandé Dérive forte : Contrat CDD Observé / prévu : 0,52 (cible 0,80 à 1,25) Action : Prévenir l'administrateur");
+    expect(s).toContain("Données agrégées");
+    expect(s).not.toContain("À quoi sert cette page");
     expect(s).not.toContain("console d'administration");
-    expect(inOrder(s, ["Variables en dérive forte Feu rouge 1", "Variables à surveiller Aucune 0", "Variables stables Feu vert 24 sur 25", "Démissions observées / prévues Hors cible 6 dernières cohortes 0,52"])).toBe(true);
+    expect(inOrder(s, ["Variables en dérive forte Feu rouge 1", "Variables à surveiller Aucune 0", "Variables stables Feu vert 24 sur 25", "Démissions observées / prévues Hors cible 0,52"])).toBe(true);
     expect(s).not.toContain("logreg-test");
 
     const bars = figs.find((c) => c.label.startsWith("Barres triées : indice de changement"))!;
@@ -56,29 +55,28 @@ describe("Dérive des données", () => {
     expect(o.series[0].data.slice(1).every((b: Any) => b.itemStyle.color === SEMANTIC.favorable && b.value < 1 && !b.label.show)).toBe(true);
     expect(o.series[0].markArea.data.map((z: Any) => z[0].name)).toEqual(["Stable\n< 0,10", "À surveiller\n0,10 à 0,25", "Dérive\n≥ 0,25"]);
 
-    expect(inOrder(s, ["Dérive forte 1 variable", "Que faire : Vérifier dans AJIR", "Contrat CDD", "Ce qui a changé : Réponse « Non » : 25,0 % des collaborateurs en août 2026, contre 75,0 %"])).toBe(true);
-    expect(s).toContain("Voir les 24 variables stables (aucune action)");
+    expect(inOrder(s, ["Dérive par variable (PSI)", "Indice PSI par variable", "Dérive forte 1 variable", "Action : Vérifier la saisie dans AJIR", "PSI 1,10", "Écart principal : « Non » · 75,0 % → 25,0 %"])).toBe(true);
+    expect(s).toContain("Variables stables (24)");
     expect(longSentences(markup)).toEqual([]);
   });
 
   it("RH : taux observé et prévu, puis rapport observé / prévu avec zone cible nommée", async () => {
     const { s, charts: figs } = await drift("RH");
-    expect(s).toContain("2,1 % de démissions observées pour 4,0 % prévues");
-    expect(s).toContain("Moins de démissions que prévu sur les dernières cohortes");
+    expect(s).toContain("Taux de démission à 6 mois (%)");
+    expect(s).toContain("Moyenne des 6 dernières cohortes : 2,1 % observé · 4,0 % prévu");
+    expect(s).toContain("Observé / prévu par cohorte Hors cible");
     const rates = figs.find((c) => c.label.startsWith("Courbes : taux de démission observé et prévu"))!;
     expect(rates.option.series.map((x: Any) => x.name)).toEqual(["Taux observé", "Taux prévu par le modèle"]);
     const ratio = figs.find((c) => c.label.startsWith("Courbe du rapport observé sur prévu"))!;
     expect(ratio.option.series[0].markArea.label.formatter).toBe("Zone cible\n0,80 à 1,25");
     expect(ratio.option.series[0].data.at(-1).label.show).toBe(true);
-    expect(s).toContain("Dernière cohorte suivie 6 mois complets : 28/02/2026.");
+    expect(s).toContain("Dernière cohorte complète : 28/02/2026");
   });
 
   it("ADMIN : rapport observé / prévu seulement, sans taux de démission ni nom", async () => {
     const { s, charts: figs, markup } = await drift("ADMIN");
-    expect(s).toContain("Action recommandée Envisager un réentraînement du modèle.");
-    expect(s).toContain("Démissions observées égales à 0,52 fois le niveau prévu sur les 6 dernières cohortes (cible : 0,80 à 1,25).");
-    expect(s).toContain("Que faire : demandez un réentraînement à l'équipe technique. La mise en service se fait hors de l'interface, par une procédure tracée.");
-    expect(s).toContain("Rapport observé / prévu des démissions par cohorte mensuelle");
+    expect(s).toContain("Dérive Réentraînement recommandé Dérive forte : Contrat CDD Observé / prévu : 0,52 (cible 0,80 à 1,25) Action : Demander un réentraînement");
+    expect(s).toContain("Observé / prévu par cohorte Hors cible");
     expect(figs.map((c) => c.label.split(" :")[0])).toEqual(["Barres triées", "Courbe du rapport observé sur prévu par cohorte mensuelle, zone cible de 0,80 à 1,25."]);
     expect(s).not.toMatch(/Taux observé|Taux de démission|démissions observées pour/);
     expect(s).not.toMatch(/Nom[A-Z]|Prenom[A-Z]|TND/);
@@ -91,10 +89,8 @@ describe("Dérive des données", () => {
     clearDriftCache();
     try {
       const { s, markup } = await drift("RH");
-      expect(s).toContain("À surveiller Certaines variables ont changé depuis l'entraînement ; le classement reste fiable (démissions observées / prévues dans la cible).");
-      expect(s).toContain("Démissions observées égales à 1,17 fois le niveau prévu, dans la cible (0,80 à 1,25).");
-      expect(s).toContain("Que faire : vérifiez dans AJIR que ces données sont saisies comme avant.");
-      expect(s).not.toMatch(/Action recommandée|Envisager un réentraînement/);
+      expect(s).toContain("À surveiller Dérive de variables Dérive forte : Contrat CDD Observé / prévu : 1,17 (cible 0,80 à 1,25) Action : Vérifier la saisie dans AJIR");
+      expect(s).not.toMatch(/Réentraînement recommandé|Demander un réentraînement/);
       expect(longSentences(markup)).toEqual([]);
     } finally {
       sqlite.prepare("UPDATE model_version SET status = 'CHAMPION' WHERE id = ?").run(f.modelId);

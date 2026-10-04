@@ -4,7 +4,7 @@ import { pageContext, type AccessContext } from "@/lib/dal/context";
 import { ActiveFilters, FilterForm, Pagination, buildHref } from "@/components/pilotage/filters";
 import { ALERT_SEVERITIES, alertFiltersSchema, countAlerts, listAlerts, type AlertSeverity, type AlertStatus, type AlertType } from "@/lib/dal/alerts";
 import { ALERT_STATUSES, ALERT_TYPES } from "@/db/schema";
-import { ButtonLink, EmptyState, Notice, PageHeader, cardCls, fmt } from "@/components/ui";
+import { Badge, ButtonLink, EmptyState, Notice, PageHeader, cardCls, fmt } from "@/components/ui";
 import { AlertsListSkeleton } from "@/components/admin/skeletons";
 import { ExportButton } from "@/components/export/export-button";
 import {
@@ -29,11 +29,7 @@ type SP = Promise<Record<string, string | string[] | undefined>>;
 const one = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
 const PAGE_SIZE = 50;
 
-const SUBTITLE = {
-  MANAGER: "Situations à examiner dans votre équipe : risque de départ et absentéisme collectif. Les signaux individuels d'absentéisme restent réservés à la RH.",
-  RH: "Situations à examiner : risque de départ, absentéisme et qualité des données. Chaque alerte propose une action et se suit jusqu'à sa clôture.",
-  ADMIN: "Alertes techniques : qualité des imports et fonctionnement du service de calcul. Aucune alerte nominative.",
-} as const;
+const BADGE = { MANAGER: "Sans signal individuel d'absence", RH: "Aide à la décision", ADMIN: "Aucune alerte nominative" } as const;
 const SCOPE = { MANAGER: "Votre équipe (périmètre hiérarchique)", RH: "Toute l'entreprise", ADMIN: "Fonctionnement de l'outil" } as const;
 
 // Pas de loading.tsx ici : il envelopperait aussi alerts/[id] (redirection 403 et 404 doivent précéder le streaming)
@@ -41,7 +37,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: SP })
   const ctx = await pageContext();
   return (
     <>
-      <PageHeader eyebrow={ctx.role === "ADMIN" ? "Administration" : "Vue d'ensemble"} title="Alertes" subtitle={SUBTITLE[ctx.role]} scope={SCOPE[ctx.role]} />
+      <PageHeader eyebrow={ctx.role === "ADMIN" ? "Administration" : "Vue d'ensemble"} title="Alertes" badge={<Badge>{BADGE[ctx.role]}</Badge>} scope={SCOPE[ctx.role]} />
       <Suspense fallback={<AlertsListSkeleton />}>
         <AlertsContent ctx={ctx} searchParams={searchParams} />
       </Suspense>
@@ -93,7 +89,7 @@ async function AlertsContent({ ctx, searchParams }: { ctx: AccessContext; search
 
       {!parsed.success && (
         <div className="mb-4">
-          <Notice tone="warning">Filtres invalides ignorés : choisissez le type, le statut et la gravité dans les listes.</Notice>
+          <Notice tone="warning">Filtres invalides ignorés</Notice>
         </div>
       )}
 
@@ -108,19 +104,12 @@ async function AlertsContent({ ctx, searchParams }: { ctx: AccessContext; search
               </ButtonLink>
             ) : undefined
           }
-        >
-          {onlyNew
-            ? "Toutes les alertes ont été prises en charge. Les nouvelles alertes apparaissent après le calcul mensuel et les imports AJIR."
-            : filtered
-              ? "Retirez un filtre ou élargissez la sélection pour voir davantage d'alertes."
-              : "Les alertes sont créées lors du calcul mensuel et des imports AJIR."}
-        </EmptyState>
+        />
       ) : (
         <section className={`${cardCls} min-w-0 overflow-hidden`} aria-labelledby="alertes-liste">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3">
             <h2 id="alertes-liste" className="text-sm text-fg-muted">
               <span className="text-lg font-semibold tabular-nums text-heading">{fmt.int(total)}</span> alerte{total > 1 ? "s" : ""}
-              <span className="text-fg-muted"> · nouvelles et en cours d&apos;abord, les plus graves en tête</span>
             </h2>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted" aria-label="Répartition par gravité">
@@ -165,9 +154,6 @@ async function AlertsContent({ ctx, searchParams }: { ctx: AccessContext; search
                           {a.title}
                         </Link>
                       </h3>
-                      <p className="mt-0.5 line-clamp-2 text-sm text-fg-muted" title={a.message}>
-                        {a.message}
-                      </p>
                       <dl className="mt-2 grid gap-x-3 gap-y-0.5 text-[13px] sm:grid-cols-[max-content_minmax(0,1fr)]">
                         <dt className="font-medium text-fg-muted">Concerne</dt>
                         <dd data-field="concerne" className="text-fg">

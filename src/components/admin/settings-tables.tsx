@@ -136,10 +136,10 @@ export function SmigTable({
           {changed && <Badge tone="warning">Modifié</Badge>}
         </div>
         <p id="smig-help" className="mt-0.5 text-xs text-fg-muted">
-          Une ligne par changement de SMIG. Montants de {frNum(bounds.min, 0)} à {frNum(bounds.max, 0)} TND.
+          Montants : {frNum(bounds.min, 0)} à {frNum(bounds.max, 0)} TND
         </p>
       </div>
-      {!valid && <p className="mt-2 text-xs font-medium text-warning">Barème actuel absent ou illisible : le contrôle utilise le SMIG de repli.</p>}
+      {!valid && <p className="mt-2 text-xs font-medium text-warning">Barème illisible : SMIG de repli utilisé</p>}
       {/* Barème illisible et non retouché : non envoyé, pour ne pas bloquer l'enregistrement des autres réglages */}
       {(valid || rows.length > 0) && <input type="hidden" name="smig_schedule" value={smigJson(rows)} />}
       {rows.length > 0 && (
@@ -182,7 +182,7 @@ export function SmigTable({
                       ) : (
                         r.from === "" && (
                           <p id={dateNote} className="mt-1 text-xs text-fg-subtle">
-                            Sans date : couvre tout ce qui précède.
+                            Sans date : période initiale
                           </p>
                         )
                       )}
@@ -235,8 +235,8 @@ export function SmigTable({
       )}
       {rows.length > 0 && errors.size === 0 && (
         <p className="mt-3 text-sm text-fg">
-          <span className="font-semibold">En clair : </span>
-          {smigTimeline(smigPeriods(rows))}.
+          <span className="font-semibold">Barème : </span>
+          {smigTimeline(smigPeriods(rows))}
         </p>
       )}
       <p className="mt-1 text-xs text-fg-subtle">{lastChange(meta, !meta.updatedBy)}</p>
@@ -274,13 +274,13 @@ export function BudgetTable({
     <div role="group" aria-labelledby={labelledBy} aria-describedby={`budgets-help${serverError ? " budgets-err" : ""}`} className="py-4">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <p id="budgets-help" className="text-xs text-fg-muted">
-          Une ligne par année civile, montant brut annuel. Retirer une année supprime son budget à l&apos;enregistrement.
+          Montant brut annuel, par année civile
         </p>
         {changed && <Badge tone="warning">Modifié</Badge>}
       </div>
       <input type="hidden" name="budgets" value={budgetJson(rows)} />
       {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-fg-muted">Aucun budget saisi : ajoutez une année pour activer les recommandations budgétaires.</p>
+        <p className="mt-3 text-sm text-fg-muted">Aucun budget saisi</p>
       ) : (
         <div className={wrapCls}>
           <table className="w-full text-left text-sm text-fg">
@@ -368,8 +368,8 @@ export function BudgetTable({
       )}
       {rows.length > 0 && errors.size === 0 && (
         <p className="mt-3 text-sm text-fg">
-          <span className="font-semibold">En clair : </span>
-          recommandations budgétaires possibles pour {budgetYears(rows)}.
+          <span className="font-semibold">Recommandations budgétaires : </span>
+          {budgetYears(rows)}
         </p>
       )}
       <p className="mt-1 text-xs text-fg-subtle">{meta.updatedAt ? lastChange(meta) : "Aucun budget enregistré"}</p>

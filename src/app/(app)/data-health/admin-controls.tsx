@@ -118,9 +118,7 @@ export function UploadForm({ accepted, maxBytes, workerUp }: { accepted: readonl
         return;
       }
       toast.success("Import lancé", { id, description: `${files(chosen.length, "reçu")}, traitement n° ${json.jobId} en file d'attente.` });
-      setState({
-        ok: `Import lancé : ${files(chosen.length, "reçu")}, traitement n° ${json.jobId} en file d'attente. Le résultat s'affichera dans l'historique ; la page s'actualise toute seule.`,
-      });
+      setState({ ok: `Import lancé : ${files(chosen.length, "reçu")}, traitement n° ${json.jobId} en file d'attente` });
       form.reset();
       setSelected([]);
       router.refresh();
@@ -139,7 +137,7 @@ export function UploadForm({ accepted, maxBytes, workerUp }: { accepted: readonl
   return (
     <form onSubmit={onSubmit} aria-describedby="import-aide">
       <p id="import-aide" className="mb-4 text-sm text-fg-muted">
-        Fichiers CSV de l&apos;export mensuel AJIR, séparateur « ; », encodage UTF-8, {Math.round(maxBytes / 1048576)} Mo au total au maximum.
+        Format : CSV · séparateur « ; » · UTF-8 · {Math.round(maxBytes / 1048576)} Mo max
       </p>
       <Steps
         label="Étapes de l'import"
@@ -186,8 +184,7 @@ export function UploadForm({ accepted, maxBytes, workerUp }: { accepted: readonl
             >
               <Icon name="upload" className="h-5 w-5" />
             </span>
-            <span className="text-sm font-semibold text-fg">{dragging ? "Déposez les fichiers pour les ajouter" : "Glissez-déposez les fichiers CSV de l'export ici"}</span>
-            <span className="text-xs text-fg-muted">ou sélectionnez-les en une fois (Ctrl + clic pour en choisir plusieurs)</span>
+            <span className="text-sm font-semibold text-fg">{dragging ? "Déposer les fichiers" : "Glisser-déposer les fichiers CSV"}</span>
             <span className={buttonClass("secondary", "md", "pointer-events-none mt-1")}>
               <Icon name="plus" />
               Choisir les fichiers CSV
@@ -206,7 +203,6 @@ export function UploadForm({ accepted, maxBytes, workerUp }: { accepted: readonl
         </Block>
 
         <Block n={2} title="Vérifier la sélection" done={s2 === "done"}>
-          <p>Les deux fichiers marqués « obligatoire » doivent être présents ; les autres complètent l&apos;analyse.</p>
           <ul aria-label="Fichiers attendus" className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
             {accepted.map((name) => {
               const f = picked.get(name);
@@ -242,10 +238,7 @@ export function UploadForm({ accepted, maxBytes, workerUp }: { accepted: readonl
         </Block>
 
         <Block n={3} title="Lancer l'import">
-          <p>Le service de calcul contrôle chaque ligne puis publie un rapport. Sous le seuil de qualité, l&apos;import est bloqué et les écrans gardent le calcul précédent.</p>
-          {!workerUp && (
-            <Notice tone="warning">Le service de calcul ne répond pas : l&apos;import restera en attente jusqu&apos;à son redémarrage sur le serveur.</Notice>
-          )}
+          {!workerUp && <Notice tone="warning">Service de calcul arrêté : import mis en attente</Notice>}
           <Button type="submit" variant="primary" icon="upload" pending={pending} pendingLabel="Envoi en cours…" disabled={!!problem} disabledReason={problem ?? undefined}>
             Lancer l&apos;import
           </Button>
@@ -257,18 +250,16 @@ export function UploadForm({ accepted, maxBytes, workerUp }: { accepted: readonl
   );
 }
 
-const RECOMPUTE_NEXT = "Le service de calcul le traite en quelques minutes ; la page s'actualise toute seule.";
-
 export function RecomputeForm({ disabled, reason }: { disabled: boolean; reason?: string }) {
   const [state, action, pending] = useActionState<RecomputeState, FormData>(recomputeAction, {});
-  useActionToast(state, { description: state.ok ? RECOMPUTE_NEXT : undefined });
+  useActionToast(state);
   return (
     <form action={action} className="space-y-2">
       <ConfirmButton
         variant="secondary"
         icon="refresh"
         title="Relancer le calcul mensuel ?"
-        consequence="Les indicateurs, niveaux de risque, anomalies et alertes seront recalculés à partir des dernières données importées. Le traitement prend quelques minutes."
+        consequence="Recalcul des indicateurs, niveaux de risque, anomalies et alertes · quelques minutes"
         confirmLabel="Relancer le calcul"
         disabled={disabled}
         pending={pending}
@@ -278,11 +269,7 @@ export function RecomputeForm({ disabled, reason }: { disabled: boolean; reason?
       </ConfirmButton>
       {disabled && reason && <p className="text-xs text-fg-muted">{reason}</p>}
       {state.error && <Notice tone="error">{state.error}</Notice>}
-      {state.ok && (
-        <Notice tone="success">
-          {state.ok} {RECOMPUTE_NEXT}
-        </Notice>
-      )}
+      {state.ok && <Notice tone="success">{state.ok}</Notice>}
     </form>
   );
 }

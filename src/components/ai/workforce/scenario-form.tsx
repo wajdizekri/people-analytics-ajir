@@ -124,8 +124,7 @@ export function WorkforceScenarioForm({
             1. Rythme des embauches <Modified show={changed.embauches} />
           </legend>
           <p className={helpCls}>
-            100 % = même rythme que sur les 12 derniers mois{baseHires12 != null ? `, soit environ ${dec(baseHires12, 0)} embauches par an` : ""}. Valeur
-            possible : de 0 à {HIRING_MAX} %.
+            100 % = rythme des 12 derniers mois{baseHires12 != null ? ` (≈ ${dec(baseHires12, 0)} embauches par an)` : ""} · de 0 à {HIRING_MAX} %
           </p>
           <div className="mt-3 flex items-center gap-3">
             <div className="min-w-0 flex-1">
@@ -155,7 +154,7 @@ export function WorkforceScenarioForm({
           </div>
           {baseHires12 != null && (
             <p className="mt-1.5 text-xs text-fg-muted" aria-live="polite">
-              Soit environ <strong className="tabular-nums text-fg">{dec((baseHires12 * hiringPct) / 100, 0)}</strong> embauches sur 12 mois.
+              ≈ <strong className="tabular-nums text-fg">{dec((baseHires12 * hiringPct) / 100, 0)}</strong> embauches sur 12 mois
             </p>
           )}
         </fieldset>
@@ -210,7 +209,7 @@ export function WorkforceScenarioForm({
               <Modified show={changed.budget} />
             </label>
             <p id="wf-budget-aide" className={helpCls}>
-              Pour comparer la projection de l&apos;année à votre budget : montant en TND, sans espace.
+              Montant en TND, sans espace
             </p>
             {/* step="any" : avec min={1} et step={1000}, un montant rond (21000000) était refusé par le navigateur */}
             <input
@@ -248,7 +247,7 @@ export function WorkforceScenarioForm({
             {dirty && !pending && (
               <>
                 <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-accent motion-safe:animate-pulse" />
-                Hypothèses modifiées : recalculez pour mettre la page à jour.
+                Hypothèses modifiées, non recalculées
               </>
             )}
           </p>

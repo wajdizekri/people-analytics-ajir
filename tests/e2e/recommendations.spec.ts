@@ -46,7 +46,7 @@ test.describe("Recommandations", () => {
     await page.reload();
     const done = recoItem(page, reco.action);
     await expect(done).toContainText("Réalisée");
-    await expect(done).toContainText(`Intervention réalisée le ${frDate(date)}`);
+    await expect(done).toContainText(`Intervention : ${frDate(date)}`);
     await expect(done.getByRole("button", { name: /Marquer comme réalisée|Rejeter avec motif/ })).toHaveCount(0);
 
     const db = q1<{ status: string; n: number; feedback: string }>(

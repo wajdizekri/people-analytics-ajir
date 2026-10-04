@@ -1,17 +1,14 @@
-// Pourquoi : facteur déclencheur en phrase (facteurs associés, jamais des causes)
-export const RECO_WHY: Record<string, string> = {
-  NIVEAU_ELEVE: "Classé au niveau de risque Élevé lors du calcul : un échange individuel est recommandé.",
-  REMUNERATION: "La rémunération fait partie des principaux facteurs associés à son niveau de risque.",
-  TEMPS_TRAVAIL: "Le temps de travail (heures supplémentaires, horaires) fait partie des principaux facteurs associés à son niveau de risque.",
-  FORMATION_EVAL: "La formation et l'évaluation font partie des principaux facteurs associés à son niveau de risque.",
-};
+import { lcFirst } from "./labels";
 
-// Que faire : l'action proposée, en une phrase lisible par la RH comme par le manager
+// Action : ce que recouvre l'action proposée, en groupe nominal court
 export const RECO_WHAT: Record<string, string> = {
-  ENTRETIEN: "Proposer un entretien pour comprendre ses attentes et ses perspectives.",
-  REVISION_SALARIALE: "Comparer sa rémunération à celle de postes équivalents et étudier un ajustement.",
-  CHARGE_TRAVAIL: "Examiner avec le collaborateur sa charge de travail et ses heures supplémentaires.",
-  PLAN_FORMATION: "Proposer une formation ou un parcours de développement adapté.",
+  ENTRETIEN: "entretien individuel sur les attentes et perspectives",
+  REVISION_SALARIALE: "comparaison aux postes équivalents et étude d'un ajustement",
+  CHARGE_TRAVAIL: "revue de la charge et des heures supplémentaires",
+  PLAN_FORMATION: "formation ou parcours de développement",
 };
 
-export const recoWhy = (triggerGroup: string, triggerLabel: string) => RECO_WHY[triggerGroup] ?? `Facteur associé à son niveau de risque : ${triggerLabel}.`;
+// Pourquoi, en libellé + valeur (facteurs associés, jamais des causes)
+export function recoWhy(triggerGroup: string, triggerLabel: string): { label: string; value: string } {
+  return triggerGroup === "NIVEAU_ELEVE" ? { label: "Déclencheur", value: "niveau de risque Élevé" } : { label: "Facteur principal", value: lcFirst(triggerLabel) };
+}

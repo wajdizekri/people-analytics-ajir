@@ -115,7 +115,7 @@ export function InsightZone({
 }: {
   id: string;
   title: string;
-  hint: string;
+  hint?: string;
   icon: InsightIcon;
   aside?: ReactNode;
   children: ReactNode;
@@ -131,9 +131,9 @@ export function InsightZone({
           <h2 id={id} className="text-base font-semibold leading-7 text-heading">
             {title}
           </h2>
-          <p className="text-xs text-fg-muted">{hint}</p>
+          {hint && <p className="text-xs text-fg-muted">{hint}</p>}
         </div>
-        {aside}
+        {aside && <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">{aside}</div>}
       </header>
       {children}
     </section>

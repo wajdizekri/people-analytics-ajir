@@ -1,22 +1,30 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 const ALIGN = { center: "left-1/2 -translate-x-1/2", start: "left-0", end: "right-0" } as const;
+type Align = keyof typeof ALIGN;
+
+// Détails ajoutés par DetailTip à la bulle d'un `tip` fourni par la page (TermTip, InfoTip…) : une seule bulle par élément
+const Extra = createContext<ReactNode>(null);
 
 // Bulle d'aide « ? » : bouton au clavier (Entrée, Espace), Échap ou clic extérieur pour fermer.
-// Le texte reste dans le DOM (masqué) et sert de description au bouton : un lecteur d'écran l'annonce dès la prise de focus.
+// Le texte reste dans le DOM (masqué) ; il n'est relié au bouton (aria-describedby) que bulle ouverte, donc rendu.
 export function InfoTip({
   label,
   children,
   align = "center",
   className = "",
+  prefix = "Définition",
 }: {
   label: string;
   children: ReactNode;
-  align?: keyof typeof ALIGN;
+  align?: Align;
   className?: string;
+  /** Début du nom accessible du bouton : « Définition : Turnover » (défaut), « Détails : Effectif fin de mois ». */
+  prefix?: string;
 }) {
+  const extra = useContext(Extra);
   const [open, setOpen] = useState(false);
   const id = useId();
   const root = useRef<HTMLSpanElement>(null);
@@ -68,14 +76,16 @@ export function InfoTip({
         type="button"
         aria-expanded={open}
         aria-controls={id}
-        aria-describedby={id}
+        aria-describedby={open ? id : undefined}
         onClick={() => setOpen((o) => !o)}
         className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-link transition-colors duration-150 hover:bg-primary-soft active:scale-95"
       >
         <span aria-hidden="true" className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border border-current text-[11px] font-semibold leading-none">
           ?
         </span>
-        <span className="sr-only">Définition : {label}</span>
+        <span className="sr-only">
+          {prefix} : {label}
+        </span>
       </button>
       <span
         ref={bubble}
@@ -87,8 +97,49 @@ export function InfoTip({
           {label}
           <span className="sr-only"> : </span>
         </span>
-        {children}
+        <Extra value={null}>
+          {children}
+          {extra != null && <span className="mt-1.5 block border-t border-line pt-1.5">{extra}</span>}
+        </Extra>
       </span>
     </span>
+  );
+}
+
+const shown = (n: ReactNode) => n != null && n !== false && n !== "";
+
+/**
+ * Bulle « ? » d'un titre ou d'une carte : sous-titre, période, aide, note… hors de l'écran, fermée par défaut.
+ * Avec `tip` (TermTip, InfoTip…), les détails s'ajoutent à cette bulle ; sinon bulle « Détails : label ». Rien si tout est vide.
+ */
+export function DetailTip({
+  label,
+  details,
+  tip,
+  prefix = "Détails",
+  align = "start",
+  className = "",
+}: {
+  label: string;
+  details?: ReactNode | ReactNode[];
+  tip?: ReactNode;
+  prefix?: string;
+  align?: Align;
+  className?: string;
+}) {
+  const lines = (Array.isArray(details) ? details : [details]).filter(shown);
+  const body = lines.length
+    ? lines.map((d, i) => (
+        <span key={i} className={i ? "mt-1 block" : "block"}>
+          {d}
+        </span>
+      ))
+    : null;
+  if (shown(tip)) return body ? <Extra value={body}>{tip}</Extra> : <>{tip}</>;
+  if (!body) return null;
+  return (
+    <InfoTip label={label} prefix={prefix} align={align} className={className}>
+      {body}
+    </InfoTip>
   );
 }

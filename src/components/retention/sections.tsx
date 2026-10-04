@@ -1,6 +1,4 @@
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { Card, fmt, tableCls } from "@/components/ui";
+import { fmt, tableCls } from "@/components/ui";
 import type { RetentionGroup } from "@/lib/dal/retention";
 import type { CurveSummary } from "@/lib/retention/summary";
 import { monthsText, pct } from "./chart-options";
@@ -96,34 +94,5 @@ export function GroupTable({ overall, groups, caption }: { overall: { label: str
         ))}
       </ul>
     </>
-  );
-}
-
-// Encarts « Comment lire » et « Limites » : listes courtes, détail dans l'aide
-export function ReadingNotes({ reading, limits, helpHref, headingLevel = 2 }: { reading: ReactNode[]; limits: ReactNode[]; helpHref?: string; headingLevel?: 2 | 3 }) {
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card title="Comment lire" headingLevel={headingLevel}>
-        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-fg-muted">
-          {reading.map((r, i) => (
-            <li key={i}>{r}</li>
-          ))}
-        </ul>
-        {helpHref && (
-          <p className="mt-3 text-sm">
-            <Link href={helpHref} className="font-medium text-link underline underline-offset-2 transition-colors duration-150 hover:decoration-2">
-              En savoir plus dans l&apos;aide
-            </Link>
-          </p>
-        )}
-      </Card>
-      <Card title="Limites" headingLevel={headingLevel}>
-        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-fg-muted">
-          {limits.map((r, i) => (
-            <li key={i}>{r}</li>
-          ))}
-        </ul>
-      </Card>
-    </div>
   );
 }

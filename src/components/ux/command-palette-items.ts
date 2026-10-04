@@ -19,7 +19,7 @@ export const ACTION_ITEMS: StaticItem[] = [
   { id: "action:theme-light", kind: "action", label: "Passer au thème clair", detail: "Apparence", icon: "sun", theme: "light", keywords: "mode jour" },
   { id: "action:theme-dark", kind: "action", label: "Passer au thème sombre", detail: "Apparence", icon: "moon", theme: "dark", keywords: "mode nuit" },
   { id: "action:theme-system", kind: "action", label: "Utiliser le thème du système", detail: "Apparence", icon: "monitor", theme: "system", keywords: "mode automatique" },
-  { id: "action:compte", kind: "action", label: "Mon compte", detail: "Vos informations, vos droits, votre mot de passe", icon: "user", href: "/compte", keywords: "profil mot de passe" },
+  { id: "action:compte", kind: "action", label: "Mon compte", detail: "Profil, droits, mot de passe", icon: "user", href: "/compte", keywords: "profil mot de passe" },
   { id: "action:aide", kind: "action", label: "Aide", detail: "Guide et définitions", icon: "help", href: "/aide", keywords: "glossaire documentation" },
 ];
 

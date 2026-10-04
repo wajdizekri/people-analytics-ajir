@@ -15,7 +15,8 @@ import {
   type PrivacySubjectDto,
   type PrivacyType,
 } from "@/lib/dal/privacy";
-import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, KpiTile, Notice, PageHeader, Steps, cardCls, fieldCls, fmt, type DataTableRow, type StepStatus } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, DataTable, EmptyState, KpiTile, Notice, PageHeader, StatusBadge, Steps, cardCls, fieldCls, fmt, type DataTableRow, type StepStatus } from "@/components/ui";
+import { InfoTip } from "@/components/help";
 import { CloseRequestForm, ExportLinks, LiftOppositionForm, RequestForm } from "@/components/privacy/privacy-forms";
 import { closeRequestAction, createRequestAction, liftOppositionAction } from "./actions";
 
@@ -43,17 +44,13 @@ function href(q: PageQuery, patch: Partial<PageQuery>): string {
   return s ? `/confidentialite?${s}` : "/confidentialite";
 }
 
-function StatusBadge({ r }: { r: PrivacyRequestDto }) {
+function RequestStatus({ r }: { r: PrivacyRequestDto }) {
   if (r.overdue) return <Badge tone="red">Hors délai</Badge>;
   return <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge>;
 }
 
 // Parcours en trois étapes (composant commun Steps : numéro, état écrit, étape en cours annoncée)
-const STEPS = [
-  { title: "Retrouver le collaborateur", description: "Par son matricule ou son nom, qu'il soit présent ou sorti." },
-  { title: "Enregistrer sa demande", description: "Accès, opposition ou rectification : l'échéance d'un mois est calculée." },
-  { title: "Répondre et clôturer", description: "Remettre la copie, confirmer l'opposition ou la correction, puis clôturer." },
-];
+const STEPS = [{ title: "Retrouver le collaborateur" }, { title: "Enregistrer la demande" }, { title: "Répondre et clôturer" }];
 
 function RequestSteps({ current }: { current: 1 | 2 | 3 }) {
   return (
@@ -84,22 +81,31 @@ function SubjectPanel({ s }: { s: PrivacySubjectDto }) {
         {s.opposition ? (
           <div className="mt-3">
             <Notice tone="warning" title={s.opposition.label}>
-              En vigueur depuis le {fmt.dateTime(s.opposition.since)}
-              {s.opposition.recordedBy ? ` (enregistrée par ${s.opposition.recordedBy})` : ""}. Ce collaborateur n&apos;a ni estimation du risque de départ, ni simulation
-              « et si ? », ni recommandation individuelle, ni alerte de risque.
+              Depuis le {fmt.dateTime(s.opposition.since)}
+              {s.opposition.recordedBy ? ` · par ${s.opposition.recordedBy}` : ""} · exclu du calcul du risque
             </Notice>
             <LiftOppositionForm employeeId={e.id} action={liftOppositionAction} />
           </div>
         ) : (
-          <p className="mt-3 text-sm text-fg-muted">Aucune opposition en vigueur : le collaborateur est évalué au calcul mensuel s&apos;il en remplit les conditions.</p>
+          <p className="mt-3">
+            <StatusBadge tone="neutral">Aucune opposition</StatusBadge>
+          </p>
         )}
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card title="Étape 2 · Enregistrer une nouvelle demande" headingLevel={3}>
+        <Card title="Étape 2 · Nouvelle demande" headingLevel={3}>
           <RequestForm employeeId={e.id} opposed={!!s.opposition} action={createRequestAction} />
         </Card>
-        <Card title="Données que l'outil détient sur lui" headingLevel={3}>
+        <Card
+          title="Données détenues"
+          headingLevel={3}
+          actions={
+            <InfoTip label="Copie d'accès" prefix="Détails" align="end">
+              Toutes ces rubriques, plus l&apos;identité, les facteurs des estimations, les interventions et les demandes déjà faites.
+            </InfoTip>
+          }
+        >
           <dl className="grid grid-cols-[1fr_max-content] gap-x-4 gap-y-1.5 text-sm">
             {s.inventory.map((i) => (
               <div key={i.label} className="contents">
@@ -108,18 +114,12 @@ function SubjectPanel({ s }: { s: PrivacySubjectDto }) {
               </div>
             ))}
           </dl>
-          <p className="mt-3 text-xs text-fg-muted">
-            La copie remise pour une demande d&apos;accès reprend toutes ces rubriques, ainsi que l&apos;identité, les facteurs des estimations, les interventions et
-            les demandes déjà faites.
-          </p>
         </Card>
       </div>
 
       <Card title={`Étape 3 · Répondre et clôturer${open.length ? ` (${open.length} demande${open.length > 1 ? "s" : ""} ouverte${open.length > 1 ? "s" : ""})` : ""}`} headingLevel={3}>
         {s.requests.length === 0 ? (
-          <EmptyState compact title="Aucune demande enregistrée pour ce collaborateur">
-            Enregistrez sa demande à l&apos;étape 2 : elle apparaîtra ici avec son échéance.
-          </EmptyState>
+          <EmptyState compact title="Aucune demande enregistrée" />
         ) : (
           <ol className="space-y-3">
             {s.requests.map((r) => (
@@ -127,7 +127,7 @@ function SubjectPanel({ s }: { s: PrivacySubjectDto }) {
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="font-semibold text-fg">Demande n° {r.id}</span>
                   <Badge tone="sky">{TYPE_LABEL[r.type]}</Badge>
-                  <StatusBadge r={r} />
+                  <RequestStatus r={r} />
                 </div>
                 <p className="mt-1 text-sm text-fg-muted">
                   Reçue le {fmt.dateTime(r.createdAt)}
@@ -135,7 +135,7 @@ function SubjectPanel({ s }: { s: PrivacySubjectDto }) {
                   {r.status === "OUVERTE" && (
                     <>
                       {" "}
-                      · <span className={r.overdue ? "font-semibold text-danger" : "font-medium text-fg"}>réponse attendue avant le {fmt.date(r.dueDate)}</span>
+                      · <span className={r.overdue ? "font-semibold text-danger" : "font-medium text-fg"}>échéance {fmt.date(r.dueDate)}</span>
                     </>
                   )}
                   {r.closedAt ? ` · clôturée le ${fmt.dateTime(r.closedAt)}${r.closedBy ? ` par ${r.closedBy}` : ""}` : ""}
@@ -147,8 +147,8 @@ function SubjectPanel({ s }: { s: PrivacySubjectDto }) {
                   </div>
                 )}
                 {r.type === "RECTIFICATION" && r.status === "OUVERTE" && (
-                  <p className="mt-2 text-xs text-fg-muted">
-                    Faites la correction dans AJIR, qui reste la source de vérité : elle sera reprise au prochain import. Clôturez ensuite la demande.
+                  <p className="mt-2">
+                    <StatusBadge tone="info">Correction à faire dans AJIR</StatusBadge>
                   </p>
                 )}
                 {r.status === "OUVERTE" && <CloseRequestForm requestId={r.id} type={r.type} action={closeRequestAction} />}
@@ -195,23 +195,33 @@ export default async function PrivacyPage({ searchParams }: { searchParams: Prom
       <PageHeader
         eyebrow="Données et modèle"
         title="Droit d'accès"
-        subtitle="Traiter les demandes des collaborateurs sur leurs données : obtenir une copie, s'opposer au calcul du risque, faire corriger une information."
-        scope="Réservé à la RH · chaque action et chaque téléchargement sont tracés"
+        subtitle="Demandes d'accès, d'opposition et de rectification des collaborateurs."
+        scope="Réservé à la RH"
+        badge={<StatusBadge tone="info">Actions tracées</StatusBadge>}
       />
 
       <RequestSteps current={step} />
 
       {ignored.length > 0 && (
         <div className="mb-4">
-          <Notice tone="warning">Paramètre(s) d&apos;adresse ignoré(s) : {ignored.join(", ")}. Utilisez la recherche et les filtres de la page.</Notice>
+          <Notice tone="warning">Paramètre ignoré : {ignored.join(", ")}</Notice>
         </div>
       )}
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiTile label="Demandes ouvertes" value={fmt.int(c.open)} hint="Réponse due sous un mois" href={href({}, { statut: "OUVERTE" })} />
-        <KpiTile label="Hors délai" value={fmt.int(c.overdue)} hint={c.overdue ? "À traiter en priorité" : "Aucune demande en retard"} />
-        <KpiTile label="Oppositions en vigueur" value={fmt.int(c.oppositions)} hint="Collaborateurs exclus du calcul du risque" />
-        <KpiTile label="Demandes enregistrées" value={fmt.int(c.total)} hint="Depuis la mise en service" />
+        <KpiTile
+          label="Demandes ouvertes"
+          value={fmt.int(c.open)}
+          href={href({}, { statut: "OUVERTE" })}
+          tip={<InfoTip label="Demandes ouvertes" align="end">Réponse due sous un mois.</InfoTip>}
+        />
+        <KpiTile label="Hors délai" value={fmt.int(c.overdue)} />
+        <KpiTile
+          label="Oppositions en vigueur"
+          value={fmt.int(c.oppositions)}
+          tip={<InfoTip label="Oppositions en vigueur" align="end">Collaborateurs exclus du calcul du risque.</InfoTip>}
+        />
+        <KpiTile label="Demandes enregistrées" value={fmt.int(c.total)} />
       </div>
 
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
@@ -219,7 +229,17 @@ export default async function PrivacyPage({ searchParams }: { searchParams: Prom
           <form method="get" action="/confidentialite" role="search" className="flex flex-wrap items-end gap-2">
             <div className="min-w-0 grow basis-40">
               <label htmlFor="privacy-q" className="block text-sm font-medium text-fg">Matricule ou nom</label>
-              <input id="privacy-q" name="q" type="search" defaultValue={q.q ?? ""} minLength={2} maxLength={100} className={selectCls} autoComplete="off" aria-describedby="privacy-q-help" />
+              <input
+                id="privacy-q"
+                name="q"
+                type="search"
+                defaultValue={q.q ?? ""}
+                minLength={2}
+                maxLength={100}
+                placeholder="Présents et sortis"
+                className={selectCls}
+                autoComplete="off"
+              />
             </div>
             {q.statut && <input type="hidden" name="statut" value={q.statut} />}
             {q.type && <input type="hidden" name="type" value={q.type} />}
@@ -227,10 +247,9 @@ export default async function PrivacyPage({ searchParams }: { searchParams: Prom
               Rechercher
             </Button>
           </form>
-          <p id="privacy-q-help" className="mt-2 text-xs text-fg-muted">Collaborateurs présents et sortis. Saisissez au moins 2 caractères.</p>
           <div className="mt-3">
             {results === null ? null : results.length === 0 ? (
-              <EmptyState compact title="Aucun collaborateur trouvé">Vérifiez l&apos;orthographe, ou cherchez par matricule.</EmptyState>
+              <EmptyState compact title="Aucun collaborateur trouvé" />
             ) : (
               <ul className="divide-y divide-line" aria-label="Résultats de la recherche">
                 {results.map((r) => (
@@ -266,17 +285,14 @@ export default async function PrivacyPage({ searchParams }: { searchParams: Prom
           {subject ? (
             <SubjectPanel s={subject} />
           ) : subjectMissing ? (
-            <EmptyState title="Collaborateur introuvable">Il a pu être retiré de l&apos;export AJIR. Recherchez-le par son matricule.</EmptyState>
+            <EmptyState title="Collaborateur introuvable" />
           ) : (
-            <EmptyState title="Commencez par retrouver le collaborateur" icon="search">
-              Recherchez-le à gauche par matricule ou par nom. Vous pourrez ensuite enregistrer sa demande, télécharger la copie de ses données ou gérer son
-              opposition.
-            </EmptyState>
+            <EmptyState title="Aucun collaborateur sélectionné" icon="search" />
           )}
         </div>
       </div>
 
-      <Section id="registre" title="Registre de toutes les demandes">
+      <Section id="registre" title="Registre des demandes">
         <form method="get" action="/confidentialite" aria-label="Filtrer le registre" className="mb-4 flex flex-wrap items-end gap-3 rounded-control border border-line bg-surface-2 p-3">
           {q.q && <input type="hidden" name="q" value={q.q} />}
           {q.salarie && <input type="hidden" name="salarie" value={q.salarie} />}
@@ -312,7 +328,7 @@ export default async function PrivacyPage({ searchParams }: { searchParams: Prom
         {register.rows.length > 0 && (
           <p className="mb-2 text-xs text-fg-muted">
             {fmt.int(register.rows.length)} demande{register.rows.length > 1 ? "s" : ""}
-            {q.statut || q.type ? " pour ces filtres" : ""} · les plus récentes d&apos;abord ; cliquez sur un en-tête pour trier, sur un nom pour ouvrir le dossier.
+            {q.statut || q.type ? ` filtrée${register.rows.length > 1 ? "s" : ""}` : ""}
           </p>
         )}
         <DataTable
@@ -342,7 +358,7 @@ export default async function PrivacyPage({ searchParams }: { searchParams: Prom
                 id: r.id,
                 recue: <span className="whitespace-nowrap tabular-nums">{fmt.dateTime(r.createdAt)}</span>,
                 type: TYPE_LABEL[r.type],
-                statut: <StatusBadge r={r} />,
+                statut: <RequestStatus r={r} />,
                 echeance: <span className="whitespace-nowrap tabular-nums">{r.status === "OUVERTE" ? fmt.date(r.dueDate) : "—"}</span>,
                 cloture: <span className="whitespace-nowrap">{r.closedAt ? `${fmt.date(r.closedAt)}${r.closedBy ? ` · ${r.closedBy}` : ""}` : "—"}</span>,
               },
@@ -358,18 +374,30 @@ export default async function PrivacyPage({ searchParams }: { searchParams: Prom
             }),
           )}
           empty={
-            <EmptyState compact title={q.statut || q.type ? "Aucune demande pour ces filtres" : "Aucune demande enregistrée"}>
-              {q.statut || q.type ? "Élargissez les filtres." : "Les demandes enregistrées à l'étape 2 apparaissent ici, avec leur échéance."}
-            </EmptyState>
+            <EmptyState
+              compact
+              title={q.statut || q.type ? "Aucune demande pour ces filtres" : "Aucune demande enregistrée"}
+              action={
+                q.statut || q.type ? (
+                  <ButtonLink href={href(q, { statut: undefined, type: undefined })} variant="secondary">
+                    Réinitialiser les filtres
+                  </ButtonLink>
+                ) : undefined
+              }
+            />
           }
         />
-        {register.rows.length === 200 && <p className="mt-2 text-xs text-fg-muted">Affichage limité aux 200 demandes les plus récentes : filtrez par statut ou par type.</p>}
+        {register.rows.length === 200 && <p className="mt-2 text-xs text-fg-muted">Limité aux 200 demandes les plus récentes</p>}
       </Section>
 
       <div className="mt-6">
-        <Notice tone="neutral" title="Bon à savoir">
-          La rectification se fait dans AJIR, qui reste la source de vérité. La copie d&apos;accès se remet au seul collaborateur concerné. Le journal d&apos;audit
-          n&apos;est jamais supprimé. Cadre légal : loi organique n° 2004-63, articles 32 à 42.
+        <Notice tone="neutral" title="Règles">
+          <ul className="list-disc space-y-0.5 pl-5">
+            <li>Rectification : dans AJIR, source de vérité</li>
+            <li>Copie d&apos;accès : au seul collaborateur concerné</li>
+            <li>Journal d&apos;audit : jamais supprimé</li>
+            <li>Cadre légal : loi organique n° 2004-63, articles 32 à 42</li>
+          </ul>
         </Notice>
       </div>
     </div>

@@ -5,7 +5,7 @@ import { createElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { SessionUser } from "@/lib/auth/session";
 import type { ActionMatching, MatchedComparisonDto } from "@/lib/dal/intervention-impact";
-import { INSUFFICIENT_LABEL, MATCHING_TITLE, MatchedComparison, intervalReading } from "@/app/(app)/interventions/matched-comparison";
+import { INSUFFICIENT_LABEL, MATCHING_TITLE, MatchedComparison, NON_CAUSAL_BADGE, intervalReading } from "@/app/(app)/interventions/matched-comparison";
 import { createCausalFixture, destroyCausalFixture, type CausalFixture } from "./fixture";
 
 // Section « Comparaison avec des collaborateurs similaires » : vocabulaire imposé (estimation non causale, aucun « évité »),
@@ -122,8 +122,8 @@ describe("section : vocabulaire et limites", () => {
 
   it("titre, mention non causale, encadré des limites, tableaux « Voir les données »", () => {
     expect(s).toContain(MATCHING_TITLE);
-    expect(s).toContain("(estimation non causale)");
-    expect(s).toContain("estimation sous hypothèses");
+    expect(s).toContain(NON_CAUSAL_BADGE);
+    expect(s).toContain("valable sous hypothèses");
     expect(s).toContain("Ce que ce chiffre ne dit pas");
     for (const k of ["Variables non observées", "Choix des personnes suivies", "Petits effectifs", "Aucune décision individuelle ne repose sur ce chiffre"]) expect(s).toContain(k);
     expect(s).toContain("Voir les données");
@@ -145,23 +145,23 @@ describe("section : vocabulaire et limites", () => {
     expect(s).toContain("Comparaison fragile");
     expect(s).toContain("Suivis : 8,0 % · Similaires : 12,0 %");
     expect(s).toContain("Écart : −4,0 pt (fourchette de −9,0 pt à +1,0 pt)");
-    expect(s).toContain("La fourchette contient zéro : aucun écart net entre les deux groupes.");
-    expect(s).toContain("La fourchette exclut zéro : écart net, qui ne prouve pas un effet de l'action.");
-    expect(s).toContain("Des écarts importants subsistent après appariement : compa-ratio (salaire / médiane du poste).");
+    expect(s).toContain("Aucun écart net (fourchette contenant zéro) · Paires : ");
+    expect(s).toContain("Écart net, non causal (fourchette excluant zéro)");
+    expect(s).toContain("Écarts subsistants : compa-ratio (salaire / médiane du poste)");
     expect(s).not.toContain("risque élevé au dernier calcul.");
-    expect(s).toContain("Seuls 64 % des collaborateurs suivis ont trouvé un collaborateur similaire.");
-    expect(s).toContain("48 collaborateurs suivis comparés à autant de non-suivis au profil proche, soit 96 % des 50 suivis comparables.");
+    expect(s).toContain("Appariement partiel : 64 % des suivis");
+    expect(s).toContain("Paires : 48 · Couverture : 96 % des 50 suivis comparables");
     expect(s).not.toMatch(/\d\.\d/);
   });
 
   it("gardes : effectif insuffisant, aucun chiffre sous le seuil", () => {
-    expect(s).toContain(`${INSUFFICIENT_LABEL} : 12 paires mesurées, il en faut au moins 20.`);
-    expect(s).toContain("3 collaborateurs suivis comparables sur 4, il en faut au moins 20. Aucun chiffre n'est affiché sous ce seuil.");
+    expect(s).toContain(`${INSUFFICIENT_LABEL} : 12 / 20 paires`);
+    expect(s).toContain("Suivis comparables : 3 / 20 requis");
   });
 
   it("lecture de la fourchette", () => {
-    expect(intervalReading({ low: -0.1, high: 0.02 })).toContain("contient zéro");
-    expect(intervalReading({ low: 0.01, high: 0.2 })).toContain("exclut zéro");
+    expect(intervalReading({ low: -0.1, high: 0.02 })).toContain("contenant zéro");
+    expect(intervalReading({ low: 0.01, high: 0.2 })).toContain("excluant zéro");
     expect(intervalReading({ low: null, high: null })).toBe("");
   });
 
@@ -185,9 +185,9 @@ describe("page /interventions avec des entretiens comparables", () => {
     session.current = { userId: f.users.rh, login: "rh.causal", role: "RH", employeeId: null } as SessionUser;
     const page = (await import("@/app/(app)/interventions/page")).default;
     const s = text(await page(sp()));
-    expect(s).toContain("Observation, pas un effet causal.");
+    expect(s).toContain("Observation non causale");
     expect(s).toContain("en tient compte en partie, sans prouver d'effet");
-    expect(s.indexOf(MATCHING_TITLE)).toBeGreaterThan(s.indexOf("Ce qui change après l'action, par type d'action"));
+    expect(s.indexOf(MATCHING_TITLE)).toBeGreaterThan(s.indexOf("Avant / après par type d'action"));
     expect(s).toContain("Entretien de rétention");
     expect(s).toMatch(/Groupes comparables|Comparaison fragile/);
     expect(s).toContain("Écart : ");

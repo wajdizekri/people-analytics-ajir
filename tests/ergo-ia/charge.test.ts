@@ -6,7 +6,7 @@ import { getDb } from "@/db/client";
 import { runStep } from "@/lib/ai/workload/step";
 import { AS_OF, cleanupWorkloadDb, setupWorkloadDb, type Fixture } from "../ai/workload/setup";
 
-// /charge : sous-titre avec périmètre et horizon, incertitude des prévisions signalée côté manager
+// /charge : titre court et horizon de prévision, incertitude des prévisions signalée côté manager
 const session: { current: SessionUser | null } = { current: null };
 vi.mock("@/lib/auth/session", () => ({ readSession: async () => session.current, clientIp: () => "test" }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
@@ -34,9 +34,12 @@ const render = async () => {
 };
 
 describe("/charge", () => {
-  it("RH : le visuel des équipes dit son périmètre et son horizon", async () => {
+  it("RH : le visuel des équipes porte un titre court, l'horizon reste écrit", async () => {
     session.current = { userId: 1, login: "rh", role: "RH", employeeId: null };
-    expect(await render()).toMatch(/par équipe désignée par son manager · toute l'entreprise, d'ici \S+ \d{4}/);
+    const t = await render();
+    expect(t).toContain("Charge prévue par équipe (h)");
+    expect(t).toMatch(/Pic d'heures sup par ETP sur 3 mois, d'ici \S+ \d{4}/);
+    expect(t).not.toMatch(/dépasser(ont)? (probablement )?le seuil de/);
   });
 
   it("manager : fourchette probable à 80 % mentionnée, équipe la plus chargée qualifiée en mots", async () => {

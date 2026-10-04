@@ -1,7 +1,7 @@
 import Form from "next/form";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { Button, DataTable, EmptyState, Icon, KpiTile, Notice, PageHeader, RiskBadge, StatusBadge, cardCls, fieldCls, fmt, tableCls } from "@/components/ui";
+import { Button, ButtonLink, DataTable, EmptyState, Icon, KpiTile, Notice, PageHeader, RiskBadge, StatusBadge, cardCls, fieldCls, fmt, tableCls } from "@/components/ui";
 import { VisualCard, barChart } from "@/components/charts/pbi";
 import { buildHref } from "@/components/pilotage/filters";
 import { formatDate, formatMonth, formatProb, formatRate } from "@/components/pilotage/labels";
@@ -11,7 +11,7 @@ import { clientIp } from "@/lib/auth/session";
 import { backtestQuerySchema, getBacktest, type BacktestDto, type BacktestPerson } from "@/lib/dal/backtest";
 import { pageContext } from "@/lib/dal/context";
 import { parseQuery } from "@/lib/dal/employees";
-import { InfoTip, PageIntro, TermTip } from "@/components/help";
+import { InfoTip, TermTip } from "@/components/help";
 
 export const metadata = { title: "Vérification a posteriori (backtesting) — People Analytics AJIR" };
 
@@ -100,7 +100,7 @@ function PeopleTable({ list, asOf, here, b0, caption }: { list: BacktestPerson[]
                 <span className="text-xs text-fg-muted">{months(p.delayDays)} après</span>
               </span>
             ) : (
-              <StatusBadge tone="warning">Oui (date de démission non renseignée)</StatusBadge>
+              <StatusBadge tone="warning">Oui, date inconnue</StatusBadge>
             ),
           },
           sort: { nom: p.name, rang: p.rank, departement: p.department, score: p.score, demission: p.resigned ? (p.eventDate ?? "9999") : "" },
@@ -132,39 +132,30 @@ export default async function BacktestingPage({ searchParams }: { searchParams: 
       <PageHeader
         eyebrow="Données et modèle"
         title="Vérification a posteriori (backtesting)"
-        subtitle="Le modèle aurait-il repéré les démissions ? Le calcul est rejoué à une date passée, puis comparé aux démissions des 6 mois suivants."
+        badge={
+          <StatusBadge tone="info" dot={false}>
+            Exposition au risque, hors effet des actions
+          </StatusBadge>
+        }
       />
-      <PageIntro
-        helpHref="/aide#modele"
-        points={[
-          "Choisissez une date d'origine : seules les fins de mois suivies pendant 6 mois complets sont proposées.",
-          "Le résultat mesure l'exposition au risque signalée à cette date, pas l'effet des actions menées ensuite.",
-        ]}
-      >
-        Vérifier après coup si les niveaux de risque d&apos;une date passée ont repéré les démissions des 6 mois suivants.
-      </PageIntro>
       {(ignored.length > 0 || b.requestedUnavailable) && (
         <div className="mb-4 space-y-2">
-          {ignored.length > 0 && <Notice tone="warning">Paramètre ignoré car invalide : {ignored.join(", ")}.</Notice>}
-          {b.requestedUnavailable && (
-            <Notice tone="warning">La date demandée n&apos;a pas 6 mois de suivi complet ou pas de variables calculées. La dernière date possible est affichée.</Notice>
-          )}
+          {ignored.length > 0 && <Notice tone="warning">Paramètre invalide ignoré : {ignored.join(", ")}</Notice>}
+          {b.requestedUnavailable && <Notice tone="warning">Date indisponible : dernière date possible affichée</Notice>}
         </div>
       )}
 
       {!b.model ? (
-        <EmptyState title="Aucun modèle en service">
-          La vérification a posteriori est impossible sans modèle en service. Voir{" "}
-          <Link href="/transparency" className="font-medium text-link underline underline-offset-2">
-            Transparence du modèle
-          </Link>
-          .
-        </EmptyState>
+        <EmptyState
+          title="Aucun modèle en service"
+          action={
+            <ButtonLink href="/transparency" variant="secondary">
+              Transparence du modèle
+            </ButtonLink>
+          }
+        />
       ) : b.months.length === 0 || !r ? (
-        <EmptyState title="Aucune date avec un suivi complet de 6 mois">
-          Il faut des variables calculées pour une fin de mois antérieure d&apos;au moins 6 mois à la fin des données.
-          {b.dataEndDate ? ` Fin des données : ${formatDate(b.dataEndDate)}.` : ""}
-        </EmptyState>
+        <EmptyState title="Aucune date avec 6 mois de suivi">{b.dataEndDate ? `Fin des données : ${formatDate(b.dataEndDate)}` : undefined}</EmptyState>
       ) : (
         <ResultView b={b} r={r} b0={b0} here={here} role={ctx.role} presets={presets} afterTraining={afterTraining.length} trainTo={trainTo} />
       )}
@@ -206,11 +197,8 @@ function ResultView({
     <>
       <section className={`${cardCls} mb-4 p-4`} aria-labelledby="choix-date">
         <h2 id="choix-date" className="text-base font-semibold text-heading">
-          Choisir la date d&apos;origine
+          Date d&apos;origine
         </h2>
-        <p className="mt-0.5 text-sm text-fg-muted">
-          Le modèle est rejoué sur les données connues à cette fin de mois. Les démissions sont comptées sur les 6 mois suivants.
-        </p>
         <Form action="/backtesting" className="mt-3 flex flex-wrap items-end gap-3" aria-label="Choix de la date d'origine">
           <div className="min-w-[14rem]">
             <label htmlFor="f-mois" className="flex items-center gap-1 text-sm font-medium text-fg">
@@ -253,63 +241,43 @@ function ResultView({
           </p>
         )}
         {!b0 && trainTo && (
-          <p className="mt-2 text-xs text-fg-muted">
-            {afterTraining
-              ? `${afterTraining} date${afterTraining > 1 ? "s" : ""} postérieure${afterTraining > 1 ? "s" : ""} à l'apprentissage du modèle (après ${formatMonth(trainTo)}) : ce sont les résultats les plus fiables.`
-              : `Toutes les dates proposées font partie de la période d'apprentissage du modèle (jusqu'à ${formatMonth(trainTo)}) : les résultats sont optimistes.`}
+          <p className="mt-2">
+            {afterTraining ? (
+              <StatusBadge tone="success">{`${afterTraining} date${afterTraining > 1 ? "s" : ""} après l'apprentissage (${formatMonth(trainTo)})`}</StatusBadge>
+            ) : (
+              <StatusBadge tone="warning">{`Dates d'apprentissage (jusqu'à ${formatMonth(trainTo)}) : résultats optimistes`}</StatusBadge>
+            )}
           </p>
         )}
       </section>
 
       <section className={`${cardCls} mb-4 border-l-4 border-l-primary p-4`} aria-labelledby="resultat-titre">
-        <h2 id="resultat-titre" className="text-sm font-semibold text-link">
-          Résultat au {origin}
-        </h2>
-        <p className="mt-1 text-base font-semibold text-heading sm:text-lg">
-          À cette date, le modèle aurait signalé {people(eleve.flagged)} au niveau Élevé ; {fmt.int(eleve.hits)} {eleve.hits > 1 ? "ont" : "a"} démissionné dans les 6 mois.
-        </p>
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-fg-muted">
-          {eleve.precision != null && r.baseRate != null && (
-            <li>
-              Soit {formatRate(eleve.precision)} des personnes signalées, contre {formatRate(r.baseRate)} pour l&apos;ensemble des {fmt.int(r.n)} collaborateurs évalués.
-              {eleve.lift != null ? ` C'est ${dec(eleve.lift)} fois plus que la moyenne.` : ""}
-            </li>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <h2 id="resultat-titre" className="text-base font-semibold text-heading">
+            Résultat au {origin}
+          </h2>
+          {b0 && <StatusBadge tone="info">Score à règles (B0) : points</StatusBadge>}
+          {!b0 && r.seenInTraining === true && (
+            <StatusBadge tone="warning">{`Date d'apprentissage (${formatDate(b.model!.trainFrom)} – ${formatDate(b.model!.trainTo)}) : résultat optimiste`}</StatusBadge>
           )}
-          <li>
-            En ajoutant le niveau Moyen ({people(moyen.flagged)}) : {resignations(both.hits)} parmi les {people(both.flagged)} signalées.
-          </li>
-          <li>
-            Les {resignations(r.missedPositives)} restante{r.missedPositives > 1 ? "s" : ""} concernaient des collaborateurs classés Faible. Le modèle aide à prioriser ; il
-            ne repère pas tous les départs.
-          </li>
-        </ul>
-        <p className="mt-2 text-xs text-fg-muted">
-          {upperFirst(fmt.model(b.model!.version, b.model!.promotedAt))} ;{" "}
-          {r.source === "RUN" ? "niveaux du calcul enregistré pour ce mois" : "niveaux recalculés sur les variables du mois avec les paramètres de décision actuels"}. Ce
-          résultat mesure l&apos;exposition au risque signalée à la date d&apos;origine, sans tenir compte des actions menées entre-temps. Ce n&apos;est pas une mesure de
-          l&apos;effet d&apos;une intervention.
-        </p>
-        {b0 && (
-          <div className="mt-3">
-            <Notice>
-              Le modèle en service est un score à règles (B0). Ses règles sont fixées à l&apos;avance, sans apprentissage sur les données. Le score est un nombre de
-              points, pas une probabilité.
-            </Notice>
-          </div>
-        )}
-        {!b0 && r.seenInTraining === true && (
-          <div className="mt-3">
-            <Notice tone="warning">
-              <strong>Date vue pendant l&apos;apprentissage : résultat optimiste.</strong> Ce mois fait partie de la période d&apos;apprentissage du modèle (
-              {formatDate(b.model!.trainFrom)} au {formatDate(b.model!.trainTo)}).
-            </Notice>
-          </div>
-        )}
-        {!b0 && r.seenInTraining === null && (
-          <div className="mt-3">
-            <Notice tone="warning">Période d&apos;apprentissage non renseignée dans le fichier du modèle : impossible de savoir si ce mois a été vu à l&apos;apprentissage.</Notice>
-          </div>
-        )}
+          {!b0 && r.seenInTraining === null && <StatusBadge tone="warning">Période d&apos;apprentissage inconnue</StatusBadge>}
+        </div>
+        <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-[max-content_1fr]">
+          {(
+            [
+              ["Classés Élevé", `${people(eleve.flagged)} · ${resignations(eleve.hits)}`],
+              ["Classés Élevé ou Moyen", `${people(both.flagged)} · ${resignations(both.hits)}`],
+              ["Démissions classées Faible", fmt.int(r.missedPositives)],
+              ["Modèle", upperFirst(fmt.model(b.model!.version, b.model!.promotedAt))],
+              ["Niveaux", r.source === "RUN" ? "Calcul enregistré du mois" : "Recalculés, paramètres actuels"],
+            ] as const
+          ).map(([k, v]) => (
+            <div key={k} className="contents">
+              <dt className="text-fg-muted">{k}</dt>
+              <dd className="mb-1 tabular-nums text-fg sm:mb-0">{v}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
@@ -317,42 +285,38 @@ function ResultView({
           tip={<TermTip term="dateOrigine" role={role} align="end" />}
           label="Collaborateurs évalués (suivi complet)"
           value={fmt.int(r.n)}
-          hint={`à la date d'origine (${origin})`}
+          hint={`Au ${origin}`}
         />
         <KpiTile
           tip={<TermTip term="tauxBase" role={role} align="end" />}
           label="Démissions dans les 6 mois"
           value={fmt.int(r.positives)}
-          hint={`Soit ${formatRate(r.baseRate)} des collaborateurs évalués`}
+          hint={`Taux moyen : ${formatRate(r.baseRate)}`}
         />
         <KpiTile
           tip={<TermTip term="precision" role={role} align="end" />}
           label="Précision au niveau Élevé"
           value={formatRate(eleve.precision)}
-          hint={`${resignations(eleve.hits)} parmi les ${fmt.int(eleve.flagged)} classés Élevé`}
+          hint={`${fmt.int(eleve.hits)} sur ${fmt.int(eleve.flagged)} classés Élevé`}
         />
         <KpiTile
           tip={<TermTip term="liftCapacite" role={role} align="end" />}
           label="Lift au niveau Élevé"
           value={eleve.lift != null ? `${dec(eleve.lift)} ×` : "—"}
-          hint={`fois le taux moyen (${formatRate(r.baseRate)})`}
+          hint={`Taux moyen : ${formatRate(r.baseRate)}`}
         />
         <KpiTile
           tip={<TermTip term="rappel" role={role} align="end" />}
           label="Rappel au niveau Élevé"
           value={formatRate(eleve.recall)}
-          hint={`${fmt.int(eleve.hits)} des ${resignations(r.positives)} repérée${eleve.hits > 1 ? "s" : ""}`}
+          hint={`${fmt.int(eleve.hits)} sur ${resignations(r.positives)}`}
         />
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <VisualCard
-          title={
-            eleve.lift != null
-              ? `Les classés Élevé ont démissionné ${dec(eleve.lift)} fois plus que la moyenne`
-              : "Part ayant démissionné dans les 6 mois, par niveau de risque"
-          }
-          subtitle={`Part des collaborateurs de chaque niveau qui ont démissionné dans les 6 mois suivant le ${origin} (%)`}
+          title="Taux de démission par niveau (%)"
+          subtitle={`Démissions dans les 6 mois suivant le ${origin}`}
           chart={barChart({
             rows: [
               { name: `Élevé (${fmt.int(eleve.hits)} sur ${fmt.int(eleve.flagged)})`, value: pct(eleve.precision), tone: "defavorable" },
@@ -368,24 +332,16 @@ function ResultView({
           })}
         />
         <VisualCard
-          title={
-            capacity
-              ? `En contactant ${formatRate(capacity.share)} des collaborateurs, on repère ${formatRate(capacity.captured)} des démissions`
-              : "Démissions repérées selon la part de collaborateurs contactés"
-          }
-          subtitle="Part des démissions des 6 mois repérées (%), en contactant les collaborateurs par ordre de risque · trait gris : tirage au hasard"
+          title="Démissions repérées par part contactée (%)"
+          subtitle="Contacts par ordre de risque"
           chart={r.gain.length ? { ...gainChart(r.gain, capacity), height: 260, mobileHeight: 280 } : undefined}
         >
-          {!r.gain.length && <EmptyState compact title="Aucune démission sur la période">La courbe apparaît dès qu&apos;une démission est observée dans les 6 mois.</EmptyState>}
+          {!r.gain.length && <EmptyState compact title="Aucune démission sur la période" />}
         </VisualCard>
         <VisualCard
           className="lg:col-span-2"
-          title={
-            dated > 0
-              ? `${fmt.int(firstHalf)} des ${resignations(dated)} datées surviennent dans les 3 premiers mois`
-              : "Aucune démission datée dans les 6 mois"
-          }
-          subtitle={`Démissions de chaque mois après le ${origin}, selon le niveau de risque à cette date`}
+          title="Démissions par mois et niveau de risque"
+          subtitle={dated > 0 ? `3 premiers mois : ${fmt.int(firstHalf)} sur ${resignations(dated)}` : undefined}
           actions={
             <InfoTip label="Pourquoi si peu de démissions repérées ?" align="end">
               Le niveau Élevé est limité par la capacité d&apos;entretiens RH (2 % par défaut) : il sert à choisir qui rencontrer en priorité. La plupart des démissions
@@ -393,12 +349,10 @@ function ResultView({
             </InfoTip>
           }
           chart={dated > 0 ? { ...resignationTimelineChart(r.byMonth, r.byMonth.map((m) => fmt.month(m.month, { short: true }))), height: 240, mobileHeight: 260 } : undefined}
-          footnote={
-            r.undated > 0
-              ? `${resignations(r.undated)} sans date connue ne figure${r.undated > 1 ? "nt" : ""} pas dans ce visuel.`
-              : undefined
-          }
-        />
+          footnote={r.undated > 0 ? `Démissions non datées, hors visuel : ${fmt.int(r.undated)}` : undefined}
+        >
+          {dated === 0 && <EmptyState compact title="Aucune démission datée" />}
+        </VisualCard>
       </div>
 
       <div className={`${cardCls} relative mb-6 overflow-x-auto`} tabIndex={0} role="region" aria-label="Exposition au risque et démissions observées (zone défilante)">
@@ -409,18 +363,9 @@ function ResultView({
               <th scope="col" className={tableCls.th}>Groupe</th>
               <th scope="col" className={`${tableCls.th} text-right`}>Collaborateurs</th>
               <th scope="col" className={`${tableCls.th} text-right`}>Démissions à 6 mois</th>
-              <th scope="col" className={`${tableCls.th} text-right`}>
-                Précision
-                <span className="block font-normal normal-case tracking-normal">part ayant démissionné</span>
-              </th>
-              <th scope="col" className={`${tableCls.th} text-right`}>
-                Rappel
-                <span className="block font-normal normal-case tracking-normal">part des démissions repérées</span>
-              </th>
-              <th scope="col" className={`${tableCls.th} text-right`}>
-                Lift
-                <span className="block font-normal normal-case tracking-normal">fois la moyenne</span>
-              </th>
+              <th scope="col" className={`${tableCls.th} text-right`}>Précision</th>
+              <th scope="col" className={`${tableCls.th} text-right`}>Rappel</th>
+              <th scope="col" className={`${tableCls.th} text-right`}>Lift (×)</th>
               <th scope="col" className={`${tableCls.th} text-right`}>Délai moyen avant démission</th>
             </tr>
           </thead>
@@ -438,33 +383,34 @@ function ResultView({
             ))}
           </tbody>
         </table>
-        <p className="border-t border-line px-4 py-3 text-xs text-fg-muted">
-          Moyenne de référence : {formatRate(r.baseRate)} de démissions parmi les {fmt.int(r.n)} collaborateurs évalués. Précision, rappel et lift sont définis dans
-          l&apos;aide (bulles « ? »).
+        <p className="border-t border-line px-4 py-3 text-xs tabular-nums text-fg-muted">
+          Taux moyen : {formatRate(r.baseRate)} · {fmt.int(r.n)} évalués
         </p>
       </div>
 
       <section aria-labelledby="personnes-titre">
-        <h2 id="personnes-titre" className="text-lg font-semibold text-heading">
-          Collaborateurs signalés au {origin}
-        </h2>
-        <p className="mb-3 mt-0.5 text-sm text-fg-muted">
-          Liste nominative réservée à la RH, par rang. La dernière colonne signale les démissions survenues dans les 6 mois, avec leur date.
-        </p>
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 id="personnes-titre" className="text-lg font-semibold text-heading">
+            Collaborateurs signalés au {origin}
+          </h2>
+          <StatusBadge tone="neutral" dot={false}>
+            Liste nominative RH
+          </StatusBadge>
+        </div>
         {r.people.length === 0 ? (
-          <EmptyState title="Aucun collaborateur classé Élevé ou Moyen à cette date">Choisissez une autre date d&apos;origine ci-dessus.</EmptyState>
+          <EmptyState title="Aucun collaborateur classé Élevé ou Moyen" />
         ) : (
           <div className="space-y-3">
             {eleveList.length > 0 && (
               <>
                 <h3 className="text-sm font-semibold text-fg">
-                  Classés Élevé ({fmt.int(eleveList.length)}, dont {resignations(eleve.hits)})
+                  Classés Élevé ({fmt.int(eleveList.length)} · {resignations(eleve.hits)})
                 </h3>
                 <PeopleTable list={eleveList} asOf={r.asOf} here={here} b0={b0} caption="Collaborateurs classés Élevé et démissions observées" />
               </>
             )}
             {otherList.length > 0 && (
-              <Disclosure bodyClassName="p-3" summary={`Voir aussi les ${fmt.int(otherList.length)} collaborateurs classés Moyen (dont ${resignations(moyen.hits)})`}>
+              <Disclosure bodyClassName="p-3" summary={`Classés Moyen (${fmt.int(otherList.length)} · ${resignations(moyen.hits)})`}>
                 <PeopleTable list={otherList} asOf={r.asOf} here={here} b0={b0} caption="Collaborateurs classés Moyen et démissions observées" />
               </Disclosure>
             )}

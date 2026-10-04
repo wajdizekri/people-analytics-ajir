@@ -9,6 +9,7 @@ vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: str
 const pbi = await import("@/components/charts/pbi");
 const { CHART_INK, CHART_PALETTE, CHART_SURFACE, DARK_COLORS, SEMANTIC, cssChartColor, darkOption } = await import("@/components/charts/theme");
 const { localizeOption } = await import("@/components/charts/echart");
+const { InfoTip } = await import("@/components/help/info-tip");
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- inspection des options ECharts produites */
 type Any = any;
@@ -17,6 +18,25 @@ const html = (el: unknown) => renderToStaticMarkup(el as ReactElement);
 const text = (m: string) => m.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&amp;/g, "&").replace(/[  ]/g, " ").replace(/\s+/g, " ").trim();
 const nb = (s: string) => s.replace(/[  ]/g, " ");
 const css = readFileSync(path.resolve(__dirname, "../../src/app/globals.css"), "utf8");
+// Élément <span> complet qui commence à `i`
+const spanAt = (m: string, i: number) => {
+  const re = /<\/?span\b[^>]*>/g;
+  re.lastIndex = i;
+  let depth = 0;
+  for (let t = re.exec(m); t; t = re.exec(m)) {
+    depth += t[0][1] === "/" ? -1 : 1;
+    if (depth === 0) return m.slice(i, re.lastIndex);
+  }
+  return m.slice(i);
+};
+// Texte visible : sans les bulles « ? » (bouton et texte masqué) ; texte des bulles fermées
+const TIP = '<span class="relative inline-flex align-middle';
+const visible = (m: string) => {
+  let out = m;
+  for (let i = out.indexOf(TIP); i >= 0; i = out.indexOf(TIP)) out = out.slice(0, i) + out.slice(i + spanAt(out, i).length);
+  return text(out);
+};
+const bubbles = (m: string) => [...m.matchAll(/<span id="[^"]+" hidden=""/g)].map((x) => text(spanAt(m, x.index)));
 
 // Contraste WCAG (même luminance que tests/components/charts.test.ts), ici entre deux couleurs
 const L = (r: number, g: number, b: number) => [r, g, b].map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
@@ -310,16 +330,34 @@ describe("KpiCard", () => {
     expect(m).toMatch(/<a href="\/retention"[^>]*>Voir le détail/);
   });
 
-  it("état « non évalué » : tiret, mention, ni unité, ni variation, ni tendance ; le motif reste écrit", () => {
+  it("état « non évalué » : tiret, mention, ni unité, ni variation, ni tendance ; le motif passe dans la bulle « ? »", () => {
     const m = html(h(pbi.KpiCard, { label: "Collaborateurs en risque élevé", value: null, unit: "%", delta: { value: 1, label: "+1", good: "down" }, spark: [1, 2], hint: "Aucun calcul de risque publié" }));
-    expect(text(m)).toBe("Collaborateurs en risque élevé — Non évalué Aucun calcul de risque publié");
+    expect(visible(m)).toBe("Collaborateurs en risque élevé — Non évalué");
+    expect(bubbles(m)).toEqual(["Collaborateurs en risque élevé : Aucun calcul de risque publié"]);
     expect(m).toMatch(/<span aria-hidden="true" class="text-fg-subtle">—<\/span>/);
     expect(m).not.toContain("Tendance");
     expect(text(html(h(pbi.KpiCard, { label: "Sorties", value: null, emptyLabel: "Masqué" })))).toBe("Sorties — Masqué");
     // Tiret passé par la page : rendu inchangé (pas de mention ajoutée), unité retirée
     const dash = html(h(pbi.KpiCard, { label: "Score", value: "—", unit: "%", hint: "Aucun import terminé" }));
-    expect(text(dash)).toBe("Score — Aucun import terminé");
-    expect(dash).not.toContain("aria-hidden");
+    expect(visible(dash)).toBe("Score —");
+    expect(dash).not.toMatch(/<span aria-hidden="true" class="text-fg-subtle">—/);
+  });
+
+  it("titres seuls : libellé, valeur et variation visibles ; période et aide dans une seule bulle, ajoutées à la définition fournie", () => {
+    const delta = { value: -0.4, label: "−0,4 pt", reference: "vs juillet", good: "down" };
+    const own = html(h(pbi.KpiCard, { label: "Turnover glissant", value: "10,9", unit: "%", delta, period: "12 derniers mois", hint: "Démissions et abandons de poste" }));
+    expect(visible(own)).toBe("Turnover glissant 10,9 % ▼ En baisse : −0,4 pt vs juillet favorable");
+    expect(own.match(/<button/g)).toHaveLength(1);
+    expect(text(own)).toContain("Détails : Turnover glissant");
+    expect(bubbles(own)).toEqual(["Turnover glissant : 12 derniers mois Démissions et abandons de poste"]);
+    expect(own).toMatch(/<div class="flex h-full flex-col [^"]*pr-10/);
+    const tip = h(InfoTip, { label: "Turnover", align: "end" }, "Sorties sur 12 mois.");
+    const merged = html(h(pbi.KpiCard, { label: "Turnover glissant", value: "10,9", period: "12 derniers mois", href: "/retention", tip }));
+    expect(merged.match(/<button/g)).toHaveLength(1);
+    expect(text(merged)).toContain("Définition : Turnover");
+    expect(bubbles(merged)).toEqual(["Turnover : Sorties sur 12 mois. 12 derniers mois"]);
+    expect(merged).toMatch(/<\/a><span class="absolute right-2 top-2\.5">/);
+    expect(merged).not.toMatch(/<a[^>]*>(?:(?!<\/a>)[\s\S])*<button/);
   });
 
   it("ton de tuile : cadre et valeur dans le ton, sans changer la bordure au survol ; couleur de la mini-courbe", () => {
@@ -371,9 +409,33 @@ describe("ChartData et VisualCard", () => {
   });
 
   it("VisualCard : actions sous le titre sous 640 px, à droite au-delà", () => {
-    const m = html(h(pbi.VisualCard, { title: "L'absentéisme baisse depuis mars", measure: "Taux d'absence", unit: "%", actions: h("a", { href: "/absenteeism" }, "Analyser l'absentéisme") }));
+    const m = html(h(pbi.VisualCard, { title: "Absentéisme mensuel (%)", measure: "Taux d'absence", unit: "%", actions: h("a", { href: "/absenteeism" }, "Analyser l'absentéisme") }));
     expect(m).toMatch(/<div class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">/);
-    expect(m).toMatch(/<h2[^>]*>L&#x27;absentéisme baisse depuis mars<\/h2><p[^>]*><span>Taux d&#x27;absence \(%\)<\/span><\/p>/);
     expect(m).toMatch(/<div class="flex shrink-0 flex-wrap items-center gap-2 text-\[13px\]"><a href="\/absenteeism">/);
+  });
+
+  it("VisualCard titres seuls : titre nommant la section, sous-titre et note dans la bulle « ? » posée hors du titre, tableau conservé", () => {
+    const chart = { option: {}, height: 200, ariaLabel: "Barres", table: { headers: ["Département", "Effectif"], rows: [["Production", "12"]] } };
+    const m = html(
+      h(pbi.VisualCard, { title: "Effectif par département", measure: "Effectif", unit: "collaborateurs", scope: "Toute l'entreprise", period: "août 2026", footnote: "Hors stagiaires.", chart }),
+    );
+    const id = /<section aria-labelledby="([^"]+)"/.exec(m)?.[1];
+    expect(id).toBeTruthy();
+    expect(m).toContain(`<h2 id="${id}" class="`);
+    expect(m).toMatch(/<h2 [^>]*>Effectif par département<\/h2><span class="relative inline-flex/);
+    expect(visible(m)).not.toMatch(/Toute l'entreprise|août 2026|Hors stagiaires/);
+    expect(m).not.toMatch(/<p[\s>]/);
+    expect(bubbles(m)).toEqual(["Effectif par département : Effectif (collaborateurs) · , Toute l'entreprise · , août 2026 Hors stagiaires."]);
+    expect(text(m)).toContain("Détails : Effectif par département");
+    expect(m).not.toContain("aria-describedby");
+    expect(m).toContain("<details");
+    expect(text(m)).toContain("Voir les données");
+
+    const plain = html(h(pbi.VisualCard, { title: "Effectif fin de mois", badge: h("span", null, "Prévision indicative") }, "…"));
+    expect(plain).not.toContain("<button");
+    expect(plain).toMatch(/<\/h2><\/div><span>Prévision indicative<\/span>/);
+    const sub = html(h(pbi.VisualCard, { title: "Turnover (%)", subtitle: "Démissions sur 12 mois", measure: "ignoré", id: "turnover" }, "…"));
+    expect(sub).toMatch(/^<section id="turnover" aria-labelledby=/);
+    expect(bubbles(sub)).toEqual(["Turnover (%) : Démissions sur 12 mois"]);
   });
 });

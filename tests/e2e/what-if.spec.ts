@@ -44,7 +44,7 @@ test.describe("Simulation « et si ? » — RH", () => {
     await expect(apres).toBeVisible();
     await expect(section.getByText(/Salaire de base : [\d\s]+TND → [\d\s]+TND par mois/)).toBeVisible();
     await expect(section.getByText(/Coût annuel estimé : [1-9][\d\s]*TND/)).toBeVisible();
-    await expect(section.getByText(/Le niveau de risque (passerait|resterait)/)).toBeVisible();
+    await expect(section.getByText(/Niveau de risque( inchangé)? :/)).toBeVisible();
     await section.getByText("Voir le détail du calcul par groupe de facteurs").click();
     await expect(section.getByRole("table", { name: /Contributions par groupe/ })).toBeVisible();
     if (championKind() === "B0") {

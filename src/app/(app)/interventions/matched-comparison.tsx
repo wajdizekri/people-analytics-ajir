@@ -1,14 +1,15 @@
 import { ChartData } from "@/components/charts/pbi";
 import { InfoTip } from "@/components/help";
 import { actionLabel, formatDate, formatRate, joinFr, lcFirst } from "@/components/pilotage/labels";
-import { Notice, StatusBadge, cardCls, fmt } from "@/components/ui";
+import { StatusBadge, cardCls, fmt } from "@/components/ui";
 import type { ActionMatching, MatchedComparisonDto, MatchingOutcome, OutcomeEstimate } from "@/lib/dal/intervention-impact";
 
 // Section « Comparaison avec des collaborateurs similaires » de /interventions (RH) : écart et fourchette par type d'action,
-// équilibre des groupes en mots, limites écrites à côté du chiffre. Écart en bleu neutre, jamais en vert « favorable » :
+// équilibre des groupes, limites dans la bulle « ? ». Écart en bleu neutre, jamais en vert « favorable » :
 // une différence entre groupes appariés n'est pas un effet de l'action.
 
-export const MATCHING_TITLE = "Comparaison avec des collaborateurs similaires (estimation non causale)";
+export const MATCHING_TITLE = "Comparaison avec des profils similaires";
+export const NON_CAUSAL_BADGE = "Estimation non causale";
 export const INSUFFICIENT_LABEL = "Effectif insuffisant pour comparer";
 export const VERDICT_LABELS = { COMPARABLE: "Groupes comparables", FRAGILE: "Comparaison fragile" } as const;
 const VERDICT_TONE = { COMPARABLE: "success", FRAGILE: "warning" } as const;
@@ -25,9 +26,7 @@ function outcomeHelp(o: MatchingOutcome, d: Pick<MatchedComparisonDto, "horizonM
 
 export function intervalReading(o: Pick<OutcomeEstimate, "low" | "high">): string {
   if (o.low == null || o.high == null) return "";
-  return o.low <= 0 && o.high >= 0
-    ? "La fourchette contient zéro : aucun écart net entre les deux groupes."
-    : "La fourchette exclut zéro : écart net, qui ne prouve pas un effet de l'action.";
+  return o.low <= 0 && o.high >= 0 ? "Aucun écart net (fourchette contenant zéro)" : "Écart net, non causal (fourchette excluant zéro)";
 }
 
 const count = (k: number, one: string, many = `${one}s`) => `${fmt.int(k)} ${k > 1 ? many : one}`;
@@ -85,12 +84,12 @@ function OutcomeBlock({ o, data, scale }: { o: OutcomeEstimate; data: MatchedCom
             </p>
             <IntervalStrip o={o} scale={scale} />
             <p className="mt-1 text-xs text-fg-muted">
-              {intervalReading(o)} {count(o.pairs, "paire mesurée", "paires mesurées")}.
+              {intervalReading(o)} · Paires : {fmt.int(o.pairs)}
             </p>
           </>
         ) : (
           <p className="text-sm text-fg-muted">
-            {INSUFFICIENT_LABEL} : {count(o.pairs, "paire mesurée", "paires mesurées")}, il en faut au moins {fmt.int(data.minPairs)}.
+            {INSUFFICIENT_LABEL} : {fmt.int(o.pairs)} / {fmt.int(data.minPairs)} paires
           </p>
         )}
       </dd>
@@ -104,12 +103,11 @@ function fragility(a: ActionMatching, threshold: number): string[] {
     const off = a.balance.filter((b) => b.smdAfter != null && Math.abs(b.smdAfter) >= threshold).sort((x, y) => Math.abs(y.smdAfter ?? 0) - Math.abs(x.smdAfter ?? 0));
     out.push(
       off.length
-        ? `Des écarts importants subsistent après appariement : ${joinFr(off.slice(0, 3).map((b) => lcFirst(b.label)))}${off.length > 3 ? ", entre autres" : ""}.`
-        : "Des écarts importants subsistent après appariement.",
+        ? `Écarts subsistants : ${joinFr(off.slice(0, 3).map((b) => lcFirst(b.label)))}${off.length > 3 ? ", entre autres" : ""}`
+        : "Écarts subsistants après appariement",
     );
   }
-  if (a.reasons.includes("APPARIEMENT_PARTIEL") && a.matchedShare != null)
-    out.push(`Seuls ${formatRate(a.matchedShare, 0)} des collaborateurs suivis ont trouvé un collaborateur similaire.`);
+  if (a.reasons.includes("APPARIEMENT_PARTIEL") && a.matchedShare != null) out.push(`Appariement partiel : ${formatRate(a.matchedShare, 0)} des suivis`);
   return out;
 }
 
@@ -129,8 +127,7 @@ function ActionCard({ a, data, scales }: { a: ActionMatching; data: MatchedCompa
       {a.status === "OK" ? (
         <>
           <p className="mt-1 text-xs text-fg-muted">
-            {count(a.matched, "collaborateur suivi comparé", "collaborateurs suivis comparés")} à autant de non-suivis au profil proche, soit{" "}
-            {formatRate(a.matchedShare, 0)} des {count(a.comparable, "suivi comparable", "suivis comparables")}.
+            Paires : {fmt.int(a.matched)} · Couverture : {formatRate(a.matchedShare, 0)} des {count(a.comparable, "suivi comparable", "suivis comparables")}
           </p>
           {fragility(a, data.smdThreshold).map((s) => (
             <p key={s} className="mt-1 text-xs text-warning">
@@ -145,8 +142,7 @@ function ActionCard({ a, data, scales }: { a: ActionMatching; data: MatchedCompa
         </>
       ) : (
         <p className="mt-1 text-sm text-fg-muted">
-          {count(a.comparable, "collaborateur suivi comparable", "collaborateurs suivis comparables")}
-          {a.actions > a.comparable ? ` sur ${fmt.int(a.actions)}` : ""}, il en faut au moins {fmt.int(data.minTreated)}. Aucun chiffre n&apos;est affiché sous ce seuil.
+          Suivis comparables : {fmt.int(a.comparable)} / {fmt.int(data.minTreated)} requis
         </p>
       )}
     </li>
@@ -182,25 +178,36 @@ export function MatchedComparison({ data }: { data: MatchedComparisonDto }) {
     <section className={`${cardCls} mb-6 overflow-hidden`} aria-labelledby="comparaison-titre">
       <div className="border-b border-line px-4 py-3 sm:px-5">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <h2 id="comparaison-titre" className="text-base font-semibold text-heading">
+          <h2 id="comparaison-titre" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-semibold text-heading">
             {MATCHING_TITLE}
+            <StatusBadge tone="neutral" dot={false}>
+              {NON_CAUSAL_BADGE}
+            </StatusBadge>
           </h2>
-          <InfoTip label="Méthode de comparaison" align="end">
-            Un modèle estime la probabilité d&apos;être suivi, à partir des variables du modèle de risque et du niveau de risque. Ces données sont celles
-            connues à la fin du mois précédant l&apos;action. Chaque collaborateur suivi est associé au non-suivi le plus proche, évalué le même mois,
-            sans réutilisation. Sans voisin assez proche (plus de {fmt.num(data.caliperSd, 1)} écart-type), il reste sans comparaison. Les non-suivis
-            n&apos;ont reçu aucune action dans les {data.washoutMonths} mois avant ou après. La fourchette à {level} vient de {fmt.int(data.bootstrap)}{" "}
-            tirages au hasard parmi les paires.
-          </InfoTip>
+          <span className="inline-flex items-center gap-1">
+            <InfoTip label="Méthode de comparaison" align="end">
+              Chaque collaborateur suivi est comparé à un collaborateur non suivi au profil proche, évalué le même mois. Un modèle estime la probabilité
+              d&apos;être suivi, à partir des variables du modèle de risque et du niveau de risque. Ces données sont celles connues à la fin du mois précédant
+              l&apos;action. Chaque collaborateur suivi est associé au non-suivi le plus proche, sans réutilisation. Sans voisin assez proche (plus de{" "}
+              {fmt.num(data.caliperSd, 1)} écart-type), il reste sans comparaison. Les non-suivis n&apos;ont reçu aucune action dans les {data.washoutMonths}{" "}
+              mois avant ou après. La fourchette à {level} vient de {fmt.int(data.bootstrap)} tirages au hasard parmi les paires.
+            </InfoTip>
+            <InfoTip label="Ce que ce chiffre ne dit pas" align="end">
+              Il ne mesure pas l&apos;effet de l&apos;action : c&apos;est une estimation non causale, valable sous hypothèses. Variables non observées :
+              motivation, offre d&apos;emploi externe ou vie personnelle ne figurent pas dans AJIR. Sur données simulées, un tel facteur a inversé le sens de
+              l&apos;écart, alors que les groupes paraissaient comparables. Choix des personnes suivies : la RH les a retenues pour des raisons que les données
+              ne montrent pas toujours. Petits effectifs : la fourchette est large, et un écart peut venir du seul hasard. Aucune décision individuelle ne
+              repose sur ce chiffre : il éclaire un choix RH, sans le remplacer.
+            </InfoTip>
+          </span>
         </div>
-        <p className="mt-0.5 text-sm text-fg-muted">Chaque collaborateur suivi est comparé à un collaborateur non suivi au profil proche, évalué le même mois.</p>
         <p className="mt-0.5 text-xs text-fg-subtle">
-          Toute l&apos;entreprise · données au {formatDate(data.referenceDate)} · fourchette à {level} · estimation sous hypothèses
+          Données au {formatDate(data.referenceDate)} · fourchette à {level}
         </p>
       </div>
       <div className="space-y-4 p-4 sm:p-5">
         {data.actions.length === 0 ? (
-          <p className="text-sm text-fg-muted">Aucune action réalisée à comparer pour l&apos;instant.</p>
+          <p className="text-sm text-fg-muted">Aucune action à comparer</p>
         ) : (
           <ul className="grid gap-3 lg:grid-cols-2">
             {data.actions.map((a) => (
@@ -208,18 +215,6 @@ export function MatchedComparison({ data }: { data: MatchedComparisonDto }) {
             ))}
           </ul>
         )}
-        <Notice tone="neutral" title="Ce que ce chiffre ne dit pas">
-          <ul className="list-disc space-y-1 pl-4">
-            <li>Il ne mesure pas l&apos;effet de l&apos;action : c&apos;est une estimation non causale, valable sous hypothèses.</li>
-            <li>
-              Variables non observées : motivation, offre d&apos;emploi externe ou vie personnelle ne figurent pas dans AJIR. Sur données simulées, un tel
-              facteur a inversé le sens de l&apos;écart, alors que les groupes paraissaient comparables.
-            </li>
-            <li>Choix des personnes suivies : la RH les a retenues pour des raisons que les données ne montrent pas toujours.</li>
-            <li>Petits effectifs : la fourchette est large, et un écart peut venir du seul hasard.</li>
-            <li>Aucune décision individuelle ne repose sur ce chiffre : il éclaire un choix RH, sans le remplacer.</li>
-          </ul>
-        </Notice>
         <ChartData
           caption="Comparaison appariée par type d'action et par indicateur"
           table={{ headers: ["Type d'action", "Indicateur", "Paires", "Suivis", "Similaires", `Écart (fourchette à ${level})`, "Écart sans appariement"], rows }}

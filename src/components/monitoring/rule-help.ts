@@ -130,9 +130,15 @@ export const FILE_LABEL: Record<string, string> = {
 export const ruleLabel = (rule: string) => (rule in RULES ? RULES[rule as keyof typeof RULES].label : rule);
 export const fileLabel = (file: string) => FILE_LABEL[file] ?? file;
 
-// Action à mener en une ligne (première phrase), pour le tableau des contrôles ; le texte complet reste dans RULE_HELP
+// Action à mener en quelques mots (verbe + objet), pour le tableau des contrôles : première phrase, sans parenthèse,
+// sans complément après « : », sans point final ; le texte complet reste dans RULE_HELP
 export function shortAction(rule: string): string | null {
   const action = RULE_HELP[rule]?.action;
   if (!action) return null;
-  return action.match(/^.*?[.!?](?=[ ]|$)/)?.[0] ?? action;
+  const first = action.match(/^.*?[.!?](?=[ ]|$)/)?.[0] ?? action;
+  return first
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\s+:.*$/, "")
+    .replace(/[.!?]$/, "")
+    .trim();
 }

@@ -210,6 +210,8 @@ Le design system existe ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md), [CHARTE_UI.md](CH
 
 ## J. Améliorations du contenu
 
+> **Mise à jour du 04/10 soir.** Aymen a fixé la règle « titres seuls » : titres courts descriptifs (groupe nominal de 2 à 6 mots), sans phrases d'explication, titres-messages, sous-titres ni intro. Elle prime sur les formulations en phrases proposées ci-dessous et dans les sections E et I. Les informations d'action restent, mais en champs « libellé : valeur » (« Facteur principal : … », « Action : … », « Départs estimés : environ N sur 100 »). Les mentions obligatoires deviennent des badges courts. Seule /aide garde des explications.
+
 - **Un indicateur, un nom, une valeur.** Absentéisme : libellé « Absentéisme hors santé », 1 décimale, période écrite (5 valeurs de 0,6 à 0,8 % aujourd'hui). Heures sup : par ETP et par mois. Effectif : population écrite sous chaque chiffre (« CDI et CDD », « tous contrats »). Formations : « Réalisées à l'échéance » sur les trois écrans.
 - **La fiche répond à quatre questions.** Quel risque (niveau + repère « sur 100 » + horizon daté) → pourquoi (les 3 phrases chiffrées à la hausse, pas les noms de groupe) → quels signaux (retards et pointage visibles dans « Faits ») → que faire (action liée au signal, avec « Pourquoi » chiffré).
 - **Le manager sait quoi faire.** Remplacer « La décision revient à la RH » par « Le niveau sert à choisir avec qui échanger en premier, jamais à juger une personne. Parlez-en avec la RH. »

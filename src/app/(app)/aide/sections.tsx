@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Role } from "@/db/schema";
 import type { HelpSettings } from "@/lib/dal/help";
-import { FAQ, FAQ_TOPICS, GLOSSARY, KPIS, ROLE_LABEL, ROLE_SCOPE, SCREENS, START, factorGroups, forRole, type FaqTopic, type SectionId } from "@/lib/help/content";
+import { FAQ, FAQ_TOPICS, GLOSSARY, KPIS, ROLE_SCOPE, SCREENS, START, factorGroups, forRole, type FaqTopic, type SectionId } from "@/lib/help/content";
 import { TERMS, type TermId } from "@/lib/help/terms";
 import { Definition, DefinitionList, LevelExplainer, formatCapacity } from "@/components/help";
 import { ButtonLink, Icon, Notice, fmt } from "@/components/ui";
@@ -16,13 +16,26 @@ function H3({ children }: { children: ReactNode }) {
   return <h3 className="mb-1.5 mt-5 text-sm font-semibold text-heading first:mt-0">{children}</h3>;
 }
 
-function Bullets({ items }: { items: ReactNode[] }) {
+function Bullets({ items, className = "" }: { items: ReactNode[]; className?: string }) {
   return (
-    <ul className="list-disc space-y-1 pl-5">
+    <ul className={`list-disc space-y-1 pl-5 ${className}`}>
       {items.map((it, i) => (
         <li key={i}>{it}</li>
       ))}
     </ul>
+  );
+}
+
+// Détail secondaire replié par défaut
+function Fold({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <details className="group mt-2 rounded-control border border-line">
+      <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 px-3 py-1.5 font-medium text-fg transition-colors duration-150 hover:bg-surface-3 group-open:bg-surface-2 [&::-webkit-details-marker]:hidden">
+        <Icon name="chevron-right" className="h-4 w-4 text-link transition-transform duration-200 group-open:rotate-90" />
+        {title}
+      </summary>
+      <div className="px-3 pb-3 pl-9 pt-1 text-fg-muted">{children}</div>
+    </details>
   );
 }
 
@@ -41,21 +54,18 @@ function TermDefinitions({ ids }: { ids: TermId[] }) {
 function Screens({ role }: P) {
   const items = forRole(SCREENS, role);
   return (
-    <>
-      <p>Les écrans ci-dessous sont ceux de votre rôle ; le menu donne le même accès. Chaque écran commence par un encart « À quoi sert cette page ».</p>
-      <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2">
-        {items.map((i) => (
-          <div key={i.href}>
-            <dt>
-              <Link href={i.href} className={`font-medium ${link}`}>
-                {i.labels?.[role] ?? i.label}
-              </Link>
-            </dt>
-            <dd className="text-fg-muted">{i.purpose}</dd>
-          </div>
-        ))}
-      </dl>
-    </>
+    <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+      {items.map((i) => (
+        <div key={i.href}>
+          <dt>
+            <Link href={i.href} className={`font-medium ${link}`}>
+              {i.labels?.[role] ?? i.label}
+            </Link>
+          </dt>
+          <dd className="text-fg-muted">{i.purpose}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -63,51 +73,61 @@ function Risk({ role, s }: P) {
   const staff = role !== "MANAGER";
   const k = Math.max(1, Math.round(1000 * s.capacityRate));
   const groups = factorGroups(role);
+  const model = s.modelKind === "B0" ? "Modèle actuel : score à règles. Ses points classent les collaborateurs ; ce n'est pas un pourcentage." : s.modelKind ? "Modèle actuel : probabilité à 6 mois." : "Aucun modèle en service pour le moment.";
   return (
     <>
       <H3>Ce que l&apos;application estime</H3>
-      <p>
-        Chaque mois, l&apos;application estime pour chaque collaborateur évalué le risque qu&apos;il quitte volontairement l&apos;entreprise (démission ou abandon de poste)
-        dans les 6 mois suivants. Les autres départs (fin de CDD, retraite, licenciement, mutation) ne sont pas visés.
-      </p>
-      {staff && (
-        <p className="mt-2">
-          Selon le modèle en service, l&apos;estimation est une <strong>probabilité à 6 mois</strong> (en %) ou un <strong>score à règles</strong> (en points).
-          {s.modelKind === "B0" && " Le modèle actuel est un score à règles : ses points servent à classer les collaborateurs, ils ne se lisent pas comme un pourcentage."}
-          {s.modelKind && s.modelKind !== "B0" && " Le modèle actuel donne une probabilité à 6 mois."}
-          {!s.modelKind && " Aucun modèle n'est en service pour le moment."}
-          {role === "RH" && " Le manager ne voit jamais ce chiffre : seulement le niveau de risque."}
-        </p>
-      )}
+      <Bullets
+        items={[
+          "Le risque de départ volontaire (démission, abandon de poste) dans les 6 mois.",
+          "Calcul mensuel, pour chaque collaborateur évalué.",
+          "Hors champ : fin de CDD, retraite, licenciement, mutation.",
+          ...(staff
+            ? [
+                <>
+                  Forme : <strong>probabilité à 6 mois</strong> (en %) ou <strong>score à règles</strong> (en points), selon le modèle en service.
+                </>,
+                model,
+              ]
+            : []),
+          ...(role === "RH" ? ["Le manager ne voit jamais ce chiffre, seulement le niveau de risque."] : []),
+        ]}
+      />
 
       <H3>Les niveaux de risque</H3>
       <LevelExplainer capacityRate={s.capacityRate} mediumLift={s.mediumLift} role={role} />
 
       <H3>La capacité d&apos;entretiens RH</H3>
-      <p>
-        Le niveau Élevé ne dépend pas d&apos;un seuil fixe mais du nombre d&apos;entretiens que la RH peut mener chaque mois. Avec une capacité de{" "}
-        {formatCapacity(s.capacityRate)} et 1 000 collaborateurs évalués, {fmt.int(k)} au plus sont classés Élevé. Si plusieurs collaborateurs ont exactement la même
-        estimation à la limite, aucun d&apos;eux n&apos;est classé Élevé : le nombre réel peut donc être inférieur.
-        {role === "ADMIN" && (
+      <Bullets
+        items={[
+          "Le niveau Élevé dépend du nombre d'entretiens que la RH peut mener chaque mois, pas d'un seuil fixe.",
           <>
-            {" "}
-            La capacité et le seuil du niveau Moyen se règlent dans{" "}
-            <Link href="/admin/settings" className={link}>
-              Paramètres
-            </Link>
-            .
-          </>
-        )}
-      </p>
+            Capacité de {formatCapacity(s.capacityRate)} : sur 1 000 collaborateurs évalués, {fmt.int(k)} au plus sont classés Élevé.
+          </>,
+          "Ex æquo à la limite : aucun n'est classé Élevé ; le nombre réel peut donc être inférieur.",
+          ...(role === "ADMIN"
+            ? [
+                <>
+                  Réglage de la capacité et du seuil Moyen :{" "}
+                  <Link href="/admin/settings" className={link}>
+                    Paramètres
+                  </Link>
+                </>,
+              ]
+            : []),
+        ]}
+      />
 
       {staff && (
         <>
           <H3>Le lift</H3>
-          <p>
-            Le lift compare l&apos;estimation d&apos;un collaborateur à la moyenne des collaborateurs évalués : un lift de 3 signifie un risque 3 fois plus élevé que la
-            moyenne. Le niveau Moyen correspond à un lift d&apos;au moins {num(s.mediumLift)}. Le « lift à la capacité » de l&apos;écran Transparence mesure, sur le passé,
-            combien de fois plus les collaborateurs classés Élevé ont réellement démissionné.
-          </p>
+          <Bullets
+            items={[
+              "Estimation d'un collaborateur rapportée à la moyenne des évalués : un lift de 3 signifie un risque 3 fois plus élevé que la moyenne.",
+              `Niveau Moyen : lift d'au moins ${num(s.mediumLift)}.`,
+              "« Lift à la capacité » (écran Transparence) : combien de fois plus les collaborateurs classés Élevé ont réellement démissionné, sur le passé.",
+            ]}
+          />
         </>
       )}
 
@@ -123,11 +143,14 @@ function Risk({ role, s }: P) {
       />
 
       <H3>Facteurs associés, pas causes</H3>
-      <p>
-        Pour chaque collaborateur évalué, l&apos;application indique les familles de facteurs qui pèsent le plus dans l&apos;estimation. Un facteur associé va souvent de
-        pair avec les départs, sans en être la cause démontrée : de nombreuses heures supplémentaires peuvent accompagner un départ sans l&apos;expliquer. Seul un échange
-        permet de comprendre la situation.
-      </p>
+      <Bullets
+        items={[
+          "Pour chaque collaborateur évalué : les familles de facteurs qui pèsent le plus dans l'estimation.",
+          "Un facteur associé va souvent de pair avec les départs, sans en être la cause démontrée.",
+          "Seul un échange permet de comprendre la situation.",
+          ...(role === "MANAGER" ? ["Catégorie Rémunération absente quand le calcul repose sur un score à règles.", "Absences individuelles : jamais présentées au manager."] : []),
+        ]}
+      />
       <ul className="mt-2 space-y-1.5">
         {groups.map((g) => (
           <li key={g.code}>
@@ -147,27 +170,25 @@ function Risk({ role, s }: P) {
           </li>
         ))}
       </ul>
-      {role === "MANAGER" && (
-        <p className="mt-2 text-fg-muted">
-          La catégorie Rémunération n&apos;apparaît pas quand le calcul repose sur un score à règles. Les absences individuelles ne vous sont jamais présentées.
-        </p>
-      )}
 
       <H3>Ce qui n&apos;est jamais utilisé</H3>
-      <p>
-        Les absences pour maladie et maternité, le sexe, l&apos;âge, la situation familiale et le gouvernorat ne sont pas des variables du calcul. L&apos;âge sert
-        seulement à exclure les collaborateurs proches de la retraite ; sexe et âge servent à vérifier l&apos;équité du calcul
-        {staff ? " (rapport d'équité de l'écran Transparence)" : ""}.
-      </p>
+      <Bullets
+        items={[
+          "Absences pour maladie et maternité.",
+          "Sexe, âge, situation familiale, gouvernorat.",
+          "Âge : seulement pour exclure les collaborateurs proches de la retraite.",
+          `Sexe et âge : seulement pour vérifier l'équité du calcul${staff ? " (rapport d'équité, écran Transparence)" : ""}.`,
+        ]}
+      />
 
       {role === "MANAGER" && (
         <div className="mt-3">
-          <Notice>Vous voyez le niveau de risque et les catégories de facteurs de vos collaborateurs, jamais un pourcentage ni un salaire.</Notice>
+          <Notice>Visible : niveau de risque et catégories de facteurs. Jamais un pourcentage ni un salaire.</Notice>
         </div>
       )}
       {role === "ADMIN" && (
         <div className="mt-3">
-          <Notice>Vous ne voyez aucune estimation individuelle. Vous réglez la règle de décision et suivez le modèle dans l&apos;écran Transparence du modèle.</Notice>
+          <Notice>Aucune estimation individuelle visible. Règle de décision et suivi du modèle : écran Transparence du modèle.</Notice>
         </div>
       )}
     </>
@@ -177,10 +198,12 @@ function Risk({ role, s }: P) {
 function Dashboard({ role }: P) {
   return (
     <>
-      <p>
-        Le tableau de bord résume la situation sur la période choisie (3 à 24 derniers mois) pour{" "}
-        {role === "RH" ? "la population filtrée : département, contrat, tranche d'âge, ancienneté." : "votre hiérarchie, éventuellement limitée à un département."}
-      </p>
+      <Bullets
+        items={[
+          "Période : 3 à 24 derniers mois, au choix.",
+          role === "RH" ? "Population filtrable : département, contrat, tranche d'âge, ancienneté." : "Périmètre : votre hiérarchie, éventuellement limitée à un département.",
+        ]}
+      />
       <H3>Repères de lecture</H3>
       <Bullets
         items={[
@@ -228,12 +251,15 @@ function Absenteeism({ role, s }: P) {
       </DefinitionList>
 
       <H3>Les anomalies collectives</H3>
-      <p>
-        Chaque semaine, le taux de chaque équipe ou département d&apos;au moins 5 personnes est comparé au taux attendu. Le taux attendu part du niveau habituel du groupe
-        sur les 26 semaines précédentes, ajusté au calendrier : Ramadan, jours fériés et ponts, séance unique. Une anomalie est signalée quand le taux dépasse nettement
-        l&apos;attendu deux semaines de suite.
-      </p>
-      <p className="mt-2">Une anomalie est un signal à comprendre (pic saisonnier, événement d&apos;équipe, erreur de saisie), pas un constat de faute.</p>
+      <Bullets
+        items={[
+          "Chaque semaine, chaque équipe ou département d'au moins 5 personnes est comparé à son taux attendu.",
+          "Taux attendu : niveau habituel des 26 semaines précédentes, ajusté au calendrier (Ramadan, jours fériés et ponts, séance unique).",
+          "Anomalie : taux nettement au-dessus de l'attendu deux semaines de suite.",
+          "Un signal à comprendre (pic saisonnier, événement d'équipe, erreur de saisie), pas un constat de faute.",
+          "Maladie et maternité ne comptent jamais, ni dans les taux ni dans les signaux.",
+        ]}
+      />
 
       {role === "RH" && (
         <>
@@ -242,13 +268,15 @@ function Absenteeism({ role, s }: P) {
             {TERMS.bradford.text}
             {s.bradfordThreshold != null && ` Seuil actuel : ${fmt.int(s.bradfordThreshold)}.`}
           </p>
-          <p className="mt-2">
-            Ces signaux sont réservés à la RH et ne sont jamais transmis au manager. Vérifiez-les avant toute démarche : une absence autorisée mal enregistrée dans AJIR
-            peut suffire à déclencher un signal.
-          </p>
+          <Bullets
+            className="mt-2"
+            items={[
+              "Réservés à la RH, jamais transmis au manager.",
+              "À vérifier avant toute démarche : une absence autorisée mal enregistrée dans AJIR peut suffire à déclencher un signal.",
+            ]}
+          />
         </>
       )}
-      <p className="mt-3 text-fg-muted">Les absences pour maladie et maternité ne comptent jamais, ni dans les taux ni dans les signaux.</p>
     </>
   );
 }
@@ -257,22 +285,21 @@ function Recommendations({ role }: P) {
   return (
     <>
       <H3>D&apos;où viennent les recommandations</H3>
-      <p>Pour chaque collaborateur au niveau Élevé ou Moyen, l&apos;application propose des actions liées aux facteurs qui pèsent le plus dans son estimation :</p>
       <Bullets
         items={[
           "Entretien de rétention : pour tout collaborateur au niveau Élevé.",
           ...(role === "RH" ? ["Revue de la rémunération : quand la rémunération fait partie des principaux facteurs (réservée à la RH)."] : []),
           "Revue de la charge de travail : quand le temps de travail fait partie des principaux facteurs.",
           "Plan de formation et de développement : quand la formation ou l'évaluation fait partie des principaux facteurs.",
+          "Une aide à la décision, jamais une obligation.",
         ]}
       />
-      <p className="mt-2">Une recommandation est une aide à la décision, jamais une obligation.</p>
 
       {role === "MANAGER" ? (
-        <p className="mt-2">
-          Vous voyez les recommandations de vos collaborateurs dans leur fiche, zone Suggestions, sans pouvoir les modifier. La RH les traite et peut vous solliciter
-          pour un échange.
-        </p>
+        <>
+          <H3>Dans la fiche collaborateur</H3>
+          <Bullets items={["Zone Suggestions, en lecture seule.", "Traitement par la RH, qui peut vous solliciter pour un échange."]} />
+        </>
       ) : (
         <>
           <H3>Traiter une recommandation</H3>
@@ -312,7 +339,6 @@ function Alerts({ role }: P) {
   ];
   return (
     <>
-      <p>Une alerte signale un événement à examiner. Vous ne voyez que les alertes de votre périmètre.</p>
       <H3>Types d&apos;alertes</H3>
       <Bullets
         items={forRole(types, role).map((t) => (
@@ -324,6 +350,7 @@ function Alerts({ role }: P) {
       <H3>Gravité et suivi</H3>
       <Bullets
         items={[
+          "Seules les alertes de votre périmètre sont visibles.",
           "Gravité : Information, Attention ou Critique.",
           "Statut : Nouvelle, puis En cours, puis Traitée ou Rejetée. Un commentaire explique la décision.",
           ...(role === "ADMIN" ? [] : ["Une alerte Turnover est une estimation à confirmer lors d'un échange, pas une annonce de départ."]),
@@ -337,16 +364,18 @@ function DataQuality({ role, s }: P) {
   const threshold = s.qualityThreshold != null ? fmt.pct(s.qualityThreshold, 0) : "—";
   return (
     <>
-      <p>
-        Chaque mois, l&apos;export AJIR (un dossier de fichiers CSV) est importé. Chaque ligne passe 24 contrôles avant d&apos;être utilisée. La date « Données AJIR au »
-        affichée en haut des écrans correspond au dernier pointage importé.
-      </p>
+      <Bullets
+        items={["Import mensuel de l'export AJIR (un dossier de fichiers CSV).", "24 contrôles par ligne avant utilisation.", "« Données AJIR au » : date du dernier pointage importé."]}
+      />
       <H3>Les trois effets d&apos;un contrôle</H3>
       <p>{TERMS.gravite.text}</p>
-      <p className="mt-2 text-fg-muted">
-        Exemples : date invalide, doublon, matricule inconnu, salaire de base sous le SMIG hors stage et SIVP, pointage dans le futur (rejets) ; grade inconnu, manager
-        introuvable (corrections) ; pointage sans heure de sortie, paie manquante (avertissements).
-      </p>
+      <Fold title="Exemples de contrôles">
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Rejets : date invalide, doublon, matricule inconnu, salaire de base sous le SMIG hors stage et SIVP, pointage dans le futur.</li>
+          <li>Corrections : grade inconnu, manager introuvable.</li>
+          <li>Avertissements : pointage sans heure de sortie, paie manquante.</li>
+        </ul>
+      </Fold>
       <H3>Le score qualité et le blocage</H3>
       <DefinitionList>
         <Definition
@@ -365,20 +394,26 @@ function DataQuality({ role, s }: P) {
           {TERMS.worker.text} Il est « Actif » s&apos;il a donné signe de vie depuis moins de 2 minutes, « En retard » jusqu&apos;à 10 minutes, « Arrêté » au-delà.
         </Definition>
       </DefinitionList>
+      <H3>Qui fait quoi</H3>
       {role === "ADMIN" ? (
-        <p className="mt-3">
-          Vous téléversez un export et relancez le calcul mensuel depuis{" "}
-          <Link href="/data-health" className={link}>
-            Santé des données
-          </Link>
-          . Le seuil qualité se règle dans{" "}
-          <Link href="/admin/settings" className={link}>
-            Paramètres
-          </Link>
-          .
-        </p>
+        <Bullets
+          items={[
+            <>
+              Téléversement d&apos;un export et relance du calcul :{" "}
+              <Link href="/data-health" className={link}>
+                Santé des données
+              </Link>
+            </>,
+            <>
+              Seuil qualité :{" "}
+              <Link href="/admin/settings" className={link}>
+                Paramètres
+              </Link>
+            </>,
+          ]}
+        />
       ) : (
-        <p className="mt-3">L&apos;administrateur téléverse les exports et relance le calcul ; vous suivez le résultat dans Santé des données.</p>
+        <Bullets items={["Imports et relance du calcul : l'administrateur.", "Suivi du résultat : écran Santé des données."]} />
       )}
     </>
   );
@@ -387,23 +422,26 @@ function DataQuality({ role, s }: P) {
 function Model({ role }: P) {
   return (
     <>
-      <p>
-        L&apos;écran Transparence du modèle présente la méthode de calcul en service, ses performances mesurées sur des périodes passées, le rapport d&apos;équité et les
-        paramètres de décision. Chaque indicateur porte un badge « Dans la cible » ou « Hors cible », selon des cibles fixées avant l&apos;entraînement.
-      </p>
+      <Bullets
+        items={[
+          "Écran Transparence du modèle : méthode de calcul en service, performances mesurées sur des périodes passées, rapport d'équité, paramètres de décision.",
+          "Badge « Dans la cible » ou « Hors cible » : selon des cibles fixées avant l'entraînement.",
+        ]}
+      />
       <H3>Indicateurs de performance</H3>
       <TermDefinitions ids={["auc", "liftCapacite", "observePrevu", "penteCalibration", "equite", "variables"]} />
-      <p className="mt-2 text-fg-muted">
-        Statuts d&apos;un modèle : Candidat (enregistré, pas utilisé), Champion (en service), Retiré. La mise en service d&apos;un nouveau modèle se fait hors de
-        l&apos;interface, par une procédure vérifiée et tracée.
-      </p>
+      <H3>Statuts d&apos;un modèle</H3>
+      <Bullets
+        items={["Candidat : enregistré, pas utilisé.", "Champion : en service.", "Retiré : plus utilisé.", "Mise en service : hors de l'interface, par une procédure vérifiée et tracée."]}
+      />
       {role === "RH" && (
         <>
           <H3>Vérification a posteriori</H3>
-          <p>
-            {TERMS.backtest.text} Elle ne mesure pas l&apos;effet des actions menées entre-temps. Si la date choisie a servi à l&apos;entraînement du modèle, un message
-            signale que le résultat est optimiste.
-          </p>
+          <p>{TERMS.backtest.text}</p>
+          <Bullets
+            className="mt-2"
+            items={["Ne mesure pas l'effet des actions menées entre-temps.", "Date ayant servi à l'entraînement du modèle : résultat signalé comme optimiste."]}
+          />
           <div className="mt-2">
             <TermDefinitions ids={["dateOrigine", "tauxBase", "precision", "rappel"]} />
           </div>
@@ -438,67 +476,66 @@ function Privacy({ role }: P) {
         </div>
       </div>
       <H3>Traçabilité</H3>
-      <p>
-        Les consultations sensibles sont enregistrées dans un journal qui ne peut être ni modifié ni effacé : ouverture d&apos;une fiche, consultation d&apos;un salaire ou
-        d&apos;une estimation, export, simulation, changement de paramètre, accès refusé.
-        {role === "ADMIN" && (
-          <>
-            {" "}
-            Vous le consultez dans{" "}
-            <Link href="/admin/audit" className={link}>
-              Journal d&apos;audit
-            </Link>
-            .
-          </>
-        )}
-      </p>
+      <Bullets
+        items={[
+          "Journal des consultations sensibles : ni modifiable, ni effaçable.",
+          "Actions tracées : ouverture d'une fiche, consultation d'un salaire ou d'une estimation, export, simulation, changement de paramètre, accès refusé.",
+          ...(role === "ADMIN"
+            ? [
+                <>
+                  Consultation :{" "}
+                  <Link href="/admin/audit" className={link}>
+                    Journal d&apos;audit
+                  </Link>
+                </>,
+              ]
+            : []),
+        ]}
+      />
       <H3>Cadre légal et droits des collaborateurs</H3>
-      <p>
-        Le traitement est encadré par la loi organique n° 2004-63 du 27 juillet 2004 relative à la protection des données à caractère personnel. L&apos;entreprise en est
-        responsable ; l&apos;autorité de contrôle est l&apos;INPDP. Un collaborateur peut demander à connaître les données qui le concernent, et s&apos;opposer au calcul de
-        son risque : il n&apos;est alors plus évalué.
-      </p>
-      <p className="mt-2">
-        {role === "RH" ? (
-          <>
-            Vous traitez ces demandes depuis l&apos;écran{" "}
-            <Link href="/confidentialite" className={link}>
-              Droit d&apos;accès
-            </Link>
-            .
-          </>
-        ) : (
-          "Transmettez toute demande de ce type à la RH."
-        )}
-      </p>
+      <Bullets
+        items={[
+          "Loi organique n° 2004-63 du 27 juillet 2004 relative à la protection des données à caractère personnel.",
+          "Responsable du traitement : l'entreprise. Autorité de contrôle : INPDP.",
+          "Droit d'accès : connaître les données qui le concernent.",
+          "Droit d'opposition au calcul de son risque : il n'est alors plus évalué.",
+          role === "RH" ? (
+            <>
+              Traitement des demandes :{" "}
+              <Link href="/confidentialite" className={link}>
+                Droit d&apos;accès
+              </Link>
+            </>
+          ) : (
+            "Demandes à transmettre à la RH."
+          ),
+        ]}
+      />
     </>
   );
 }
 
 function Start({ role }: P) {
   return (
-    <>
-      <p>Trois étapes pour votre rôle ({ROLE_LABEL[role]}), dans l&apos;ordre où vous les ferez chaque mois après l&apos;import AJIR.</p>
-      <ol className="mt-3 grid gap-3 md:grid-cols-3">
-        {START[role].map((step, i) => (
-          <li key={step.href} className="flex flex-col rounded-control border border-line bg-surface-2 p-4">
-            <span className="flex items-center gap-2">
-              <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent text-sm font-bold text-accent-fg">
-                {i + 1}
-              </span>
-              <span className="font-semibold text-heading">
-                <span className="sr-only">Étape {i + 1} : </span>
-                {step.title}
-              </span>
+    <ol className="grid gap-3 md:grid-cols-3">
+      {START[role].map((step, i) => (
+        <li key={step.href} className="flex flex-col rounded-control border border-line bg-surface-2 p-4">
+          <span className="flex items-center gap-2">
+            <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent text-sm font-bold text-accent-fg">
+              {i + 1}
             </span>
-            <span className="mt-2 flex-1 text-fg-muted">{step.text}</span>
-            <ButtonLink href={step.href} variant="secondary" iconEnd="arrow-right" className="mt-3 self-start">
-              {step.cta}
-            </ButtonLink>
-          </li>
-        ))}
-      </ol>
-    </>
+            <span className="font-semibold text-heading">
+              <span className="sr-only">Étape {i + 1} : </span>
+              {step.title}
+            </span>
+          </span>
+          <span className="mt-2 flex-1 text-fg-muted">{step.text}</span>
+          <ButtonLink href={step.href} variant="secondary" iconEnd="arrow-right" className="mt-3 self-start">
+            {step.cta}
+          </ButtonLink>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -507,7 +544,6 @@ function Faq({ role }: P) {
   const topics = (Object.keys(FAQ_TOPICS) as FaqTopic[]).filter((t) => items.some((f) => f.topic === t));
   return (
     <>
-      <p className="text-fg-muted">Cliquez sur une question pour afficher la réponse.</p>
       {topics.map((topic) => (
         <div key={topic}>
           <H3>{FAQ_TOPICS[topic]}</H3>

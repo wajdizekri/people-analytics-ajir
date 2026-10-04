@@ -3,23 +3,40 @@
 import { useState } from "react";
 import { EChart } from "@/components/charts/echart";
 import { ChartData, type ChartSpec } from "@/components/charts/pbi";
-import { fieldCls } from "@/components/ui";
+import { InfoTip } from "@/components/help/info-tip";
+import { StatusBadge, fieldCls, type StatusTone } from "@/components/ui";
 import type { CoverageCell } from "@/lib/ai/conformal";
 import { CoverageNote } from "@/components/ai/conformal/coverage-note";
+import type { ForecastTrend } from "./forecast-section";
 
-type Item = { key: string; label: string; spec: ChartSpec; message: string; detail: string; coverage?: CoverageCell | null };
+type Item = { key: string; label: string; spec: ChartSpec; trend: ForecastTrend | null; coverage?: CoverageCell | null };
 
-// Visuel « prévision » : le titre (message) suit le périmètre choisi (RH : entreprise ou département) ; graphiques construits côté serveur.
-export function ForecastPicker({ items, subtitle, footnote }: { items: Item[]; subtitle: string; footnote: string }) {
+const TREND: Record<ForecastTrend, { label: string; tone: StatusTone }> = {
+  hausse: { label: "Hausse prévue", tone: "warning" },
+  baisse: { label: "Baisse prévue", tone: "success" },
+  stable: { label: "Stable", tone: "neutral" },
+};
+
+// Visuel « prévision » : titre fixe, périmètre choisi (RH : entreprise ou département) et tendance en badge ; graphiques construits côté serveur.
+export function ForecastPicker({ title, items, help }: { title: string; items: Item[]; help: string }) {
   const [key, setKey] = useState(items[0]?.key);
   const current = items.find((i) => i.key === key) ?? items[0];
   if (!current) return null;
+  const trend = current.trend ? TREND[current.trend] : null;
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 flex-1 basis-72">
-          <h2 className="text-base font-semibold leading-snug text-fg">{current.message}</h2>
-          <p className="mt-0.5 text-[13px] leading-snug text-fg-muted">{subtitle}</p>
+          <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-semibold leading-snug text-fg">
+            {title}
+            <InfoTip label={title} prefix="Détails" align="start">
+              {help}
+            </InfoTip>
+          </h2>
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-fg-muted" aria-live="polite">
+            {items.length === 1 && <span>{current.label}</span>}
+            {trend && <StatusBadge tone={trend.tone}>{trend.label}</StatusBadge>}
+          </p>
         </div>
         {items.length > 1 && (
           <div className="w-full sm:w-64">
@@ -36,18 +53,14 @@ export function ForecastPicker({ items, subtitle, footnote }: { items: Item[]; s
           </div>
         )}
       </div>
-      <p className="mb-2 rounded-control bg-surface-2 px-3 py-2 text-sm text-fg-muted" aria-live="polite">
-        {current.detail}
-      </p>
       <EChart
         option={current.spec.option}
         format={current.spec.format}
         height={current.spec.height}
-        ariaLabel={`${current.message}. ${current.spec.ariaLabel}`}
+        ariaLabel={`${title}, ${current.label}${trend ? ` : ${trend.label.toLowerCase()}` : ""}. ${current.spec.ariaLabel}`}
       />
-      <ChartData table={current.spec.table} caption={current.message} />
+      <ChartData table={current.spec.table} caption={`${title}, ${current.label}`} />
       <CoverageNote cell={current.coverage} />
-      <p className="mt-2 text-xs leading-relaxed text-fg-muted">{footnote}</p>
     </div>
   );
 }

@@ -45,11 +45,8 @@ export function AlertStatusForm({ id, next }: { id: number; next: AlertStatus[] 
       <div>
         <label htmlFor="alert-comment" className="block text-sm font-medium text-fg">
           Commentaire de suivi{" "}
-          {next.includes("REJETEE") && <span className="font-normal text-fg-muted">(facultatif ; obligatoire pour un rejet)</span>}
+          {next.includes("REJETEE") && <span className="font-normal text-fg-muted">(obligatoire pour un rejet)</span>}
         </label>
-        <p id="alert-comment-help" className="mt-0.5 text-xs text-fg-muted">
-          Ce que vous avez fait ou décidé. Il est visible des personnes qui suivent cette alerte.
-        </p>
         <textarea
           id="alert-comment"
           name="comment"
@@ -58,7 +55,7 @@ export function AlertStatusForm({ id, next }: { id: number; next: AlertStatus[] 
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           aria-invalid={!!state.commentError}
-          aria-describedby={`alert-comment-help${state.commentError ? " alert-comment-error" : ""}`}
+          aria-describedby={state.commentError ? "alert-comment-error" : undefined}
           className={`${fieldCls} mt-1.5 py-2 focus:outline-none focus:ring-2 focus:ring-primary/25${state.commentError ? " border-danger" : ""}`}
         />
         {state.commentError && (
@@ -118,7 +115,7 @@ export function AlertStatusForm({ id, next }: { id: number; next: AlertStatus[] 
             >
               Rejeter l&apos;alerte
             </ConfirmButton>
-            {!canReject && <p className="text-xs text-fg-muted">Pour rejeter, expliquez pourquoi dans le commentaire (3 caractères au moins).</p>}
+            {!canReject && <p className="text-xs text-fg-muted">Rejet : commentaire de 3 caractères minimum</p>}
           </>
         )}
       </div>

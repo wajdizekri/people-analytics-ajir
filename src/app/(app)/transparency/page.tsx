@@ -10,11 +10,12 @@ import { SEMANTIC, cssChartColor } from "@/components/charts/theme";
 import { formatMonth } from "@/components/pilotage/labels";
 import { runLabel } from "@/components/monitoring/data-options";
 import { estimateHistogramChart, factorsChart, fairnessChart, levelShareChart } from "@/components/monitoring/model-options";
-import { factorAxisLabel, factorPhrase, factorsHeadline, ruleCondition } from "@/components/monitoring/model-words";
+import { factorAxisLabel, factorPhrase, ruleCondition } from "@/components/monitoring/model-words";
 import { OnThisPage } from "@/components/ux/on-this-page";
 import { Disclosure } from "@/components/monitoring/disclosure";
+import { ActionLine } from "@/components/monitoring/action-line";
 import { CalibrationChart } from "./calibration-chart";
-import { LevelExplainer, PageIntro, TermTip } from "@/components/help";
+import { InfoTip, LevelExplainer, TermTip } from "@/components/help";
 
 type Light = "bon" | "attention" | "critique";
 
@@ -82,36 +83,20 @@ function evalRange(period: string | null): string | null {
   return m ? `${formatMonth(m[1])} – ${formatMonth(m[2])}` : null;
 }
 
-// Verdict en une phrase, d'après les cibles fixées avant l'entraînement
-function verdict(c: ChampionDTO, m: ParsedMetrics | null, coldStart: boolean): { tone: Light; label: string; title: string; points: ReactNode[] } {
-  const method = `${KIND_LABEL[c.kind] ?? c.kind} en service${c.promotedAt ? ` depuis le ${fmt.date(c.promotedAt)}` : ""}`;
-  if (!m) {
-    return {
-      tone: "attention",
-      label: "Performances non documentées",
-      title: `${method} : aucune mesure de performance enregistrée.`,
-      points: ["Les niveaux de risque restent calculés ; interprétez-les avec prudence."],
-    };
-  }
+// Verdict d'après les cibles fixées avant l'entraînement : badge, mesures au format libellé : valeur, action
+function verdict(c: ChampionDTO, m: ParsedMetrics | null): { tone: Light; label: string; title: string; points: string[]; action: string } {
+  const title = `${KIND_LABEL[c.kind] ?? c.kind}${c.promotedAt ? ` · en service depuis le ${fmt.date(c.promotedAt)}` : ""}`;
+  if (!m) return { tone: "attention", label: "Non documenté", title, points: [], action: "Interpréter les niveaux avec prudence" };
   const liftOk = (m.lift.liftAtK ?? 0) >= 3;
   const oeOk = inRange(m.calibration.oe, 0.8, 1.25);
   const slopeOk = m.calibration.slope == null || inRange(m.calibration.slope, 0.8, 1.2);
   const ok = liftOk && oeOk && slopeOk;
-  const points: ReactNode[] = [];
-  if (m.auc != null)
-    points.push(`Pouvoir de tri ${aucWord(m.auc)} : le modèle aide à choisir qui rencontrer en priorité, il ne prédit pas qui partira.`);
-  if (!liftOk && m.lift.liftAtK != null) points.push(`Concentration des démissions au niveau Élevé sous la cible (${times(m.lift.liftAtK)} pour au moins 3 ×).`);
-  if (!oeOk && m.calibration.oe != null) points.push(`Pourcentages annoncés hors cible en moyenne (observé / prévu ${dec(m.calibration.oe)}).`);
-  if (!slopeOk) points.push(`Estimations extrêmes trop ${m.calibration.slope! < 1 ? "marquées" : "prudentes"} (pente ${dec(m.calibration.slope)}).`);
-  if (coldStart) points.push("Démarrage à froid : les niveaux publiés viennent encore du score à règles (voir l'encadré ci-dessous).");
-  points.push("Les facteurs affichés sont associés au départ, pas des causes.");
-  const lift = m.lift.liftAtK != null ? `${dec(m.lift.liftAtK, 1)} fois plus de démissions au niveau Élevé` : "démissions plus fréquentes au niveau Élevé";
-  return {
-    tone: ok ? "bon" : "attention",
-    label: ok ? "Modèle dans ses cibles" : "Modèle hors cible sur un point",
-    title: `${method} : ${lift} ; pourcentages ${oeOk ? "justes en moyenne" : "à vérifier"}.`,
-    points,
-  };
+  const points: string[] = [];
+  if (m.auc != null) points.push(`Pouvoir de tri (AUC) : ${dec(m.auc)} · ${aucWord(m.auc)}`);
+  if (m.lift.liftAtK != null) points.push(`Lift à la capacité : ${times(m.lift.liftAtK)} (cible ≥ 3 ×)`);
+  if (m.calibration.oe != null) points.push(`Observé / prévu : ${dec(m.calibration.oe)} (cible 0,8 à 1,25)`);
+  if (m.calibration.slope != null) points.push(`Pente de calibration : ${dec(m.calibration.slope)} (cible 0,8 à 1,2)`);
+  return { tone: ok ? "bon" : "attention", label: ok ? "Dans la cible" : "Hors cible", title, points, action: ok ? "Aucune" : "Surveiller la dérive des données" };
 }
 
 function Scale({ value }: { value: number }) {
@@ -143,22 +128,21 @@ function Reliability({ m, capacityRate }: { m: ParsedMetrics; capacityRate: numb
   const aucRange = range95(m.aucCi ?? undefined);
   return (
     <>
-      <p className="mb-3 max-w-3xl text-sm text-fg-muted">
-        Mesuré sur des données passées que le modèle n&apos;avait pas vues
-        {range ? ` (${range}${m.evalN != null ? `, ${fmt.int(m.evalN)} situations mensuelles` : ""})` : ""}. Ses estimations sont comparées aux démissions réellement
-        survenues dans les 6 mois.
+      <p className="mb-3 text-sm tabular-nums text-fg-muted">
+        Évaluation hors apprentissage : {range ?? "—"}
+        {m.evalN != null ? ` · ${fmt.int(m.evalN)} situations mensuelles` : ""}
       </p>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {p100 != null && (
           <section className={`${cardCls} p-4`} aria-labelledby="perf-eleve">
             <div className="flex items-start justify-between gap-2">
-              <h3 id="perf-eleve" className="text-sm font-semibold text-heading">Sur 100 collaborateurs classés Élevé</h3>
+              <h3 id="perf-eleve" className="text-sm font-semibold text-heading">Précision au niveau Élevé</h3>
               <TermTip term="liftCapacite" align="end" />
             </div>
             <p className="mt-1 text-2xl font-semibold tabular-nums text-heading">
-              {p100} <span className="text-base font-medium">ont démissionné</span>
+              {p100} <span className="text-base font-medium">sur 100</span>
             </p>
-            <p className="text-xs text-fg-muted">dans les 6 mois suivants</p>
+            <p className="text-xs text-fg-muted">Démissions à 6 mois</p>
             <div className="mt-3 flex flex-wrap items-end gap-4">
               <div>
                 <IconArray segments={[{ n: p100, tone: "defavorable" }]} total={100} label={`${p100} carrés colorés sur 100 : classés Élevé ayant démissionné`} />
@@ -172,50 +156,57 @@ function Reliability({ m, capacityRate }: { m: ParsedMetrics; capacityRate: numb
               )}
             </div>
             {lift != null && (
-              <p className="mt-3 text-sm text-fg-muted">
-                Soit <strong>{dec(lift, 1)} fois</strong> plus que la moyenne (lift {times(lift)}). <Target ok={lift >= 3} label={lift >= 3 ? "Dans la cible (au moins 3 ×)" : "Sous la cible de 3 ×"} />
-                {liftRange && <span className="mt-1 block text-xs">Marge d&apos;incertitude à 95 % : de {liftRange} fois.</span>}
-              </p>
+              <dl className="mt-3 space-y-1 text-sm">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <dt className="text-fg-muted">Lift :</dt>
+                  <dd className="font-semibold tabular-nums text-fg">{times(lift)}</dd>
+                  <dd>
+                    <Target ok={lift >= 3} label={lift >= 3 ? "Dans la cible (≥ 3 ×)" : "Sous la cible (3 ×)"} />
+                  </dd>
+                </div>
+                {liftRange && (
+                  <div className="flex gap-x-2 text-xs">
+                    <dt className="text-fg-muted">IC 95 % :</dt>
+                    <dd className="tabular-nums text-fg">{liftRange}</dd>
+                  </div>
+                )}
+              </dl>
             )}
           </section>
         )}
         {r100 != null && (
           <section className={`${cardCls} p-4`} aria-labelledby="perf-rappel">
             <div className="flex items-start justify-between gap-2">
-              <h3 id="perf-rappel" className="text-sm font-semibold text-heading">Sur 100 démissionnaires</h3>
+              <h3 id="perf-rappel" className="text-sm font-semibold text-heading">Rappel au niveau Élevé</h3>
               <TermTip term="rappel" align="end" />
             </div>
             <p className="mt-1 text-2xl font-semibold tabular-nums text-heading">
-              {r100} <span className="text-base font-medium">étaient classés Élevé</span>
+              {r100} <span className="text-base font-medium">sur 100</span>
             </p>
-            <p className="text-xs text-fg-muted">6 mois avant leur départ</p>
+            <p className="text-xs text-fg-muted">Démissionnaires classés Élevé 6 mois avant</p>
             <div className="mt-3">
               <IconArray segments={[{ n: r100, tone: "defavorable" }]} total={100} label={`${r100} carrés colorés sur 100 : démissionnaires qui étaient classés Élevé`} />
             </div>
-            <p className="mt-3 text-sm text-fg-muted">
-              Le niveau Élevé est limité à {capacity} des collaborateurs : c&apos;est la capacité d&apos;entretiens RH. La plupart des départs viennent donc des niveaux Moyen
-              ou Faible. Le modèle aide à prioriser ; il ne repère pas tous les départs.
-            </p>
+            <dl className="mt-3 flex gap-x-2 text-sm">
+              <dt className="text-fg-muted">Capacité (niveau Élevé) :</dt>
+              <dd className="font-semibold tabular-nums text-fg">{capacity}</dd>
+            </dl>
           </section>
         )}
         {m.auc != null && (
           <section className={`${cardCls} p-4`} aria-labelledby="perf-tri">
             <div className="flex items-start justify-between gap-2">
-              <h3 id="perf-tri" className="text-sm font-semibold text-heading">Pouvoir de tri</h3>
+              <h3 id="perf-tri" className="text-sm font-semibold text-heading">Pouvoir de tri (AUC)</h3>
               <TermTip term="auc" align="end" />
             </div>
-            <p className="mt-1 text-2xl font-semibold tabular-nums text-heading">
-              {Math.round(m.auc * 100)} <span className="text-base font-medium">cas sur 100</span>
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 text-2xl font-semibold tabular-nums text-heading">
+              {dec(m.auc)}
+              <StatusBadge tone="neutral" dot={false}>
+                {upperFirst(aucWord(m.auc))}
+              </StatusBadge>
             </p>
-            <p className="text-xs text-fg-muted">
-              Pouvoir de tri {aucWord(m.auc)} (AUC {dec(m.auc)}
-              {aucRange ? ` ; marge à 95 % : ${aucRange}` : ""})
-            </p>
+            {aucRange && <p className="text-xs tabular-nums text-fg-muted">IC 95 % : {aucRange}</p>}
             <Scale value={m.auc} />
-            <p className="mt-3 text-sm text-fg-muted">
-              Prenez au hasard un collaborateur parti et un collaborateur resté. Dans {Math.round(m.auc * 100)} cas sur 100, le modèle donne le risque le plus haut au
-              premier.
-            </p>
           </section>
         )}
       </div>
@@ -235,32 +226,38 @@ function Calibration({ m }: { m: ParsedMetrics }) {
     <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-5">
       <section className={`${cardCls} p-4 xl:col-span-2`} aria-labelledby="calibration-titre">
         <div className="flex items-start justify-between gap-2">
-          <h3 id="calibration-titre" className="text-sm font-semibold text-heading">Les pourcentages annoncés sont-ils justes ?</h3>
+          <h3 id="calibration-titre" className="text-sm font-semibold text-heading">Calibration du modèle</h3>
           <TermTip term="calibration" align="end" />
         </div>
-        <ul className="mt-2 space-y-3 text-sm text-fg-muted">
-          {cal.oe != null && (
-            <li>
-              Pour <strong>100 démissions prévues</strong>, <strong className="tabular-nums">{Math.round(cal.oe * 100)}</strong> ont été observées (rapport observé / prévu{" "}
-              {dec(cal.oe)}, cible de 0,8 à 1,25). <Target ok={oeOk} />
-              {oeRange && <span className="mt-1 block text-xs">Marge d&apos;incertitude à 95 % : {oeRange}.</span>}
-            </li>
-          )}
-          {top && (
-            <li>
-              Pour les collaborateurs au risque le plus haut, le modèle annonçait <strong className="tabular-nums">{fmt.pct(top.predicted, 1)}</strong> de démissions ;{" "}
-              <strong className="tabular-nums">{fmt.pct(top.observed, 1)}</strong> ont réellement démissionné.
-            </li>
-          )}
-          {cal.slope != null && (
-            <li>
-              Écart entre estimations hautes et basses : pente {dec(cal.slope)} (cible de 0,8 à 1,2).{" "}
-              {cal.slope < 0.95 ? "Les estimations extrêmes sont un peu trop marquées. " : cal.slope > 1.05 ? "Les estimations sont un peu trop prudentes. " : ""}
-              <Target ok={slopeOk} />
-              {slopeRange && <span className="mt-1 block text-xs">Marge d&apos;incertitude à 95 % : {slopeRange}.</span>}
-            </li>
-          )}
-        </ul>
+        <div className="mt-2">
+          <Dl
+            items={[
+              ...(cal.oe != null
+                ? ([
+                    [
+                      "Observé / prévu",
+                      <span key="oe" className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums">
+                        {dec(cal.oe)} (cible 0,8 à 1,25) <Target ok={oeOk} />
+                      </span>,
+                    ],
+                  ] as [string, ReactNode][])
+                : []),
+              ...(oeRange ? ([["IC 95 % observé / prévu", oeRange]] as [string, ReactNode][]) : []),
+              ...(top ? ([["Groupe le plus exposé", `${fmt.pct(top.predicted, 1)} annoncé · ${fmt.pct(top.observed, 1)} observé`]] as [string, ReactNode][]) : []),
+              ...(cal.slope != null
+                ? ([
+                    [
+                      "Pente de calibration",
+                      <span key="pente" className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 tabular-nums">
+                        {dec(cal.slope)} (cible 0,8 à 1,2) <Target ok={slopeOk} />
+                      </span>,
+                    ],
+                  ] as [string, ReactNode][])
+                : []),
+              ...(slopeRange ? ([["IC 95 % pente", slopeRange]] as [string, ReactNode][]) : []),
+            ]}
+          />
+        </div>
       </section>
       {cal.bins.length > 1 && <CalibrationChart bins={cal.bins} onTarget={oeOk} className="xl:col-span-3" />}
     </div>
@@ -271,10 +268,15 @@ function Fairness({ m }: { m: ParsedMetrics }) {
   const f = m.fairness;
   return (
     <>
-      <p className="mb-3 max-w-3xl text-sm text-fg-muted">
-        Le sexe et l&apos;âge ne sont pas utilisés par le modèle. On vérifie ici qu&apos;il ne se trompe pas davantage pour un groupe que pour un autre. Aucun chiffre
-        n&apos;est affiché sous {fmt.int(f.minGroupSize)} observations.
-      </p>
+      <ul aria-label="Garanties d'équité" className="mb-3 flex flex-wrap gap-2">
+        {["Sexe et âge non utilisés par le modèle", `Groupes de moins de ${fmt.int(f.minGroupSize)} masqués`, "Aucun blocage automatique"].map((b) => (
+          <li key={b}>
+            <StatusBadge tone="neutral" dot={false}>
+              {b}
+            </StatusBadge>
+          </li>
+        ))}
+      </ul>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {f.dimensions.map((d) => {
           const shown = d.rows.filter((r) => !r.masked);
@@ -282,14 +284,16 @@ function Fairness({ m }: { m: ParsedMetrics }) {
           const dots = shown.flatMap((r) => (r.baseRate != null && r.meanPred != null ? [{ group: r.group, observed: r.baseRate, estimated: r.meanPred, verdict: fairnessVerdict(r.oe) }] : []));
           return (
             <section key={d.key} className={`${cardCls} p-4`} aria-labelledby={`equite-${d.key}`}>
-              <h3 id={`equite-${d.key}`} className="text-sm font-semibold text-heading">
-                {d.label} : {off.length === 0 ? "risque estimé proche du réel dans chaque groupe" : `estimation à surveiller pour ${off.map((r) => r.group).join(", ")}`}
-              </h3>
-              <p className="mb-3 mt-1 text-sm text-fg-muted">
-                {off.length === 0
-                  ? "Pour chaque groupe, le risque estimé moyen est proche du taux de démission réel : aucun groupe n'est surestimé ni sous-estimé."
-                  : `Estimation à surveiller pour : ${off.map((r) => r.group).join(", ")}.`}
-              </p>
+              <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h3 id={`equite-${d.key}`} className="text-sm font-semibold text-heading">
+                  {d.label}
+                </h3>
+                {off.length === 0 ? (
+                  <StatusBadge tone="success">Juste pour chaque groupe</StatusBadge>
+                ) : (
+                  <StatusBadge tone="warning">{`À surveiller : ${off.map((r) => r.group).join(", ")}`}</StatusBadge>
+                )}
+              </div>
               {dots.length > 0 && <Chart spec={fairnessChart(dots)} />}
               <div className="relative mt-2 overflow-x-auto" tabIndex={0} role="region" aria-label={`Équité : ${d.label}`}>
                 <table className={tableCls.table}>
@@ -308,7 +312,7 @@ function Fairness({ m }: { m: ParsedMetrics }) {
                       r.masked ? (
                         <tr key={r.group} className={tableCls.tr}>
                           <th scope="row" className={`${tableCls.td} font-normal`}>{r.group}</th>
-                          <td colSpan={4} className={`${tableCls.td} text-xs text-fg-muted`}>Groupe trop petit : non affiché.</td>
+                          <td colSpan={4} className={`${tableCls.td} text-xs text-fg-muted`}>Masqué (effectif insuffisant)</td>
                         </tr>
                       ) : (
                         <tr key={r.group} className={tableCls.tr}>
@@ -332,10 +336,6 @@ function Fairness({ m }: { m: ParsedMetrics }) {
           );
         })}
       </div>
-      <p className="mt-3 max-w-3xl text-xs text-fg-muted">
-        Quand les taux de démission diffèrent d&apos;un groupe à l&apos;autre, la part classée Élevé diffère aussi. Ce rapport éclaire une décision humaine ; il ne bloque
-        rien automatiquement.
-      </p>
     </>
   );
 }
@@ -346,13 +346,14 @@ function ModelCard({ c }: { c: ChampionDTO }) {
       <Dl
         items={[
           ["Méthode", KIND_LABEL[c.kind] ?? c.kind],
-          ["Mise en service", c.promotedAt ? `Le ${fmt.date(c.promotedAt)}${c.promotedBy ? `, par ${c.promotedBy}` : ""}` : "—"],
-          ["Ce qu'il estime", c.kind === "B0" ? "Un nombre de points de priorité" : "La probabilité de démission (ou d'abandon de poste) dans les 6 mois"],
-          ["Appris sur", c.trainRows != null ? `${fmt.int(c.trainRows)} situations mensuelles passées` : "—"],
+          ["Mise en service", c.promotedAt ? `${fmt.date(c.promotedAt)}${c.promotedBy ? ` · ${c.promotedBy}` : ""}` : "—"],
+          ["Estimation", c.kind === "B0" ? "Points de priorité" : "Probabilité de démission ou d'abandon de poste à 6 mois"],
+          ["Données", "AJIR : carrière, rémunération, temps de travail, absences hors santé, formation, équipe"],
+          ["Apprentissage", c.trainRows != null ? `${fmt.int(c.trainRows)} situations mensuelles` : "—"],
           [
             "Identifiant technique",
             <a key="fiche" href="#technique" className="font-medium text-link underline underline-offset-2">
-              Voir la fiche technique
+              Fiche technique
             </a>,
           ],
         ]}
@@ -367,11 +368,18 @@ function HowItDecides({ c }: { c: ChampionDTO }) {
     return (
       <div className="space-y-4">
         <ModelCard c={c} />
-        <Card title="Règles du score B0" headingLevel={3} actions={<TermTip term="scoreRegles" align="end" />}>
-          <p className="mb-3 text-sm text-fg-muted">
-            Le modèle en service est un score à règles : chaque condition remplie ajoute des points. Plus le total est élevé, plus le collaborateur est prioritaire.
-            Le résultat est un nombre de points, pas une probabilité.
-          </p>
+        <Card
+          title="Règles du score B0"
+          headingLevel={3}
+          actions={
+            <>
+              <StatusBadge tone="info" dot={false}>
+                Points, pas une probabilité
+              </StatusBadge>
+              <TermTip term="scoreRegles" align="end" />
+            </>
+          }
+        >
           <div className="relative overflow-x-auto">
             <table className={tableCls.table}>
               <caption className="sr-only">Règles du score B0</caption>
@@ -420,15 +428,18 @@ function HowItDecides({ c }: { c: ChampionDTO }) {
     digits: 0,
     categoryName: "Famille",
   });
-  const first = c.groups[0];
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
       <div className="space-y-4 xl:order-2 xl:col-span-2">
         <ModelCard c={c} />
         <VisualCard
           headingLevel={3}
-          title={`${first.label} : première famille, ${Math.round(share(first.weight))} % du poids`}
-          subtitle="Part du poids total des facteurs, par famille (%)"
+          title="Poids par famille de facteurs (%)"
+          badge={
+            <StatusBadge tone="neutral" dot={false}>
+              Hors absences de santé
+            </StatusBadge>
+          }
           chart={{
             ...families,
             table: {
@@ -450,29 +461,22 @@ function HowItDecides({ c }: { c: ChampionDTO }) {
               );
             })}
           </ul>
-          <p className="mt-2 text-xs text-fg-muted">
-            « Levier RH » : famille sur laquelle la RH peut agir. Les absences pour maladie et maternité ne comptent dans aucun facteur.
-          </p>
         </VisualCard>
       </div>
       <VisualCard
         headingLevel={3}
         className="xl:order-1 xl:col-span-3"
-        title={factorsHeadline(top.map((f) => f.name)) ?? `Les ${top.length} facteurs les plus influents, du plus fort au plus faible`}
-        subtitle={
-          top.length < all.length
-            ? `Poids relatif de chaque facteur (%) · les ${top.length} plus influents sur ${all.length} · ils pèsent ${fmt.pct(topShare, 0)} de la décision`
-            : `Poids relatif de chaque facteur (%) · les ${top.length} facteurs du modèle`
-        }
+        title="Poids des principaux facteurs (%)"
+        subtitle={top.length < all.length ? `${top.length} facteurs sur ${all.length} · ${fmt.pct(topShare, 0)} du poids total` : `${top.length} facteurs`}
         actions={<TermTip term="facteursAssocies" align="end" />}
         chart={factorsChart(top.map((f) => ({ label: factorPhrase(f.name), axis: factorAxisLabel(f.name), weight: share(f.effect) })))}
-        footnote="Les facteurs se lisent ensemble : deux facteurs proches (absences courtes et facteur de Bradford, par exemple) peuvent se compenser. Poids relatif : influence d'un écart habituel de la valeur, rapportée à l'ensemble des facteurs."
+        footnote="Facteurs à lire ensemble : deux facteurs proches peuvent se compenser. Poids relatif : influence d'un écart habituel de la valeur."
       >
         <ColorLegend
           className="mt-2"
           items={[
-            { color: SEMANTIC.defavorable, label: "Défavorable, à droite de zéro : associé à un risque plus élevé" },
-            { color: SEMANTIC.favorable, label: "Favorable, à gauche de zéro : associé à un risque plus faible" },
+            { color: SEMANTIC.defavorable, label: "Risque plus élevé" },
+            { color: SEMANTIC.favorable, label: "Risque plus faible" },
           ]}
         />
       </VisualCard>
@@ -482,22 +486,19 @@ function HowItDecides({ c }: { c: ChampionDTO }) {
 
 function Levels({ t, admin, role }: { t: TransparencyDTO; admin: boolean; role: "ADMIN" | "RH" }) {
   return (
-    <Card title="Du risque estimé au niveau de risque" headingLevel={3} className="mt-4" actions={<TermTip term="capacite" align="end" />}>
+    <Card title="Niveaux de risque" headingLevel={3} className="mt-4" actions={<TermTip term="capacite" align="end" />}>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
         <div className="space-y-3 text-sm">
           <Dl
             items={[
-              ["Capacité (niveau « Élevé »)", `${fmt.pct(t.decision.capacityRate, 1)} des collaborateurs évalués`],
-              ["Seuil du niveau « Moyen »", `${dec(t.decision.mediumLift, 1)} fois le risque moyen`],
+              ["Capacité (niveau « Élevé »)", `${fmt.pct(t.decision.capacityRate, 1)} des évalués`],
+              ["Seuil du niveau « Moyen »", `${dec(t.decision.mediumLift, 1)} × le risque moyen`],
+              ["Seuil de probabilité", "Aucun : rang et capacité"],
             ]}
           />
-          <p className="text-xs text-fg-muted">
-            Aucun seuil de probabilité : le niveau dépend du rang de chaque collaborateur et de la capacité d&apos;entretiens RH. En cas d&apos;égalité à la limite, le nombre
-            de collaborateurs Élevé peut être inférieur à la capacité.
-          </p>
           {admin && (
             <Link href="/admin/settings" className="inline-flex min-h-10 items-center text-sm font-medium text-link underline underline-offset-2">
-              Modifier la capacité dans Paramètres
+              Modifier la capacité
             </Link>
           )}
         </div>
@@ -535,8 +536,8 @@ function ModelMonitoringSection({ m }: { m: ModelMonitoringDTO }) {
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
       <VisualCard
         headingLevel={3}
-        title={last ? `${fmt.int(last.nScored)} collaborateurs évalués en ${runLabel(last)}` : "Collaborateurs évalués par calcul"}
-        subtitle={`Nombre de collaborateurs évalués à chaque calcul mensuel${runs.length > 1 ? ` · ${runs.length} derniers calculs` : ""}`}
+        title="Collaborateurs évalués par calcul"
+        subtitle={runs.length > 1 ? `${runs.length} derniers calculs` : undefined}
         chart={
           runs.length
             ? {
@@ -549,40 +550,29 @@ function ModelMonitoringSection({ m }: { m: ModelMonitoringDTO }) {
             : undefined
         }
       >
-        {!runs.length && <EmptyState compact title="Aucun calcul publié">Le suivi apparaît après le premier calcul mensuel.</EmptyState>}
+        {!runs.length && <EmptyState compact title="Aucun calcul publié" />}
       </VisualCard>
 
       <VisualCard
         headingLevel={3}
-        title={
-          last && lastTotal
-            ? `En ${runLabel(last)} : ${fmt.pct(last.levels.ELEVE / lastTotal, 1)} Élevé, ${fmt.pct(last.levels.MOYEN / lastTotal, 1)} Moyen`
-            : "Répartition des niveaux de risque par calcul"
-        }
-        subtitle="Part des collaborateurs évalués par niveau de risque, à chaque calcul (%)"
+        title="Niveaux de risque par calcul (%)"
+        subtitle={last && lastTotal ? `${runLabel(last)} : ${fmt.pct(last.levels.ELEVE / lastTotal, 1)} Élevé · ${fmt.pct(last.levels.MOYEN / lastTotal, 1)} Moyen` : undefined}
         chart={runs.some((r) => total(r) > 0) ? levelShareChart(runs) : undefined}
       >
-        {!runs.some((r) => total(r) > 0) && <EmptyState compact title="Aucun niveau de risque calculé">La répartition apparaît après le premier calcul mensuel.</EmptyState>}
+        {!runs.some((r) => total(r) > 0) && <EmptyState compact title="Aucun niveau de risque calculé" />}
       </VisualCard>
 
       <VisualCard
         headingLevel={3}
-        title={cut != null ? `8 collaborateurs sur 10 ont un risque estimé inférieur à ${fmt.pct(cut, 0)}` : "Répartition des risques estimés au dernier calcul"}
-        subtitle={
-          lastRun && d
-            ? `Nombre de collaborateurs par tranche de risque estimé à 6 mois · calcul au ${fmt.date(lastRun.asOf)}`
-            : "Nombre de collaborateurs par tranche de risque estimé à 6 mois"
-        }
+        title="Risques estimés à 6 mois"
+        subtitle={lastRun && d ? `Calcul du ${fmt.date(lastRun.asOf)}${cut != null ? ` · 80 % sous ${fmt.pct(cut, 0)}` : ""}` : undefined}
         chart={lastRun?.modelKind !== "B0" && d ? estimateHistogramChart(d.bins, d.mean) : undefined}
-        footnote={lastRun?.modelKind !== "B0" && d && d.bins.at(-1)?.to == null ? "La dernière tranche regroupe le 1 % d'estimations les plus hautes." : undefined}
+        footnote={lastRun?.modelKind !== "B0" && d && d.bins.at(-1)?.to == null ? "Dernière tranche : 1 % d'estimations les plus hautes" : undefined}
       >
         {lastRun?.modelKind === "B0" ? (
-          <Notice>
-            Le calcul publié repose sur un score à règles (B0) : sa valeur est un nombre de points, pas une probabilité. Aucune répartition de risques estimés
-            n&apos;est affichée.
-          </Notice>
+          <EmptyState compact title="Score à règles (B0) : sans probabilité" />
         ) : (
-          !d && <EmptyState compact title={lastRun ? "Aucune estimation pour ce calcul" : "Aucun calcul publié"}>La répartition apparaît après un calcul mensuel par un modèle probabiliste.</EmptyState>
+          !d && <EmptyState compact title={lastRun ? "Aucune estimation pour ce calcul" : "Aucun calcul publié"} />
         )}
       </VisualCard>
     </div>
@@ -615,12 +605,8 @@ function TopicModels({ models }: { models: TopicModelDTO[] }) {
   const subjects = [...new Set(models.map((m) => (TOPIC_LABEL[m.topic] ?? m.topic).toLocaleLowerCase("fr-FR")))];
   return (
     <More summary={models.length ? `Modèles par sujet : ${models.length} (${subjects.join(", ")})` : "Modèles par sujet"}>
-      <p className="mb-3 text-sm text-fg-muted">
-        Prévisions collectives (absentéisme, effectif, masse salariale, charge de travail) et risque de formation en retard. Pour chacun : version, statut et
-        mesures sur le passé. Aucune donnée individuelle.
-      </p>
       {models.length === 0 ? (
-        <EmptyState title="Aucun modèle par sujet enregistré">L&apos;enregistrement et la mise en service se font par la procédure outillée.</EmptyState>
+        <EmptyState title="Aucun modèle par sujet enregistré" />
       ) : (
         <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Modèles par sujet">
           <table className={tableCls.table}>
@@ -729,10 +715,34 @@ function Technical({ c, t }: { c: ChampionDTO; t: TransparencyDTO }) {
               ...m.other.map((o) => [o.key, o.value] as [string, ReactNode]),
             ]}
           />
-          <p className="mt-3 text-xs text-fg-muted">
-            Cibles fixées avant l&apos;entraînement, à 3 et 6 mois : observé / prévu entre 0,8 et 1,25, pente entre 0,8 et 1,2. À 12 mois : observé / prévu entre 0,7
-            et 1,4. Lift d&apos;au moins 3 à la capacité par défaut.
-          </p>
+          <div className="mt-4 relative overflow-x-auto">
+            <table className={tableCls.table}>
+              <caption className="mb-1 text-left text-sm font-medium text-fg">Cibles fixées avant l&apos;entraînement</caption>
+              <thead className={tableCls.thead}>
+                <tr>
+                  <th scope="col" className={tableCls.th}>Mesure</th>
+                  <th scope="col" className={tableCls.th}>Horizon</th>
+                  <th scope="col" className={`${tableCls.th} text-right`}>Cible</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(
+                  [
+                    ["Observé / prévu", "3 et 6 mois", "0,8 à 1,25"],
+                    ["Pente de calibration", "3 et 6 mois", "0,8 à 1,2"],
+                    ["Observé / prévu", "12 mois", "0,7 à 1,4"],
+                    ["Lift à la capacité par défaut", "6 mois", "≥ 3 ×"],
+                  ] as const
+                ).map(([k, h, v]) => (
+                  <tr key={`${k}-${h}`} className={tableCls.tr}>
+                    <td className={tableCls.td}>{k}</td>
+                    <td className={tableCls.td}>{h}</td>
+                    <td className={`${tableCls.td} ${tableCls.num}`}>{v}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {cal && cal.byHorizon.length > 0 && (
             <div className="mt-4 relative overflow-x-auto">
               <table className={tableCls.table}>
@@ -793,14 +803,15 @@ function Technical({ c, t }: { c: ChampionDTO; t: TransparencyDTO }) {
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-xs text-fg-muted">
-            Lift : taux de démission du groupe ciblé, rapporté au taux moyen. Précision : part du groupe ciblé qui a démissionné.
-            {withRecall ? " Rappel : part des démissions qui concernaient le groupe ciblé." : ""}
-          </p>
         </More>
       )}
       {m && m.decisionCurve.length > 0 && (
         <More summary="Courbe de décision (bénéfice net)">
+          <p className="mb-2">
+            <StatusBadge tone="neutral" dot={false}>
+              Indicatif : niveaux fixés par la capacité RH
+            </StatusBadge>
+          </p>
           <div className="relative overflow-x-auto">
             <table className={tableCls.table}>
               <caption className="sr-only">Bénéfice net selon le seuil</caption>
@@ -822,7 +833,6 @@ function Technical({ c, t }: { c: ChampionDTO; t: TransparencyDTO }) {
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-xs text-fg-muted">Analyse coût-bénéfice indicative : le niveau de risque n&apos;utilise pas de seuil de probabilité mais la capacité RH.</p>
         </More>
       )}
       {m && m.fairness.dimensions.length > 0 && (
@@ -837,7 +847,7 @@ function Technical({ c, t }: { c: ChampionDTO; t: TransparencyDTO }) {
                     <tr>
                       <th scope="col" className={tableCls.th}>Groupe</th>
                       <th scope="col" className={`${tableCls.th} text-right`}>Effectif</th>
-                      <th scope="col" className={`${tableCls.th} text-right`}>Obs. / prévu</th>
+                      <th scope="col" className={`${tableCls.th} text-right`}>{d.rows.some((r) => r.oeCi) ? "Obs. / prévu (IC 95 %)" : "Obs. / prévu"}</th>
                       <th scope="col" className={`${tableCls.th} text-right`}>Sélection</th>
                       <th scope="col" className={`${tableCls.th} text-right`}>TPR@k</th>
                       <th scope="col" className={`${tableCls.th} text-right`}>FPR@k</th>
@@ -848,7 +858,7 @@ function Technical({ c, t }: { c: ChampionDTO; t: TransparencyDTO }) {
                       r.masked ? (
                         <tr key={r.group} className={tableCls.tr}>
                           <td className={tableCls.td}>{r.group}</td>
-                          <td colSpan={5} className={`${tableCls.td} text-xs text-fg-muted`}>Effectif insuffisant, non affiché.</td>
+                          <td colSpan={5} className={`${tableCls.td} text-xs text-fg-muted`}>Masqué (effectif insuffisant)</td>
                         </tr>
                       ) : (
                         <tr key={r.group} className={tableCls.tr}>
@@ -869,14 +879,12 @@ function Technical({ c, t }: { c: ChampionDTO; t: TransparencyDTO }) {
               </div>
             ))}
           </div>
-          {m.fairness.dimensions.some((d) => d.rows.some((r) => r.oeCi)) && <p className="mt-2 text-xs text-fg-muted">Sous chaque rapport observé / prévu : marge d&apos;incertitude à 95 %.</p>}
         </More>
       )}
       {c.groups.length > 0 && (
         <More summary="Coefficients de toutes les variables (effet pour +1 écart-type, odds ratio)">
-          <p className="mb-3 text-sm text-fg-muted">
-            Effet de chaque variable sur le log-odds de l&apos;estimation pour une hausse d&apos;un écart-type, recalibrage inclus. Un effet positif est associé à un risque
-            plus élevé. <TermTip term="variables" />
+          <p className="mb-3 flex items-center gap-1 text-sm text-fg-muted">
+            Effet sur le log-odds, recalibrage inclus <TermTip term="variables" />
           </p>
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {c.groups.map((g) => (
@@ -920,9 +928,17 @@ const liftText = (v: TransparencyDTO["versions"][number]) => (v.liftAtK != null 
 
 function Versions({ t }: { t: TransparencyDTO }) {
   return (
-    <Card title="Historique des versions" headingLevel={3}>
+    <Card
+      title="Historique des versions"
+      headingLevel={3}
+      actions={
+        <StatusBadge tone="neutral" dot={false}>
+          Mise en service tracée, hors interface
+        </StatusBadge>
+      }
+    >
       {t.versions.length === 0 ? (
-        <EmptyState title="Aucune version enregistrée">Les versions apparaissent ici après leur enregistrement par la procédure outillée.</EmptyState>
+        <EmptyState title="Aucune version enregistrée" />
       ) : (
         <>
           {/* Sous 640 px : une carte par version ; à partir de 640 px : tableau */}
@@ -989,7 +1005,6 @@ function Versions({ t }: { t: TransparencyDTO }) {
           </div>
         </>
       )}
-      <p className="mt-3 text-xs text-fg-muted">La mise en service d&apos;un modèle se fait hors de l&apos;interface, par une procédure outillée et tracée.</p>
     </Card>
   );
 }
@@ -1001,29 +1016,33 @@ export default async function TransparencyPage() {
   const monitoring = getModelMonitoring(ctx);
   const c = t.champion;
   const role = ctx.role === "ADMIN" ? "ADMIN" : "RH";
-  const v = c ? verdict(c, c.metrics, !!t.coldStart?.active) : null;
+  const v = c ? verdict(c, c.metrics) : null;
 
   return (
     <>
       <PageHeader
         eyebrow="Données et modèle"
         title="Transparence du modèle"
-        subtitle={`Comment le risque de départ est estimé, avec quelle fiabilité et dans quelles limites.${c ? ` ${upperFirst(fmt.model(c.version, c.promotedAt))}.` : ""}`}
+        badge={
+          <ul aria-label="Cadre d'usage du modèle" className="flex flex-wrap gap-2">
+            {["Aide à la décision humaine", "Facteurs associés, non causaux", "Données agrégées"].map((b) => (
+              <li key={b}>
+                <StatusBadge tone="info" dot={false}>
+                  {b}
+                </StatusBadge>
+              </li>
+            ))}
+          </ul>
+        }
       />
-      {v && <StatusSummary tone={v.tone} label={v.label} title={v.title} points={v.points} ariaLabel="Le modèle en un coup d'œil" />}
-      <PageIntro
-        helpHref="/aide#modele"
-        points={[
-          "Outil d'aide à la décision : chaque estimation est à examiner par une personne.",
-          "Les facteurs sont associés au départ, pas des causes.",
-          "Aucune donnée individuelle n'est affichée sur cette page.",
-        ]}
-      >
-        Comprendre comment le modèle classe les collaborateurs, avec quelle fiabilité et avec quelle équité entre les groupes.
-      </PageIntro>
+      {v && (
+        <StatusSummary tone={v.tone} label={v.label} title={v.title} points={v.points} ariaLabel="Le modèle en un coup d'œil">
+          <ActionLine>{v.action}</ActionLine>
+        </StatusSummary>
+      )}
       <OnThisPage
         items={[
-          ...(c ? [{ id: "modele", label: "Comment il décide" }, { id: "performances", label: "Fiabilité" }] : []),
+          ...(c ? [{ id: "modele", label: "Fonctionnement" }, { id: "performances", label: "Fiabilité" }] : []),
           ...(c?.metrics?.fairness.dimensions.length ? [{ id: "equite", label: "Équité" }] : []),
           { id: "suivi", label: "Suivi mensuel" },
           { id: "technique", label: "Détails techniques" },
@@ -1031,46 +1050,50 @@ export default async function TransparencyPage() {
       />
       {t.coldStart?.message && (
         <div className="mb-4">
-          <Notice tone={t.coldStart.active || t.coldStart.indicative ? "warning" : "info"}>{t.coldStart.message}</Notice>
+          <Notice tone={t.coldStart.active || t.coldStart.indicative ? "warning" : "info"}>
+            {t.coldStart.active
+              ? `Démarrage à froid : ${fmt.int(t.coldStart.events)} démission${t.coldStart.events > 1 ? "s" : ""} observée${t.coldStart.events > 1 ? "s" : ""} (seuil ${fmt.int(t.coldStart.threshold)}) · niveaux du score à règles B0`
+              : t.coldStart.indicative
+                ? `Probabilité indicative : ${fmt.int(t.coldStart.events)} démission${t.coldStart.events > 1 ? "s" : ""} observée${t.coldStart.events > 1 ? "s" : ""} (seuil ${fmt.int(t.coldStart.indicativeUntil)})`
+                : t.coldStart.message}
+          </Notice>
         </div>
       )}
 
       {!c ? (
         <div className="mb-8">
-          <EmptyState title="Aucun modèle en service">
-            Les estimations ne sont pas calculées. La mise en service se fait hors de l&apos;interface, par la procédure outillée (voir l&apos;historique des versions
-            ci-dessous).
-          </EmptyState>
+          <EmptyState title="Aucun modèle en service" />
         </div>
       ) : (
         <>
           <Section
             id="modele"
-            title="Comment le modèle décide"
-            intro={
-              <>
-                {KIND_PLAIN[c.kind] ?? ""} Il s&apos;appuie uniquement sur des données AJIR : carrière, rémunération, temps de travail, absences hors santé, formation et
-                équipe.
-              </>
+            title="Fonctionnement du modèle"
+            tip={
+              KIND_PLAIN[c.kind] ? (
+                <InfoTip label={KIND_LABEL[c.kind] ?? c.kind} align="start">
+                  {KIND_PLAIN[c.kind]}
+                </InfoTip>
+              ) : undefined
             }
           >
             <HowItDecides c={c} />
             <Levels t={t} admin={ctx.role === "ADMIN"} role={role} />
           </Section>
 
-          <Section id="performances" title="Fiabilité : que valent ses estimations ?">
+          <Section id="performances" title="Fiabilité du modèle">
             {c.metrics ? (
               <>
                 <Reliability m={c.metrics} capacityRate={t.decision.capacityRate} />
                 <Calibration m={c.metrics} />
               </>
             ) : (
-              <EmptyState title="Mesures de performance non disponibles pour ce modèle">Le fichier du modèle ne contient pas de mesures d&apos;évaluation ; les niveaux de risque restent calculés.</EmptyState>
+              <EmptyState title="Mesures de performance indisponibles" />
             )}
           </Section>
 
           {c.metrics && c.metrics.fairness.dimensions.length > 0 && (
-            <Section id="equite" title="Équité : le modèle traite-t-il tous les groupes de la même façon ?">
+            <Section id="equite" title="Équité entre groupes">
               <Fairness m={c.metrics} />
             </Section>
           )}
@@ -1080,20 +1103,16 @@ export default async function TransparencyPage() {
       <Section
         id="suivi"
         title="Suivi mensuel du modèle"
-        intro={
-          <>
-            Ce que le modèle produit chaque mois. Pour vérifier que les données récentes ressemblent encore à celles de l&apos;apprentissage, voir{" "}
-            <Link href="/derive" className="text-link underline underline-offset-2">
-              Dérive des données
-            </Link>
-            .
-          </>
+        actions={
+          <Link href="/derive" className="inline-flex min-h-8 items-center text-sm font-medium text-link underline underline-offset-2">
+            Dérive des données
+          </Link>
         }
       >
         <ModelMonitoringSection m={monitoring} />
       </Section>
 
-      <Section id="technique" title="Détails techniques" intro="Pour les spécialistes : fiche complète, mesures statistiques, modèles par sujet et historique des versions." className="mb-0">
+      <Section id="technique" title="Détails techniques" className="mb-0">
         <div className="space-y-3">
           {c && <Technical c={c} t={t} />}
           <TopicModels models={topics} />

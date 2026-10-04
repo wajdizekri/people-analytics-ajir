@@ -23,7 +23,7 @@ async function expectThreeZones(page: Page) {
   await expect(page.getByRole("heading", { level: 2, name: /1\.\s*Faits/ })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: /2\.\s*Estimation/ })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: /3\.\s*Suggestions/ })).toBeVisible();
-  await expect(zone(page, 2)).toContainText("Estimation, pas une certitude. Facteurs associés, pas des causes.");
+  await expect(zone(page, 2)).toContainText("Estimation, pas une certitude");
 }
 
 test.describe("Liste et fiche collaborateur — RH", () => {
@@ -78,7 +78,7 @@ test.describe("Liste et fiche collaborateur — RH", () => {
     test.skip(!row, "aucune recommandation déclenchée par le niveau élevé");
     await page.goto(`/employees/${row!.id}`);
     await waitReady(page);
-    const triggers = await zone(page, 3).getByText(/Déclenchée par/).allInnerTexts();
+    const triggers = await zone(page, 3).getByText(/Déclencheur/).allInnerTexts();
     expect(triggers.length).toBeGreaterThan(0);
     for (const t of triggers) expect(t, t).not.toMatch(/[A-Z]{3,}_[A-Z]{3,}/);
   });

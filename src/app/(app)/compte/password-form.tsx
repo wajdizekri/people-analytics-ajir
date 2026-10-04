@@ -12,21 +12,6 @@ const sessionsClosed = (n?: number) => (n ? `${n} autre${n > 1 ? "s" : ""} sessi
 type Field = "current" | "password" | "confirm";
 const FIELDS: Field[] = ["current", "password", "confirm"];
 
-function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
-  return (
-    <li className="relative pl-9">
-      <span aria-hidden="true" className="absolute left-0 top-0 inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-fg">
-        {n}
-      </span>
-      <p className="text-sm font-semibold text-fg">
-        <span className="sr-only">Étape {n} : </span>
-        {title}
-      </p>
-      <div className="mt-1">{children}</div>
-    </li>
-  );
-}
-
 function Check({ ok, children }: { ok: boolean; children: ReactNode }) {
   return (
     <li className={`flex items-center gap-1.5 ${ok ? "text-success" : "text-fg-muted"}`}>
@@ -50,7 +35,7 @@ export function PasswordForm({ login, otherSessions }: { login: string; otherSes
     setPwd("");
     setConfirm("");
     return announce(res, {
-      success: "Mot de passe modifié. Vous restez connecté ici.",
+      success: "Mot de passe modifié",
       successDescription: sessionsClosed(res.revoked),
       error: "Mot de passe non modifié",
       errorDescription: "Le motif est indiqué sous le formulaire.",
@@ -81,69 +66,63 @@ export function PasswordForm({ login, otherSessions }: { login: string; otherSes
   return (
     <form action={action} onSubmit={validate} noValidate className="max-w-md">
       <input type="text" name="username" autoComplete="username" value={login} readOnly hidden />
-      <ol className="space-y-5">
-        <Step n={1} title="Confirmez que c'est bien vous">
-          <PasswordField
-            ref={currentRef}
-            id="current"
-            name="current"
-            label="Mot de passe actuel"
-            autoComplete="current-password"
-            toggleLabel="Afficher le mot de passe actuel"
-            maxLength={200}
-            onChange={() => clear("current")}
-            invalid={!!state.error}
-            error={errors.current}
-            describedBy={serverError}
-          />
-        </Step>
-        <Step n={2} title="Choisissez un nouveau mot de passe">
-          <PasswordField
-            ref={passwordRef}
-            id="password"
-            name="password"
-            label="Nouveau mot de passe"
-            autoComplete="new-password"
-            toggleLabel="Afficher le nouveau mot de passe"
-            minLength={10}
-            maxLength={200}
-            value={pwd}
-            onChange={(e) => {
-              setPwd(e.target.value);
-              clear("password");
-            }}
-            error={errors.password}
-            describedBy="password-help"
-          >
-            <ul id="password-help" className="mt-1.5 space-y-0.5 text-xs">
-              <Check ok={hasLength(pwd)}>Au moins 10 caractères</Check>
-              <Check ok={hasMix(pwd)}>Des lettres et des chiffres</Check>
-            </ul>
-          </PasswordField>
-        </Step>
-        <Step n={3} title="Saisissez-le une seconde fois">
-          <PasswordField
-            ref={confirmRef}
-            id="confirm"
-            name="confirm"
-            label="Confirmation du mot de passe"
-            autoComplete="new-password"
-            toggleLabel="Afficher la confirmation du mot de passe"
-            maxLength={200}
-            value={confirm}
-            onChange={(e) => {
-              setConfirm(e.target.value);
-              clear("confirm");
-            }}
-            error={errors.confirm}
-            describedBy="confirm-help"
-          >
-            <ul id="confirm-help" className="mt-1.5 text-xs">
-              <Check ok={confirm.length > 0 && confirm === pwd}>Les deux saisies sont identiques</Check>
-            </ul>
-          </PasswordField>
-        </Step>
-      </ol>
+      <div className="space-y-4">
+        <PasswordField
+          ref={currentRef}
+          id="current"
+          name="current"
+          label="Mot de passe actuel"
+          autoComplete="current-password"
+          toggleLabel="Afficher le mot de passe actuel"
+          maxLength={200}
+          onChange={() => clear("current")}
+          invalid={!!state.error}
+          error={errors.current}
+          describedBy={serverError}
+        />
+        <PasswordField
+          ref={passwordRef}
+          id="password"
+          name="password"
+          label="Nouveau mot de passe"
+          autoComplete="new-password"
+          toggleLabel="Afficher le nouveau mot de passe"
+          minLength={10}
+          maxLength={200}
+          value={pwd}
+          onChange={(e) => {
+            setPwd(e.target.value);
+            clear("password");
+          }}
+          error={errors.password}
+          describedBy="password-help"
+        >
+          <ul id="password-help" className="mt-1.5 space-y-0.5 text-xs">
+            <Check ok={hasLength(pwd)}>Au moins 10 caractères</Check>
+            <Check ok={hasMix(pwd)}>Des lettres et des chiffres</Check>
+          </ul>
+        </PasswordField>
+        <PasswordField
+          ref={confirmRef}
+          id="confirm"
+          name="confirm"
+          label="Confirmation du mot de passe"
+          autoComplete="new-password"
+          toggleLabel="Afficher la confirmation du mot de passe"
+          maxLength={200}
+          value={confirm}
+          onChange={(e) => {
+            setConfirm(e.target.value);
+            clear("confirm");
+          }}
+          error={errors.confirm}
+          describedBy="confirm-help"
+        >
+          <ul id="confirm-help" className="mt-1.5 text-xs">
+            <Check ok={confirm.length > 0 && confirm === pwd}>Les deux saisies sont identiques</Check>
+          </ul>
+        </PasswordField>
+      </div>
 
       <div aria-live="polite" className="mt-4">
         {state.error && (
@@ -158,10 +137,11 @@ export function PasswordForm({ login, otherSessions }: { login: string; otherSes
         <SubmitButton variant="primary" icon="lock" pendingLabel="Enregistrement…">
           Changer mon mot de passe
         </SubmitButton>
-        <p className="text-xs text-fg-muted">
-          Vous restez connecté sur cet appareil.
-          {otherSessions > 0 ? ` Par sécurité, vos ${otherSessions > 1 ? `${otherSessions} autres sessions seront fermées` : "autre session sera fermée"}.` : ""}
-        </p>
+        {otherSessions > 0 && (
+          <p className="text-xs text-fg-muted">
+            {otherSessions > 1 ? `${otherSessions} autres sessions seront fermées` : "1 autre session sera fermée"}
+          </p>
+        )}
       </div>
     </form>
   );

@@ -6,15 +6,14 @@ test.describe("Tableau de bord RH", () => {
   test("KPI d'entreprise visibles, masse salariale en TND, graphiques rendus", async ({ page }) => {
     await page.goto("/dashboard");
     await expect(page.getByRole("heading", { level: 1, name: "Tableau de bord" })).toBeVisible();
-    await expect(page.getByText("Indicateurs RH de l'entreprise")).toBeVisible();
     await expect(page.getByRole("link", { name: "Lire la synthèse du mois" })).toHaveAttribute("href", "/synthese");
-    for (const label of [/^Effectif fin/, /^Turnover glissant 12 mois/, /^Absentéisme hors santé/, /^Masse salariale brute/, /^Entrées \/ sorties/, /^Formations obligatoires/, /^Collaborateurs en risque élevé/]) {
+    for (const label of [/^Effectif fin/, /^Turnover sur 12 mois/, /^Absentéisme hors santé/, /^Masse salariale brute/, /^Entrées \/ sorties/, /^Formations obligatoires/, /^Collaborateurs en risque élevé/]) {
       await expect(page.getByText(label).first(), String(label)).toBeVisible();
     }
     const headcount = toInt(await kpiValue(page, /^Effectif fin/));
     expect(headcount).toBeGreaterThan(100);
     expect(await kpiValue(page, /^Masse salariale brute/)).toMatch(/\d.*\sTND$/);
-    expect(await kpiValue(page, /^Turnover glissant 12 mois/)).toMatch(/^\d+,\d\s?%$/);
+    expect(await kpiValue(page, /^Turnover sur 12 mois/)).toMatch(/^\d+,\d\s?%$/);
     const charts = page.locator("main [role=img]");
     expect(await charts.count()).toBeGreaterThanOrEqual(3);
     await expect(page.locator("main canvas").first()).toBeVisible();

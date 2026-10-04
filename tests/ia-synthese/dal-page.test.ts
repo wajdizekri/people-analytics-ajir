@@ -140,14 +140,15 @@ describe("DAL : reformulation par IA générative (API simulée)", () => {
 describe("rendu statique de l'encadré", () => {
   const sample = { sentences: ["Première phrase.", "Deuxième phrase."], model: null, fallback: null };
 
-  it("phrases types : mention de la rédaction automatique et de la méthode", async () => {
+  it("phrases types : titre court, méthode en pastille et en bulle", async () => {
     const { NarrativeBox } = await import("@/app/(app)/synthese/narrative");
     const m = html(createElement(NarrativeBox, { narrative: { source: "GABARIT", ...sample } }));
     expect(m).toContain('aria-labelledby="synthese-redigee-titre"');
     expect((m.match(/<li>/g) ?? []).length).toBe(2);
     const t = text(m);
-    expect(t).toContain("Synthèse du mois en quelques phrases");
-    expect(t).toContain("Texte rédigé automatiquement à partir des indicateurs ci-dessous.");
+    expect(m).toMatch(/id="synthese-redigee-titre"[^>]*>Synthèse du mois</);
+    expect(t).not.toContain("Synthèse du mois en quelques phrases");
+    expect(t).toContain("Phrases types");
     expect(t).toContain("Rédaction par phrases types, sans IA générative.");
     expect(t).not.toContain("(s)");
   });
@@ -155,6 +156,7 @@ describe("rendu statique de l'encadré", () => {
   it("IA générative : modèle affiché ; repli et attente signalés", async () => {
     const { NarrativeBox } = await import("@/app/(app)/synthese/narrative");
     const ia = text(html(createElement(NarrativeBox, { narrative: { ...sample, source: "IA", model: "claude-opus-5-5" } })));
+    expect(ia).toContain("IA générative");
     expect(ia).toContain("Reformulé par IA générative (modèle claude-opus-5-5) à partir des seuls agrégats ; chaque chiffre a été vérifié.");
     const fb = text(html(createElement(NarrativeBox, { narrative: { ...sample, source: "GABARIT", fallback: "delai" } })));
     expect(fb).toContain("la reformulation par IA générative n'a pas abouti");
@@ -182,11 +184,11 @@ describe("page /synthese (sans clé d'API)", () => {
     as("RH");
     const out = await render();
     const t = text(out);
-    expect(t).toContain("Synthèse du mois en quelques phrases");
+    expect(out).toMatch(/id="synthese-redigee-titre"[^>]*>Synthèse du mois</);
     expect(t).toContain("Fin août 2026, l'effectif de toute l'entreprise compte 16 collaborateurs");
     expect(t).toContain("Rédaction par phrases types, sans IA générative.");
-    expect(out.indexOf("Imprimer la synthèse")).toBeLessThan(out.indexOf("Synthèse du mois en quelques phrases"));
-    expect(out.indexOf("Synthèse du mois en quelques phrases")).toBeLessThan(out.indexOf("À traiter en priorité"));
+    expect(out.indexOf("Imprimer la synthèse")).toBeLessThan(out.indexOf('id="synthese-redigee-titre"'));
+    expect(out.indexOf('id="synthese-redigee-titre"')).toBeLessThan(out.indexOf("À traiter en priorité"));
     expect(out.indexOf("À traiter en priorité")).toBeLessThan(out.indexOf("Chiffres clés"));
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });

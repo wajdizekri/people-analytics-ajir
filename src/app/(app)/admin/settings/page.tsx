@@ -2,7 +2,7 @@ import { pageContext } from "@/lib/dal/context";
 import { getAdminSettings, getAdminSettingsExtras } from "@/lib/dal/admin";
 import { getDataHealth } from "@/lib/dal/imports";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
-import { PageHeader } from "@/components/ui";
+import { PageHeader, StatusBadge } from "@/components/ui";
 import { SettingsForm } from "@/components/admin/settings-form";
 
 export const metadata = { title: "Paramètres — People Analytics AJIR" };
@@ -20,7 +20,11 @@ export default async function SettingsPage() {
       <PageHeader
         eyebrow="Administration"
         title="Paramètres"
-        subtitle="Règles de calcul et de contrôle, par thème. Les changements s'appliquent au prochain calcul ou au prochain import."
+        badge={
+          <StatusBadge tone="info" dot={false}>
+            Effet au prochain calcul ou import
+          </StatusBadge>
+        }
       />
       <SettingsForm
         fields={settings.map((s) => ({

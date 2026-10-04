@@ -70,14 +70,14 @@ describe("paramètres : unités d'affichage", () => {
     expect(toRaw("abs_reco_ecart_min", 0.2)).toBe(0.002);
     expect(toDisplay("medium_lift", 2)).toBe(2);
     expect(formatSetting("quality_threshold", 0.95)).toBe("95 %");
-    expect(SETTINGS_UI.capacity_rate.effect(0.02, { nScored: 987, asOf: "2026-08-31", lastQuality: null, values: {} })).toContain("environ 20 personnes classées en risque élevé");
-    expect(SETTINGS_UI.quality_threshold.effect(0.95, { nScored: null, asOf: null, lastQuality: 0.981, values: {} })).toContain("serait accepté");
+    expect(SETTINGS_UI.capacity_rate.effect(0.02, { nScored: 987, asOf: "2026-08-31", lastQuality: null, values: {} })).toContain("≈ 20 classés Élevé sur 987 évalués");
+    expect(SETTINGS_UI.quality_threshold.effect(0.95, { nScored: null, asOf: null, lastQuality: 0.981, values: {} })).toContain(": accepté");
   });
 });
 
-describe("alertes : action proposée en mots", () => {
+describe("alertes : action proposée en groupe nominal court", () => {
   it("selon le type, le statut et le rôle", () => {
-    expect(proposedAction({ type: "TURNOVER", status: "NOUVELLE", employeeName: "A B", departmentName: null }, "RH")).toMatch(/^Prévoir un échange/);
+    expect(proposedAction({ type: "TURNOVER", status: "NOUVELLE", employeeName: "A B", departmentName: null }, "RH")).toBe("Échange individuel avec le collaborateur");
     expect(proposedAction({ type: "ABSENTEISME", status: "EN_COURS", employeeName: null, departmentName: null }, "MANAGER")).toMatch(/votre équipe/);
     expect(proposedAction({ type: "DONNEES", status: "TRAITEE", employeeName: null, departmentName: null }, "ADMIN")).toMatch(/clôturée/);
     expect(concernedLabel({ type: "SYSTEME", employeeName: null, departmentName: null })).toBe("L'outil (alerte technique)");
@@ -130,8 +130,8 @@ describe("rendu des pages d'administration", () => {
     const Page = (await import("@/app/(app)/admin/page")).default;
     as("admin");
     const t = text(renderToStaticMarkup((await Page()) as ReactElement));
-    expect(t).toMatch(/points? demandent? votre attention|Tout fonctionne normalement/);
-    expect(t).toContain("compte est verrouillé");
+    expect(t).toMatch(/points? d'attention|Tout fonctionne normalement/);
+    expect(t).toContain("Comptes verrouillés : 1");
     for (const s of ["Importer un export AJIR", "Créer un compte", "Traiter les alertes", "Consulter le journal d'audit"]) expect(t).toContain(s);
   });
 });
@@ -143,8 +143,8 @@ describe("rendu de Mon compte et du détail d'alerte", () => {
     as("mgr");
     const t = text(renderToStaticMarkup((await Page()) as ReactElement));
     expect(t).toContain("Vous vous êtes connecté.");
-    expect(t).toContain("Votre accès est protégé.");
-    expect(t).toContain("Confirmez que c'est bien vous");
+    expect(t).toContain("Accès protégé");
+    expect(t).toContain("Mot de passe actuel");
     expect(t).not.toMatch(/Lift|TND|Masse salariale brute/);
   });
 
@@ -161,7 +161,7 @@ describe("rendu de Mon compte et du détail d'alerte", () => {
     const Page = (await import("@/app/(app)/alerts/[id]/page")).default;
     as("mgr");
     const t = text(renderToStaticMarkup((await Page({ params: Promise.resolve({ id: String(mine) }) })) as ReactElement));
-    for (const s of ["Prendre en charge l'alerte", "Rejeter l'alerte", "Action proposée", "Prévoir un échange", "Voir la fiche de Test Nom E2", "Suivi de l'alerte"]) expect(t).toContain(s);
+    for (const s of ["Prendre en charge l'alerte", "Rejeter l'alerte", "Action proposée", "Échange individuel avec le collaborateur", "Voir la fiche de Test Nom E2", "Suivi de l'alerte"]) expect(t).toContain(s);
     await expect(Page({ params: Promise.resolve({ id: String(other) }) })).rejects.toThrow("REDIRECT:/interdit");
     await expect(Page({ params: Promise.resolve({ id: "999999" }) })).rejects.toThrow("NOT_FOUND");
   });

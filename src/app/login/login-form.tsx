@@ -56,9 +56,6 @@ export function LoginForm({ next }: { next?: string | null }) {
         <label htmlFor="login" className="block text-sm font-medium text-fg">
           Identifiant
         </label>
-        <p id="login-hint" className="text-xs text-fg-subtle">
-          Communiqué par l&apos;administrateur de l&apos;outil, par exemple prenom.nom.
-        </p>
         <input
           ref={loginRef}
           id="login"
@@ -67,13 +64,14 @@ export function LoginForm({ next }: { next?: string | null }) {
           required
           autoCapitalize="none"
           spellCheck={false}
+          placeholder="prenom.nom"
           value={login}
           onChange={(e) => {
             setLogin(e.target.value);
             if (missing.login) setMissing((m) => ({ ...m, login: undefined }));
           }}
           aria-invalid={loginInvalid || undefined}
-          aria-describedby={["login-hint", missing.login && "login-erreur", invalid && "login-error"].filter(Boolean).join(" ")}
+          aria-describedby={[missing.login && "login-erreur", invalid && "login-error"].filter(Boolean).join(" ") || undefined}
           className={`mt-1 ${authFieldCls(loginInvalid)}`}
         />
         {missing.login && (

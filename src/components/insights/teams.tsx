@@ -2,7 +2,7 @@ import { formatRate } from "@/components/pilotage/labels";
 import type { TeamStats, TensionLevel } from "@/lib/dal/teams";
 import { TENSION_LABELS, formatHours } from "./labels";
 
-// Écran « Équipes » : pastille de niveau de tension et raison du niveau en mots (à partir des signaux calculés par la DAL)
+// Écran « Équipes » : pastille de niveau de tension et signaux du niveau (à partir des signaux calculés par la DAL)
 
 // Même rampe que la carte des équipes (TENSION_COLORS en clair, TENSION_COLORS_DARK en sombre), en classes pour le rendu serveur
 const DOT: Record<TensionLevel, string> = {
@@ -30,29 +30,25 @@ export function TensionBadge({ level }: { level: TensionLevel }) {
   );
 }
 
-const plural = (n: number, one: string, many: string) => `${n.toLocaleString("fr-FR")} ${n > 1 ? many : one}`;
-
-// Une phrase par signal, avec la valeur de l'équipe et celle de la référence (entreprise pour la RH, périmètre pour le manager)
+// Un libellé + valeur par signal, avec la valeur de référence (entreprise pour la RH, périmètre pour le manager)
 export function tensionReasons(t: TeamStats, ref: { absenteeismRate: number | null; overtimePerHead: number | null }, refLabel: string): string[] {
   const scored = t.risk.ELEVE + t.risk.MOYEN + t.risk.FAIBLE;
   return t.signals.map((s) => {
     switch (s) {
       case "RISQUE":
-        return `${plural(t.risk.ELEVE + t.risk.MOYEN, "collaborateur", "collaborateurs")} sur ${scored} en risque de départ élevé ou moyen (dont ${t.risk.ELEVE} élevé)`;
+        return `Risque élevé ou moyen : ${(t.risk.ELEVE + t.risk.MOYEN).toLocaleString("fr-FR")} sur ${scored} (élevé : ${t.risk.ELEVE})`;
       case "ABSENTEISME":
-        return `absentéisme de ${formatRate(t.absenteeismRate)} (${refLabel} : ${formatRate(ref.absenteeismRate)})`;
+        return `Absentéisme : ${formatRate(t.absenteeismRate)} (${refLabel} : ${formatRate(ref.absenteeismRate)})`;
       case "HEURES_SUP":
-        return `${formatHours(t.overtimePerHead)} supplémentaires par personne et par mois (${refLabel} : ${formatHours(ref.overtimePerHead)})`;
+        return `Heures sup. : ${formatHours(t.overtimePerHead)} / pers. / mois (${refLabel} : ${formatHours(ref.overtimePerHead)})`;
       case "FORMATION":
-        return `${plural(t.trainings.overdue, "formation obligatoire", "formations obligatoires")} en retard`;
+        return `Formations obligatoires en retard : ${t.trainings.overdue.toLocaleString("fr-FR")}`;
       case "RECOMMANDATIONS":
-        return `${plural(t.openRecommendations, "recommandation", "recommandations")} en attente de décision`;
+        return `Recommandations en attente : ${t.openRecommendations.toLocaleString("fr-FR")}`;
     }
   });
 }
 
 export function reasonSentence(reasons: string[]): string {
-  if (!reasons.length) return "Aucun signal de difficulté.";
-  const s = reasons.join(" ; ");
-  return `${s.charAt(0).toUpperCase()}${s.slice(1)}.`;
+  return reasons.length ? reasons.join(" ; ") : "Aucun signal";
 }

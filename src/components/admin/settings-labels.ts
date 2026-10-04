@@ -11,7 +11,6 @@ export type EffectContext = {
 
 export type SettingUi = {
   label: string;
-  short: string; // une ligne sous le libellé
   help: string; // explication complète, dans la bulle d'aide
   suffix: string;
   suffixPlural?: string; // à partir de 2 (« 0,2 point », « 5 points »)
@@ -30,164 +29,145 @@ const plural = (n: number, one: string, many: string) => (n > 1 ? many : one);
 export const SETTINGS_UI: Record<string, SettingUi> = {
   capacity_rate: {
     label: "Capacité mensuelle d'entretiens (part classée « Élevé »)",
-    short: "À régler sur le nombre d'entretiens que la RH peut mener chaque mois.",
     help: "Part des collaborateurs évalués classés au niveau Élevé chaque mois. Réglez-la sur le nombre d'entretiens que la RH peut mener.",
     suffix: "%",
     scale: 100,
     effect: (v, c) => {
-      if (!c.nScored) return `${pct(v)} des collaborateurs évalués seront classés en risque élevé à chaque calcul mensuel.`;
+      if (!c.nScored) return `${pct(v)} des évalués classés Élevé`;
       const k = Math.round(v * c.nScored);
-      return `Avec ${pct(v)} : environ ${frNum(k, 0)} ${plural(k, "personne classée", "personnes classées")} en risque élevé chaque mois (sur ${frNum(c.nScored, 0)} collaborateurs évalués${c.asOf ? ` au ${date(c.asOf)}` : ""}).`;
+      return `≈ ${frNum(k, 0)} ${plural(k, "classé", "classés")} Élevé sur ${frNum(c.nScored, 0)} évalués${c.asOf ? ` (calcul du ${date(c.asOf)})` : ""}`;
     },
   },
   medium_lift: {
     label: "Seuil du niveau « Moyen » (multiple du risque moyen)",
-    short: "Multiple de l'estimation moyenne qui classe un collaborateur en Moyen.",
     help: "Hors niveau Élevé, un collaborateur est classé Moyen si son estimation atteint ce multiple de l'estimation moyenne.",
     suffix: "fois",
-    effect: (v) => `Avec ${frNum(v)} : si l'estimation moyenne est de 4 %, un collaborateur est classé Moyen à partir de ${frNum(4 * v, 1)} %.`,
+    effect: (v) => `Moyen dès ${frNum(4 * v, 1)} % si moyenne à 4 %`,
   },
   min_events_for_model: {
     label: "Départs observés avant d'utiliser le modèle statistique",
-    short: "Démissions et abandons de poste observés. La valeur 0 désactive cette règle.",
     help: "En dessous de ce nombre de départs observés, le calcul utilise le score à règles, plus simple que le modèle statistique. La valeur 0 désactive cette règle.",
     suffix: "départs",
     effect: (v) =>
       v === 0
-        ? "Le modèle statistique est utilisé quel que soit le nombre de départs observés."
-        : `Tant que moins de ${frNum(v, 0)} démissions ou abandons de poste sont observés, le calcul utilise le score à règles.`,
+        ? "Modèle statistique toujours utilisé"
+        : `Score à règles sous ${frNum(v, 0)} départs observés`,
   },
   indicative_until_events: {
     label: "Départs observés avant une probabilité fiable",
-    short: "Au moins égal au seuil du modèle statistique.",
     help: "En dessous de ce nombre de départs observés, la probabilité est présentée comme « indicative ». Ce seuil doit être au moins égal à celui du modèle statistique.",
     suffix: "départs",
-    effect: (v) => `Sous ${frNum(v, 0)} départs observés, la RH voit la mention « probabilité indicative ».`,
+    effect: (v) => `Mention « probabilité indicative » sous ${frNum(v, 0)} départs`,
   },
   quality_threshold: {
     label: "Score qualité minimal d'un import AJIR",
-    short: "Sous ce score, l'import est bloqué et le calcul des risques suspendu.",
     help: "Sous ce score, l'import est bloqué et le calcul des risques suspendu jusqu'au prochain import correct.",
     suffix: "%",
     scale: 100,
     effect: (v, c) =>
       c.lastQuality != null
-        ? `Avec ${pct(v)} : le dernier import (${pct(c.lastQuality)}) serait ${c.lastQuality >= v ? "accepté" : "bloqué"}.`
-        : `Un import dont le score qualité est inférieur à ${pct(v)} est bloqué.`,
+        ? `Dernier import (${pct(c.lastQuality)}) : ${c.lastQuality >= v ? "accepté" : "bloqué"}`
+        : `Import bloqué sous ${pct(v)}`,
   },
   smig_monthly: {
     label: "SMIG mensuel de repli",
-    short: "Utilisé seulement si le barème daté est vide ou illisible.",
     help: "Sert au contrôle « salaire de base ≥ SMIG » seulement si le barème daté ci-dessous est vide ou illisible.",
     suffix: "TND",
-    effect: (v) => `Sans barème daté, un salaire de base inférieur à ${frNum(v, 3)}${NBSP}TND est signalé à l'import.`,
+    effect: (v) => `Signal si salaire de base < ${frNum(v, 3)}${NBSP}TND, sans barème daté`,
   },
   bradford_threshold: {
     label: "Seuil d'absences répétées (facteur de Bradford)",
-    short: "Score des absences courtes et fréquentes, hors santé, sur 12 mois.",
     help: "Le facteur de Bradford pèse surtout les absences courtes et fréquentes : nombre d'absences au carré × jours d'absence, hors santé, sur 12 mois. Exemple : 5 absences totalisant 10 jours donnent 5² × 10 = 250 points.",
     suffix: "points",
-    effect: (v) => `Au-delà de ${frNum(v, 0)} points, la RH reçoit un signal « à vérifier ».`,
+    effect: (v) => `Signal « à vérifier » au-delà de ${frNum(v, 0)} points`,
   },
   abs_reco_seuil_niveau: {
     label: "Écart avec l'absentéisme de l'entreprise",
-    short: "Dépassement du taux de l'entreprise à partir duquel une équipe est signalée.",
     help: "Une équipe ou un département est signalé si son absentéisme prévu dépasse celui de l'entreprise sur 12 mois d'au moins cette part.",
     suffix: "%",
     scale: 100,
-    effect: (v) => `Avec ${pct(v)} : si l'entreprise est à 4 %, une équipe est signalée à partir de ${frNum(4 * (1 + v), 1)} % d'absentéisme prévu.`,
+    effect: (v) => `Signal dès ${frNum(4 * (1 + v), 1)} % si entreprise à 4 %`,
   },
   abs_reco_seuil_hausse: {
     label: "Hausse d'absentéisme prévue dans une équipe",
-    short: "Prévision des 3 prochains mois comparée aux 12 derniers mois de l'équipe.",
     help: "Une équipe est signalée si sa prévision des 3 prochains mois dépasse son propre taux des 12 derniers mois d'au moins cette part.",
     suffix: "%",
     scale: 100,
-    effect: (v) => `Avec ${pct(v)} : une équipe habituellement à 4 % est signalée si sa prévision atteint ${frNum(4 * (1 + v), 1)} %.`,
+    effect: (v) => `Signal dès ${frNum(4 * (1 + v), 1)} % si équipe à 4 %`,
   },
   abs_reco_ecart_min: {
     label: "Écart minimal pour proposer une action",
-    short: "Évite les signaux dus aux petites équipes.",
     help: "Évite les signaux dus aux petites équipes : l'écart de taux d'absence doit atteindre au moins cette valeur.",
     suffix: "point",
     suffixPlural: "points",
     scale: 100,
-    effect: (v) => `Un écart inférieur à ${frNum(v * 100)} point (par exemple de 4 % à ${frNum(4 + v * 100)} %) ne déclenche aucune action.`,
+    effect: (v) => `Aucune action sous ${frNum(v * 100)} point d'écart`,
   },
   abs_reco_anomalies_min: {
     label: "Anomalies collectives avant une action de prévention",
-    short: "Anomalies collectives d'absentéisme comptées sur les 3 derniers mois.",
     help: "Nombre d'anomalies collectives d'absentéisme sur les 3 derniers mois à partir duquel une action de prévention est proposée.",
     suffix: "anomalies",
-    effect: (v) => `Une action de prévention est proposée dès ${frNum(v, 0)} ${plural(v, "anomalie", "anomalies")} en 3 mois dans une même équipe.`,
+    effect: (v) => `Action dès ${frNum(v, 0)} ${plural(v, "anomalie", "anomalies")} en 3 mois`,
   },
   workload_ot_threshold_h: {
     label: "Heures supplémentaires au-delà desquelles un mois est surchargé",
-    short: "Heures supplémentaires pointées dans le mois, pour un collaborateur.",
     help: "Heures supplémentaires pointées dans le mois au-delà desquelles le mois compte comme surchargé pour le collaborateur.",
     suffix: "h / mois",
     effect: (v, c) => {
       const m = c.values.workload_ot_months;
-      return `Un collaborateur qui dépasse ${frNum(v, 1)} h supplémentaires par mois${Number.isFinite(m) ? ` pendant ${frNum(m, 0)} mois de suite` : ""} est signalé à la RH.`;
+      return `Signal au-delà de ${frNum(v, 1)} h / mois${Number.isFinite(m) ? ` pendant ${frNum(m, 0)} mois` : ""}`;
     },
   },
   workload_ot_months: {
     label: "Durée d'une surcharge soutenue",
-    short: "Mois consécutifs au-delà du seuil d'heures supplémentaires.",
     help: "Nombre de mois consécutifs au-delà du seuil d'heures supplémentaires pour signaler une surcharge (entretien à prévoir).",
     suffix: "mois",
     effect: (v, c) => {
       const h = c.values.workload_ot_threshold_h;
-      return `Signal après ${frNum(v, 0)} mois de suite${Number.isFinite(h) ? ` au-dessus de ${frNum(h, 1)} h supplémentaires` : ""}.`;
+      return `Signal après ${frNum(v, 0)} mois${Number.isFinite(h) ? ` au-dessus de ${frNum(h, 1)} h` : ""}`;
     },
   },
   retention_inbox_days: {
     label: "Conservation des exports AJIR déposés",
-    short: "Fichiers d'export déposés sur le serveur.",
     help: "Les fichiers d'export déposés sur le serveur sont supprimés après ce délai par la purge planifiée.",
     suffix: "jours",
-    effect: (v) => `Un export est supprimé ${frNum(v, 0)} jours après son dépôt (environ ${frNum(v / 30, 0)} mois).`,
+    effect: (v) => `Suppression après ${frNum(v, 0)} jours (≈ ${frNum(v / 30, 0)} mois)`,
   },
   retention_prediction_months: {
     label: "Conservation des estimations individuelles",
-    short: "Estimations et facteurs individuels anciens, hors calcul en vigueur.",
     help: "Estimations et facteurs individuels anciens, hors calcul en vigueur, supprimés après ce délai par la purge planifiée.",
     suffix: "mois",
-    effect: (v) => `Les estimations de plus de ${frNum(v, 0)} mois (${frNum(v / 12, 1)} ans) sont supprimées, sauf celles du calcul en vigueur.`,
+    effect: (v) => `Suppression après ${frNum(v, 0)} mois (${frNum(v / 12, 1)} ans), hors calcul en vigueur`,
   },
 };
 
 // nav : libellé court de la navigation des thèmes (le titre complet reste celui de la carte)
-export type SettingGroup = { id: string; title: string; nav: string; intro: string; keys: string[]; block?: "smig" | "budgets" };
+export type SettingGroup = { id: string; title: string; nav: string; keys: string[]; block?: "smig" | "budgets" };
 
 export const SETTING_GROUPS: SettingGroup[] = [
   {
     id: "risque",
     title: "Classement des niveaux de risque",
     nav: "Niveaux de risque",
-    intro: "Combien de collaborateurs sont classés Élevé et Moyen à chaque calcul mensuel. Le modèle lui-même ne change pas.",
     keys: ["capacity_rate", "medium_lift"],
   },
-  { id: "imports", title: "Contrôle des imports AJIR", nav: "Imports AJIR", intro: "Garde-fou appliqué à chaque import.", keys: ["quality_threshold"] },
+  { id: "imports", title: "Contrôle des imports AJIR", nav: "Imports AJIR", keys: ["quality_threshold"] },
   {
     id: "absenteisme",
     title: "Absentéisme",
     nav: "Absentéisme",
-    intro: "Signaux d'absences répétées adressés à la RH et actions collectives proposées à partir des prévisions.",
     keys: ["bradford_threshold", "abs_reco_seuil_niveau", "abs_reco_seuil_hausse", "abs_reco_ecart_min", "abs_reco_anomalies_min"],
   },
   {
     id: "charge",
     title: "Charge de travail",
     nav: "Charge de travail",
-    intro: "Repérage des surcharges individuelles soutenues.",
     keys: ["workload_ot_threshold_h", "workload_ot_months"],
   },
   {
     id: "paie",
     title: "Paie et SMIG",
     nav: "Paie et SMIG",
-    intro: "Contrôle « salaire de base ≥ SMIG » des paies importées, selon le mois de paie.",
     keys: ["smig_monthly"],
     block: "smig",
   },
@@ -195,7 +175,6 @@ export const SETTING_GROUPS: SettingGroup[] = [
     id: "budget",
     title: "Budget de masse salariale",
     nav: "Budget",
-    intro: "Sans budget pour une année, les prévisions ne proposent pas de recommandation budgétaire.",
     keys: [],
     block: "budgets",
   },
@@ -203,14 +182,12 @@ export const SETTING_GROUPS: SettingGroup[] = [
     id: "modele",
     title: "Fiabilité du modèle de départ",
     nav: "Modèle de départ",
-    intro: "Quand passer du score à règles au modèle statistique, et quand présenter la probabilité comme fiable.",
     keys: ["min_events_for_model", "indicative_until_events"],
   },
   {
     id: "conservation",
     title: "Durée de conservation des données",
     nav: "Conservation",
-    intro: "Durées appliquées par la purge planifiée (script de rétention).",
     keys: ["retention_inbox_days", "retention_prediction_months"],
   },
 ];

@@ -6,7 +6,7 @@ test.describe("Tableau de bord manager", () => {
   test("périmètre : sous-titre, effectif limité à l'équipe, départements de l'équipe seulement", async ({ page }) => {
     await page.goto("/dashboard");
     await waitReady(page);
-    await expect(page.getByText("Indicateurs de votre équipe (périmètre hiérarchique), hors rémunération")).toBeVisible();
+    await expect(page.getByText("Hors rémunération", { exact: true }).first()).toBeVisible();
     const team = managerTeamIds();
     const headcount = toInt(await kpiValue(page, /^Effectif fin/));
     expect(headcount).toBeGreaterThan(0);

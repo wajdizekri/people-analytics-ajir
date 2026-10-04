@@ -8,11 +8,7 @@ import { CONSTELLATION_VARS, ConstellationStatic } from "./constellation-static"
 // Sous 1024 px : bandeau marine compact avec la constellation fixe, puis le formulaire. Le formulaire ne recouvre jamais
 // la constellation : aucune animation derrière les champs.
 
-const POINTS = [
-  { title: "Vos indicateurs RH", text: "Effectif, départs, absentéisme et formations, à la date du dernier export AJIR." },
-  { title: "Les priorités du mois", text: "Les collaborateurs les plus exposés à un départ, avec les facteurs associés. Une estimation, jamais une certitude." },
-  { title: "Votre périmètre seulement", text: "Chaque rôle (RH, manager, administrateur) ne voit que ce qui le concerne." },
-];
+const POINTS = ["Indicateurs RH", "Priorités du mois", "Accès par rôle"];
 
 const GLOW = (
   <>
@@ -39,15 +35,12 @@ export function AuthShell({ interactive = false, children }: { interactive?: boo
         </div>
         <div className="relative z-10 max-w-md">
           <p className="text-sm font-semibold uppercase tracking-wider text-brand-orange">Module du SIRH AJIR</p>
-          <p className="mt-2 text-3xl font-semibold leading-tight">L&apos;aide à la décision RH d&apos;AJIR</p>
-          <ul className="mt-6 space-y-4 xl:mt-8 xl:space-y-5">
+          <p className="mt-2 text-3xl font-semibold leading-tight">Aide à la décision RH</p>
+          <ul className="mt-6 space-y-3 xl:mt-8 xl:space-y-4">
             {POINTS.map((p) => (
-              <li key={p.title} className="flex gap-3">
-                <span aria-hidden="true" className="mt-1 h-5 w-1 shrink-0 rounded-full bg-brand-orange" />
-                <span>
-                  <span className="block font-medium">{p.title}</span>
-                  <span className="block text-sm text-white/80">{p.text}</span>
-                </span>
+              <li key={p} className="flex items-center gap-3 font-medium">
+                <span aria-hidden="true" className="h-5 w-1 shrink-0 rounded-full bg-brand-orange" />
+                {p}
               </li>
             ))}
           </ul>
@@ -76,11 +69,11 @@ export function AuthShell({ interactive = false, children }: { interactive?: boo
   );
 }
 
-/** Carte du formulaire : titre (h1), phrase d'intro, contenu. */
+/** Carte du formulaire : titre (h1), mention courte facultative, contenu. */
 export function AuthCard({ title, intro, children }: { title: string; intro?: ReactNode; children: ReactNode }) {
   return (
     <div className="rounded-card border border-line bg-surface p-6 text-fg shadow-pop sm:p-8">
-      <h1 className="text-xl font-semibold text-fg">{title}</h1>
+      <h1 className={`text-xl font-semibold text-fg ${intro ? "" : "mb-6"}`}>{title}</h1>
       {intro && <div className="mb-6 mt-1 text-sm text-fg-muted">{intro}</div>}
       {children}
     </div>

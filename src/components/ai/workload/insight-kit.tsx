@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { Icon, type Verdict } from "@/components/ui";
+import type { Verdict } from "@/components/ui";
 import { InfoTip } from "@/components/help";
 import { TERMS } from "@/lib/help/terms";
 
@@ -72,27 +71,5 @@ export function Def({ id, align = "end" }: { id: keyof typeof DEFS; align?: "cen
   );
 }
 
-// Réponse affichée par QuestionAnswer (@/components/ui) : verdict en mots + couleur, phrase de réponse
+// Verdict affiché par QuestionAnswer (@/components/ui) : mot + couleur, sans phrase (text: null)
 export type Answer = { tone: Verdict; label: string; text: ReactNode };
-
-// Encart repliable « Comment lire ces chiffres » en bas de page (méthode, exclusions), avec lien vers l'aide
-export function ReadingGuide({ children, helpHref }: { children: ReactNode; helpHref?: string }) {
-  return (
-    <details className="group mt-8 rounded-card border border-line bg-surface-2 text-sm text-fg-muted">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-card px-4 font-medium text-link transition-colors duration-200 hover:bg-surface-3 [&::-webkit-details-marker]:hidden">
-        <Icon name="chevron-right" className="h-4 w-4 transition-transform duration-200 group-open:rotate-90" />
-        Comment lire ces chiffres
-      </summary>
-      <div className="border-t border-line px-4 pb-4 pt-3">
-        <ul className="list-disc space-y-1.5 pl-5 leading-relaxed">{children}</ul>
-        {helpHref && (
-          <p className="mt-3">
-            <Link href={helpHref} className="font-medium text-link underline underline-offset-2 transition-[text-decoration-thickness] hover:decoration-2">
-              En savoir plus dans l&apos;aide
-            </Link>
-          </p>
-        )}
-      </div>
-    </details>
-  );
-}

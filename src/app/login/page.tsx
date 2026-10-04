@@ -7,9 +7,6 @@ import { nextAllowedFor, safeNextPath } from "./next-path";
 
 export const metadata = { title: "Connexion — People Analytics AJIR" };
 
-const PURPOSE =
-  "Suivez les indicateurs RH de votre périmètre et repérez les collaborateurs à rencontrer en priorité, à partir des données AJIR mises à jour chaque mois.";
-
 export default async function LoginPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   // Page demandée avant connexion (lien profond AJIR, session expirée) : y revenir si le rôle y a accès
   const sp = await searchParams;
@@ -18,10 +15,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (ctx) redirect(next && nextAllowedFor(ctx.role, next) ? next : homePath(ctx.role));
   return (
     <AuthShell interactive>
-      <AuthCard title="Connexion à People Analytics" intro={PURPOSE}>
+      <AuthCard title="Connexion">
         {next && (
           <Notice role="status" tone="info" className="mb-4">
-            Connectez-vous pour ouvrir la page demandée. Une session se ferme après 2 heures sans activité.
+            Connexion requise pour ouvrir la page demandée
           </Notice>
         )}
         <LoginForm next={next} />
@@ -31,24 +28,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <AuthHelp id="aide-mot-de-passe" summary="Mot de passe oublié ou compte verrouillé ?">
           <ul className="list-disc space-y-1 pl-5">
             <li>
-              <span className="font-medium text-fg">Mot de passe oublié :</span> demandez à l&apos;administrateur de l&apos;outil un nouveau lien
-              d&apos;activation. Il est valable 7 jours et vous permet de choisir un nouveau mot de passe.
+              <span className="font-medium text-fg">Mot de passe oublié :</span> nouveau lien d&apos;activation auprès de l&apos;administrateur (valable 7 jours)
             </li>
             <li>
-              <span className="font-medium text-fg">Compte verrouillé :</span> après 5 essais infructueux, le compte est bloqué quelques minutes.
-              Patientez, ou demandez à l&apos;administrateur de le déverrouiller.
+              <span className="font-medium text-fg">Compte verrouillé :</span> blocage de quelques minutes après 5 essais ; déverrouillage par l&apos;administrateur
             </li>
           </ul>
         </AuthHelp>
         <AuthHelp summary="Première connexion ?">
-          <p>
-            Ouvrez le lien d&apos;activation transmis par l&apos;administrateur de l&apos;outil pour choisir votre mot de passe, puis revenez sur cette page.
-            Sans lien, demandez-lui de créer votre compte.
-          </p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>Lien d&apos;activation transmis par l&apos;administrateur</li>
+            <li>Sans lien : demande de création de compte à l&apos;administrateur</li>
+          </ul>
         </AuthHelp>
-        <p className="px-1 text-xs text-fg-subtle">
-          Une fois connecté, le menu <span className="font-medium text-fg-muted">Aide</span> explique chaque écran, chaque indicateur et le vocabulaire utilisé.
-        </p>
       </div>
     </AuthShell>
   );

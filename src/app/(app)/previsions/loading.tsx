@@ -1,6 +1,6 @@
 import { Skeleton, SkeletonHeader, SkeletonChart, SkeletonTable, cardCls } from "@/components/ui";
 
-// Squelette de /previsions : en-tête, « En bref » (3 chiffres), scénario (3 hypothèses), 2 projections, tableau, recommandations
+// Squelette de /previsions : en-tête, projection à 12 mois (3 chiffres), scénario (3 hypothèses), 2 projections, tableau, recommandations
 export default function Loading() {
   return (
     <div role="status" aria-live="polite" aria-busy="true">
@@ -9,8 +9,7 @@ export default function Loading() {
         <SkeletonHeader actions={false} />
         <div className="space-y-6">
           <div className={`${cardCls} border-l-4 border-l-primary/40 p-4 sm:p-5`}>
-            <Skeleton className="h-3 w-56" />
-            <Skeleton className="mt-3 h-5 w-full max-w-2xl" />
+            <Skeleton className="h-5 w-56" />
             <div className="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-3">
               {[0, 1, 2].map((i) => (
                 <div key={i}>
@@ -23,7 +22,6 @@ export default function Loading() {
           </div>
           <div className={`${cardCls} p-4 sm:p-5`}>
             <Skeleton className="h-4 w-48" />
-            <Skeleton className="mt-2 h-3 w-full max-w-xl" />
             <div className="mt-5 grid gap-6 lg:grid-cols-3">
               {[0, 1, 2].map((i) => (
                 <div key={i}>

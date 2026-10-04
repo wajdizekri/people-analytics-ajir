@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { InfoTip } from "@/components/help/info-tip";
 import { cardCls } from "@/components/ui";
 import { useTheme } from "@/components/ui/theme";
 import type { OrgChartDto, OrgColorBy } from "@/lib/dal/org-chart";
 import { OrgDetailPanel } from "./org-detail-panel";
 import { OrgTreeChart } from "./org-tree-chart";
 import { OrgTreeList } from "./org-tree-list";
-import { COLOR_OPTIONS, tiersFor } from "./scale";
+import { ABSENTEEISM_TIERS, COLOR_OPTIONS, tiersFor } from "./scale";
 import { indexTree } from "./tree-index";
 
 const NARROW = "(max-width: 639px)";
@@ -34,9 +35,18 @@ function Legend({ colorBy, reference, rh }: { colorBy: OrgColorBy; reference: Or
   const option = COLOR_OPTIONS.find((o) => o.value === colorBy)!;
   return (
     <div className="mt-3 border-t border-line pt-3">
-      <p className="text-[13px] text-fg-muted">
-        <span className="font-semibold text-fg">Couleur : {option.label.toLowerCase()}</span> — {option.measure}
-        {colorBy === "absenteisme" && ` ; référence = ${rh ? "ensemble de l'entreprise" : "ensemble de votre hiérarchie"}`}.
+      <p className="flex items-center gap-1 text-[13px] font-semibold text-fg">
+        Couleur : {option.label.toLowerCase()}
+        <InfoTip label={option.label} align="start">
+          {option.measure}
+          {colorBy === "absenteisme" && (
+            <>
+              {" "}
+              Référence : {rh ? "ensemble de l'entreprise" : "ensemble de votre hiérarchie"}. Nettement au-dessus : au moins{" "}
+              {String(ABSENTEEISM_TIERS.ratio).replace(".", ",")} fois la référence et 1 point de plus.
+            </>
+          )}
+        </InfoTip>
       </p>
       <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-fg">
         {tiersFor(colorBy, reference).map((t) => (
@@ -106,9 +116,14 @@ export function OrgChartView({ dto, colorBy }: { dto: OrgChartDto; colorBy: OrgC
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <section aria-labelledby="org-main-title" className={`${cardCls} min-w-0 p-4 sm:p-5`}>
-          <h2 id="org-main-title" className="mb-2 text-base font-semibold text-heading">
-            {view === "graphe" ? "Hiérarchie en graphique" : "Hiérarchie en liste"}
-          </h2>
+          <div className="mb-2 flex items-center gap-1">
+            <h2 id="org-main-title" className="text-base font-semibold text-heading">
+              Hiérarchie
+            </h2>
+            <InfoTip label="Hiérarchie" prefix="Détails" align="start">
+              Dernier import AJIR, sans historique des rattachements.
+            </InfoTip>
+          </div>
           {/* Sous lg, le panneau de détail est sous la hiérarchie : la sélection reste visible ici, avec un lien vers le panneau */}
           <p className="mb-3 text-sm text-fg-muted lg:hidden">
             Sélection : <span className="font-medium text-fg">{selected.name}</span> ·{" "}
@@ -122,7 +137,6 @@ export function OrgChartView({ dto, colorBy }: { dto: OrgChartDto; colorBy: OrgC
             <OrgTreeList root={dto.root} index={index} colorBy={colorBy} reference={dto.reference} selected={selected.key} onSelect={select} back={back} />
           )}
           <Legend colorBy={colorBy} reference={dto.reference} rh={rh} />
-          <p className="mt-3 text-xs text-fg-subtle">Hiérarchie du dernier import AJIR : l&apos;historique des rattachements n&apos;est pas conservé.</p>
         </section>
         <OrgDetailPanel node={selected} rh={rh} onSelect={(k) => select(k, true)} headingRef={heading} back={back} />
       </div>

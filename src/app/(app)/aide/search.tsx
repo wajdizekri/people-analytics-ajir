@@ -55,7 +55,6 @@ export function HelpSearch({ query, results }: { query: string; results: HelpRes
             defaultValue={query}
             maxLength={100}
             placeholder="Un mot ou une question : départ, absence, alerte…"
-            aria-describedby="aide-q-aide"
             className={`${fieldCls} mt-1`}
           />
         </div>
@@ -68,9 +67,6 @@ export function HelpSearch({ query, results }: { query: string; results: HelpRes
           </ButtonLink>
         )}
       </form>
-      <p id="aide-q-aide" className="mt-1.5 text-xs text-fg-muted">
-        Questions fréquentes, glossaire, indicateurs et écrans de votre rôle. Le sommaire ci-dessous reste disponible.
-      </p>
 
       {query && (
         <div className="mt-4 border-t border-line pt-4">
@@ -84,7 +80,7 @@ export function HelpSearch({ query, results }: { query: string; results: HelpRes
                 </ButtonLink>
               }
             >
-              {results ? "Essayez un mot plus court ou un synonyme, ou parcourez le sommaire." : "Saisissez au moins 2 lettres, ou parcourez le sommaire."}
+              {results ? undefined : "2 lettres minimum"}
             </EmptyState>
           ) : (
             <>

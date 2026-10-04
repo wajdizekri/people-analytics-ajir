@@ -24,7 +24,7 @@ export function UserActions({
   isSelf: boolean;
 }) {
   // Toasts émis au retour de l'action : la ligne peut sortir du filtre affiché (compte déverrouillé, désactivé) ; le lien reste dans la ligne
-  const why = "Le motif est indiqué dans la ligne du compte.";
+  const why = "Motif dans la ligne du compte";
   const [toggle, toggleAction, togglePending] = useActionState<UserActionState, FormData>(
     async (prev, form) => announce(await setActiveAction(prev, form), { error: `Compte ${login} non modifié`, errorDescription: why }),
     {},
@@ -36,7 +36,7 @@ export function UserActions({
   const [link, linkAction, linkPending] = useActionState<UserActionState, FormData>(async (prev, form) => {
     const res = await activationLinkAction(prev, form);
     announce(res.link ? { ok: `Lien généré pour ${res.link.login}.` } : res, {
-      successDescription: "Copiez-le dans la ligne du compte et transmettez-le par un canal sûr : il ne sera montré qu'une fois.",
+      successDescription: "Lien dans la ligne du compte, affiché une seule fois",
       error: `Lien non généré pour ${login}`,
       errorDescription: why,
     });
@@ -117,7 +117,7 @@ export function UserActions({
             </Button>
           </form>
         )}
-        {isSelf && <p className="py-2 text-xs text-fg-muted">Votre propre compte ne peut pas être désactivé ici.</p>}
+        {isSelf && <p className="py-2 text-xs text-fg-muted">Votre compte : non désactivable</p>}
       </div>
       <div aria-live="polite">
         {message && <p role="alert" className="text-xs font-medium text-danger">{message}</p>}

@@ -32,7 +32,7 @@ Exceptions tolérées : texte blanc sur `bg-nav` ou sur un fond de statut plein 
 - Contrastes WCAG AA vérifiés dans les **deux** thèmes.
 
 ## 3. Typographie, espacements, formes
-- Police : `font-sans` (Segoe UI / system-ui). Échelle : titre de page `text-2xl font-semibold`, titre de section `text-lg font-semibold`, titre de carte `text-base font-semibold`, corps `text-sm`, méta `text-xs`. Chiffres : `tabular-nums`.
+- Police : `font-sans` (Segoe UI / system-ui). Échelle : titre de page `text-2xl font-semibold`, titre de section `text-lg font-semibold`, titre de carte `text-base font-semibold`, corps `text-sm`, méta `text-xs`. Chiffres : `tabular-nums`. Pas de paragraphe sous un titre (CHARTE_UI § 0).
 - Espacements : grille de 4 px ; entre sections `space-y-6` (24 px), dans une carte `p-4`/`p-5`, entre champs `gap-4`.
 - Rayons : cartes `rounded-card` (12 px), champs et boutons `rounded-control` (8 px), puces `rounded-full`.
 - Ombres : cartes `shadow-card`, éléments flottants (menus, dialogues, toasts) `shadow-pop`.
@@ -45,8 +45,9 @@ Exceptions tolérées : texte blanc sur `bg-nav` ou sur un fond de statut plein 
 ## 5. Retours utilisateur
 - **Toasts** : composant `Toaster` monté une fois dans la mise en page, API `toast.success|error|info(message, { description })`, annoncés aux lecteurs d'écran (`aria-live`), fermeture automatique (5 s, 8 s pour une erreur) et manuelle. Chaque Server Action qui modifie quelque chose renvoie un résultat que le formulaire transforme en toast (succès ou erreur explicite).
 - **Squelettes** : `loading.tsx` de chaque page = squelette ayant la forme de la page (`Skeleton`, `SkeletonCard`, `SkeletonTable`, `SkeletonChart`).
-- **États vides** : `EmptyState` (quoi + pourquoi + action).
+- **États vides** : `EmptyState` (titre + action ; `children` lu dans la bulle « ? » du titre).
 - **Actions destructives** : `ConfirmButton` (boîte de dialogue avec conséquence, motif si besoin).
+- **Bulles « ? » (règle « titres seuls », CHARTE_UI § 0)** : `InfoTip` (`label`, `prefix` du nom accessible, défaut « Définition ») et `TermTip` ; `DetailTip` (`@/components/help`) pose la bulle d'un titre ou d'une carte et ajoute ses détails à un `tip` fourni (une seule bulle). Utilisée par `VisualCard`/`ChartCard` (`subtitle`, `measure`/`unit`/`scope`/`period`, `footnote`), `PageHeader` (`subtitle`), `SectionHeader`/`Section`/`Card` (`description`, `intro`), `KpiCard`/`KpiTile` (`period`, `hint`), `EmptyState` (`children`). La bulle est un bouton (Entrée, Espace, Échap), posé hors du titre : le titre reste le nom du visuel (`<section aria-labelledby>`). Le texte reste dans le DOM, masqué ; `aria-describedby` ne le relie au bouton que bulle ouverte. Mentions obligatoires : `badge` de `PageHeader` et de `VisualCard` (`StatusBadge`). `PageIntro` = lien discret « Aide » vers `helpHref`.
 
 ## 6. Tableaux
 Composant commun (`DataTable` ou classes `tableCls`) : en-tête collant, tri annoncé, filtres au-dessus, pagination « 1–25 sur N », nombres à droite, ligne survolée en `bg-surface-3`, vue en cartes sous 640 px.

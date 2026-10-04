@@ -45,9 +45,9 @@ describe("synthèse du mois", () => {
     expect(out).toContain('href="/dashboard"');
     expect(out).toContain("Voir la liste (tous contrats)");
     expect(out).toContain('href="/employees?retour=%2Fsynthese"');
-    const intro = /<section aria-labelledby="page-intro-titre"[\s\S]*?<\/section>/.exec(out)?.[0] ?? "";
-    expect(intro.split("<li>").length - 1).toBe(1);
-    expect(intro).toContain("journal d&#x27;audit");
+    // titres seuls : ni encart d'explication, mention de traçabilité en pastille
+    expect(out).not.toContain("page-intro-titre");
+    expect(out).toContain("Consultation tracée");
   });
 
   it("manager : retour vers la synthèse aussi, ni probabilité ni rémunération, rappel des groupes masqués", async () => {
@@ -55,6 +55,7 @@ describe("synthèse du mois", () => {
     const out = await render();
     expect(out).not.toMatch(/TND|Probabilité (à|6)|Masse salariale/i);
     expect(out).not.toMatch(/href="\/employees\/\d+"/);
-    expect(out).toContain("masqués pour un groupe de moins de 5 personnes");
+    expect(out).toContain("Petits groupes masqués");
+    expect(out).toContain("groupe de moins de 5 personnes");
   });
 });

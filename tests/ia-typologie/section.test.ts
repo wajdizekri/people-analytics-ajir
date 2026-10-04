@@ -38,7 +38,9 @@ describe("section « Profils de départs » (rendu statique)", () => {
     const html = render(dto());
     expect(html).toContain('id="profils-departs"');
     expect(html).toContain("Profils de départs");
-    expect(html).toContain("Profil le plus fréquent : « Arrivées récentes », 46,2");
+    expect(html).toContain("Départs par profil (%)");
+    expect(html).toContain("Plus fréquent : Arrivées récentes");
+    expect(html).toContain("46,2");
     expect(html).toContain("Barres horizontales triées");
     expect(html).toContain("Voir les données");
     for (const p of b.profiles) {
@@ -50,21 +52,19 @@ describe("section « Profils de départs » (rendu statique)", () => {
     expect(html).toContain("Stabilité du profil : élevée");
     expect(html).toContain("Stabilité du profil : faible");
     expect(html).toContain("départs du 01/03/2021 au 20/08/2026");
-    expect(html).toContain("39 départs classés sur 45 départs volontaires ; 6 non classés");
+    expect(html).toContain("39 départs classés sur 45 départs volontaires · 6 non classés");
   });
 
-  it("détail par département, encarts Comment lire et Limites : non causal, aucun salarié étiqueté, attributs exclus", () => {
+  it("détail par département ; badge « Estimation non causale », limites dans la bulle : aucun salarié étiqueté, attributs exclus", () => {
     const html = render(dto());
     expect(html).toContain("Profil le plus fréquent par département");
     expect(html).toMatch(/Production<\/th>/);
-    expect(html).toContain("Comment lire");
-    expect(html).toContain("Limites");
+    expect(html).toContain("Estimation non causale");
     expect(html).toContain("facteurs associés, pas des causes");
     expect(html).toContain("Aucun collaborateur n&#x27;est étiqueté");
-    expect(html).toContain("non causale");
     expect(html).toContain("Sexe, âge, situation familiale, gouvernorat et données de santé ne sont jamais utilisés");
-    expect(html).not.toMatch(/<h2[^>]*>Comment lire/);
-    expect(html).toMatch(/<h3[^>]*>Comment lire/);
+    expect(html).not.toContain("Comment lire");
+    expect(html).not.toMatch(/<h3[^>]*>Limites/);
   });
 
   it("aucune donnée nominative rendue", () => {
@@ -87,6 +87,6 @@ describe("section « Profils de départs » (rendu statique)", () => {
     expect(render(dto({ status: "MODELE_INVALIDE", profiles: [] }))).toContain("contrôle de cohérence");
     const few = render(dto({ status: "TROP_PEU", classified: 12, profiles: [] }));
     expect(few).toContain("Trop peu de départs volontaires pour décrire des profils");
-    expect(few).toContain("12 départs classés à ce jour ; il en faut au moins 30");
+    expect(few).toContain("12 départs classés · 30 requis");
   });
 });

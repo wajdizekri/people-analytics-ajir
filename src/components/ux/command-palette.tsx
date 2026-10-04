@@ -265,12 +265,7 @@ export function CommandPaletteDialog({ role, onClose }: { role: Role; onClose: (
   const announce = loading ? "" : count === 0 ? "Aucun résultat." : `${count} résultat${count > 1 ? "s" : ""} disponible${count > 1 ? "s" : ""}.`;
   const what = pilotage ? "une page, un collaborateur, une alerte ou une action" : "une page, une alerte ou une action";
   let empty: string | null = null;
-  if (!count && !loading && !error) {
-    empty =
-      term.length < 2
-        ? "Aucune page ni action ne correspond. Saisissez au moins 2 caractères pour chercher aussi dans les alertes" + (pilotage ? " et les collaborateurs." : ".")
-        : `Aucun résultat pour « ${term} ». Vérifiez l'orthographe${pilotage ? " ou essayez un matricule" : ""}.`;
-  }
+  if (!count && !loading && !error) empty = term.length < 2 ? "Aucun résultat · 2 caractères minimum" : `Aucun résultat pour « ${term} »`;
 
   return (
     <dialog
@@ -393,8 +388,16 @@ export function CommandPaletteDialog({ role, onClose }: { role: Role; onClose: (
           </div>
         )}
 
-        <p id={`${uid}-help`} className="border-t border-line px-4 py-2 text-xs text-fg-subtle max-sm:sr-only">
-          Flèches haut et bas pour parcourir, Entrée pour ouvrir, Échap pour fermer.
+        <p id={`${uid}-help`} className="flex flex-wrap gap-x-4 gap-y-1 border-t border-line px-4 py-2 text-xs text-fg-subtle max-sm:sr-only">
+          <span>
+            <kbd className="font-sans font-medium">↑ ↓</kbd> parcourir<span className="sr-only">,</span>
+          </span>
+          <span>
+            <kbd className="font-sans font-medium">Entrée</kbd> ouvrir<span className="sr-only">,</span>
+          </span>
+          <span>
+            <kbd className="font-sans font-medium">Échap</kbd> fermer
+          </span>
         </p>
         <p role="status" aria-live="polite" className="sr-only">
           {error ? `Erreur : ${error}` : announce}

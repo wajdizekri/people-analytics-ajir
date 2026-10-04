@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Badge, EmptyState, Initials, Notice, RiskBadge, StatusBadge, cardCls, fmt } from "@/components/ui";
+import { Badge, ButtonLink, EmptyState, Initials, RiskBadge, StatusBadge, cardCls, fmt } from "@/components/ui";
 import { Chart, ChartData, levelStepChart, lineChart } from "@/components/charts/pbi";
 import { TermTip } from "@/components/help";
 import type { EmployeeDetailDto, EmployeeDetailRh, EstimationManager, EstimationRh } from "@/lib/dal/employees";
@@ -18,7 +18,6 @@ import {
   formatPoints,
   formatProb,
   formatTenure,
-  joinFr,
   lcFirst,
 } from "./labels";
 import { RecommendationActions } from "./recommendation-forms";
@@ -64,7 +63,7 @@ const ZONES = {
   3: { id: "suggestions", title: "Suggestions" },
 } as const;
 
-function Zone({ n, hint, aside, children, className = "" }: { n: 1 | 2 | 3; hint: string; aside?: ReactNode; children: ReactNode; className?: string }) {
+function Zone({ n, hint, aside, children, className = "" }: { n: 1 | 2 | 3; hint?: string; aside?: ReactNode; children: ReactNode; className?: string }) {
   const z = ZONES[n];
   return (
     <section id={z.id} aria-labelledby={`zone-${n}`} className={`${cardCls} @container min-w-0 scroll-mt-4 p-4 sm:p-5 ${className}`}>
@@ -77,16 +76,16 @@ function Zone({ n, hint, aside, children, className = "" }: { n: 1 | 2 | 3; hint
             <span className="sr-only">{n}. </span>
             {z.title}
           </h2>
-          <p className="text-sm text-fg-muted">{hint}</p>
+          {hint && <p className="text-sm text-fg-muted">{hint}</p>}
         </div>
-        {aside}
+        {aside && <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">{aside}</div>}
       </header>
       <div className="space-y-5">{children}</div>
     </section>
   );
 }
 
-function Sub({ title, icon, aside, intro, children }: { title: string; icon: keyof typeof ICONS; aside?: ReactNode; intro?: ReactNode; children: ReactNode }) {
+function Sub({ title, icon, aside, children }: { title: string; icon: keyof typeof ICONS; aside?: ReactNode; children: ReactNode }) {
   return (
     <div className="border-t border-line pt-4 first:border-t-0 first:pt-0">
       <div className="mb-2 flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
@@ -96,7 +95,6 @@ function Sub({ title, icon, aside, intro, children }: { title: string; icon: key
         </h3>
         {aside && <div className="text-xs text-fg-muted">{aside}</div>}
       </div>
-      {intro && <p className="-mt-1 mb-2 text-xs text-fg-muted">{intro}</p>}
       {children}
     </div>
   );
@@ -120,6 +118,15 @@ function More({ count, singular, plural, children }: { count: number; singular: 
 }
 
 const Empty = ({ children }: { children: ReactNode }) => <p className="text-sm text-fg-muted">{children}</p>;
+
+// Champ court « libellé : valeur », libellé en gras
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <p className="text-sm text-fg">
+      <span className="font-semibold text-heading">{label} :</span> {children}
+    </p>
+  );
+}
 const plural = (n: number, word: string) => `${word}${n > 1 ? "s" : ""}`;
 
 // Un div par paire dt/dd (liste de définitions valide) ; l'icône est dans le dt, sans positionnement absolu
@@ -205,46 +212,41 @@ export function EmployeeSummary({ d, opposition = null, simulation = false }: { 
   const est = d.estimation;
   const pending = d.recommendations.filter((r) => r.status === "PROPOSEE").length;
   let level: Level | null = null;
-  let headline: ReactNode;
-  let detail: ReactNode = null;
+  let headline: string;
+  let tip: ReactNode = null;
+  const fields: { label: string; value: string }[] = [];
   if (opposition) {
-    headline = "Aucune estimation : opposition au traitement prédictif";
-    detail = `Enregistrée le ${fmt.date(opposition.since)}. Ce collaborateur est exclu du calcul du risque et de la simulation.`;
+    headline = "Opposition au traitement prédictif";
+    fields.push({ label: "Enregistrement", value: fmt.date(opposition.since) });
   } else if (est.status === "AUCUN_RUN") {
-    headline = "Aucune estimation : aucun calcul de risque publié";
+    headline = "Aucun calcul de risque publié";
   } else if (est.status === "NON_EVALUE") {
     headline = `Non évalué au ${formatDate(est.asOf)}`;
-    detail = "Hors du calcul : stage ou SIVP, CDD court, arrivée récente, départ à la retraite proche, démission connue ou opposition au calcul.";
+    tip = <TermTip term="nonEvalue" role={d.view} align="start" />;
   } else {
     level = est.level;
     const names =
       d.view === "RH"
         ? d.estimation.status === "OK"
-          ? d.estimation.factors.filter((f) => f.direction === "HAUSSE").slice(0, 3).map((f) => lcFirst(f.label))
+          ? d.estimation.factors.filter((f) => f.direction === "HAUSSE").slice(0, 3).map((f) => f.label)
           : []
         : d.estimation.status === "OK"
-          ? d.estimation.factors.slice(0, 3).map((f) => lcFirst(f.phrase))
+          ? d.estimation.factors.slice(0, 3).map((f) => f.phrase)
           : [];
-    const summary =
-      d.view === "RH"
-        ? names.length > 0
-          ? `${names.length} ${plural(names.length, "facteur")} ${names.length > 1 ? "principaux" : "principal"} : ${joinFr(names)}`
-          : "aucun facteur ne fait nettement monter le risque"
-        : names.length > 0
-          ? `${names.length > 1 ? "domaines qui font" : "domaine qui fait"} monter l'estimation : ${joinFr(names)}`
-          : "aucun domaine ne fait nettement monter l'estimation";
-    headline = (
-      <>
-        Risque {LEVEL_LABELS[est.level]} — {summary}
-      </>
-    );
+    headline = `Risque ${LEVEL_LABELS[est.level]}`;
+    fields.push({
+      label: d.view === "RH" ? (names.length > 1 ? "Facteurs principaux" : "Facteur principal") : names.length > 1 ? "Domaines en hausse" : "Domaine en hausse",
+      value: names.length > 0 ? names.join(" ; ") : "aucun marquant",
+    });
     if (d.view === "RH" && d.estimation.status === "OK") {
       const e = d.estimation.estimate;
-      detail =
+      fields.push(
         e.type === "PROBABILITE"
-          ? `Probabilité estimée d'un départ volontaire d'ici 6 mois : ${formatProb(e.prob6)}, soit ${formatLiftWords(e.lift)}. Calcul au ${formatDate(est.asOf)}.`
-          : `${formatPoints(e.points)} : conditions de risque remplies. Calcul au ${formatDate(est.asOf)}.`;
-    } else detail = `Calcul au ${formatDate(est.asOf)}. C'est une estimation, pas une certitude ; le détail chiffré est réservé à la RH.`;
+          ? { label: "Probabilité à 6 mois", value: `${formatProb(e.prob6)} (${formatLiftWords(e.lift)})` }
+          : { label: "Estimation", value: formatPoints(e.points) },
+      );
+    }
+    fields.push({ label: "Calcul", value: formatDate(est.asOf) });
   }
   const tone = SUMMARY_TONE[level ?? "NONE"];
   const pendingLabel = pending > 0 ? (d.view === "RH" ? `${pending} à décider` : `${pending} en attente`) : null;
@@ -264,8 +266,21 @@ export function EmployeeSummary({ d, opposition = null, simulation = false }: { 
           <h2 id="fiche-resume" className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
             En bref
           </h2>
-          <p className="mt-0.5 text-lg font-semibold leading-snug text-heading">{headline}</p>
-          {detail && <p className="mt-1 max-w-3xl text-sm text-fg-muted">{detail}</p>}
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-lg font-semibold leading-snug text-heading">
+            {headline}
+            {tip}
+            {level && <Badge>Estimation</Badge>}
+          </p>
+          {fields.length > 0 && (
+            <dl className="mt-1 flex flex-wrap gap-x-5 gap-y-0.5 text-sm">
+              {fields.map((f) => (
+                <div key={f.label} className="flex flex-wrap gap-x-1">
+                  <dt className="font-semibold text-heading">{f.label} :</dt>
+                  <dd className="text-fg">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
         </div>
       </div>
       <nav aria-label="Sur cette fiche" className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3">
@@ -295,11 +310,8 @@ const score5 = (n: number) => `${n.toLocaleString("fr-FR")}/5`;
 
 function evaluationTrend(evals: EmployeeDetailDto["evaluations"]): string | null {
   const [last, prev] = evals;
-  if (!last) return null;
-  const head = `Dernière évaluation : ${score5(last.score)} le ${formatDate(last.date)}`;
-  if (!prev) return `${head}.`;
-  const trend = last.score > prev.score ? "en hausse" : last.score < prev.score ? "en baisse" : "stable";
-  return `${head}, ${trend} par rapport à la précédente (${score5(prev.score)}).`;
+  if (!last || !prev) return null;
+  return `Tendance : ${last.score > prev.score ? "en hausse" : last.score < prev.score ? "en baisse" : "stable"} (précédente ${score5(prev.score)})`;
 }
 
 export function FactsZone({ d, className = "" }: { d: EmployeeDetailDto; className?: string }) {
@@ -335,7 +347,7 @@ export function FactsZone({ d, className = "" }: { d: EmployeeDetailDto; classNa
   );
 
   return (
-    <Zone n={1} hint={`Ce qui est enregistré dans AJIR au ${formatDate(d.referenceDate)}`} className={className}>
+    <Zone n={1} hint={`Données AJIR au ${formatDate(d.referenceDate)}`} className={className}>
       {d.view === "RH" && <RhFacts d={d} />}
 
       <Sub
@@ -344,7 +356,7 @@ export function FactsZone({ d, className = "" }: { d: EmployeeDetailDto; classNa
         aside={
           trainings.length > 0 && (
             <span className="flex flex-wrap items-center gap-1.5">
-              {trainings.length} au total, dont {nDone} {plural(nDone, "terminée")}
+              Total : {trainings.length} · Terminées : {nDone}
               {nOverdue > 0 && (
                 <StatusBadge tone="warning">
                   {nOverdue} {plural(nOverdue, "obligatoire")} en retard
@@ -368,7 +380,7 @@ export function FactsZone({ d, className = "" }: { d: EmployeeDetailDto; classNa
         )}
       </Sub>
 
-      <Sub title="Évaluations annuelles" icon="star" aside={d.evaluations.length > 0 && "Note sur 5, la plus récente à gauche"} intro={trend}>
+      <Sub title="Évaluations annuelles (sur 5)" icon="star" aside={trend}>
         {d.evaluations.length === 0 ? (
           <Empty>Aucune évaluation enregistrée.</Empty>
         ) : (
@@ -444,7 +456,7 @@ function RhFacts({ d }: { d: EmployeeDetailRh }) {
               </ul>
             )}
             <p className="mt-2 border-t border-line pt-2 text-xs text-fg-muted">
-              Absences pour raison de santé : {fmt.int(d.absences.healthDays)} {plural(d.absences.healthDays, "jour")} (jamais utilisées dans l&apos;estimation)
+              Absences santé (hors estimation) : {fmt.int(d.absences.healthDays)} {plural(d.absences.healthDays, "jour")}
             </p>
           </Sub>
         </div>
@@ -484,23 +496,34 @@ function RhFacts({ d }: { d: EmployeeDetailRh }) {
   );
 }
 
-const MENTION = "Estimation, pas une certitude. Facteurs associés, pas des causes.";
 
 export type OppositionFlag = { label: string; since: string } | null;
 
 // opposition : RH seule (getOppositionFlag) ; le manager ne voit que l'absence d'estimation, sans la raison
 export function EstimationZone({ d, opposition = null, className = "" }: { d: EmployeeDetailDto; opposition?: OppositionFlag; className?: string }) {
   return (
-    <Zone n={2} hint="Ce que le calcul statistique estime : le risque de départ volontaire dans les 6 mois" aside={<TermTip term="niveauRisque" role={d.view} align="end" />} className={className}>
-      <Notice>{MENTION}</Notice>
+    <Zone
+      n={2}
+      hint="Départ volontaire à 6 mois"
+      aside={
+        <>
+          <StatusBadge tone="neutral" dot={false}>
+            Estimation, pas une certitude
+          </StatusBadge>
+          <TermTip term="niveauRisque" role={d.view} align="end" />
+        </>
+      }
+      className={className}
+    >
       {opposition ? (
-        <EmptyState title={opposition.label}>
-          Enregistrée le {fmt.date(opposition.since)} : ce collaborateur est exclu du calcul du risque et de la simulation. Suivi dans{" "}
-          <a href="/confidentialite" className="text-link underline underline-offset-2 hover:no-underline">
-            Droit d&apos;accès
-          </a>
-          .
-        </EmptyState>
+        <EmptyState
+          title={`${opposition.label} (${fmt.date(opposition.since)})`}
+          action={
+            <ButtonLink href="/confidentialite" variant="secondary" size="sm">
+              Droit d&apos;accès
+            </ButtonLink>
+          }
+        />
       ) : d.view === "RH" ? (
         <RhEstimation e={d.estimation} />
       ) : (
@@ -510,13 +533,11 @@ export function EstimationZone({ d, opposition = null, className = "" }: { d: Em
   );
 }
 
-function NoEstimate({ e }: { e: { status: "AUCUN_RUN" } | { status: "NON_EVALUE"; asOf: string } }) {
+function NoEstimate({ e, role }: { e: { status: "AUCUN_RUN" } | { status: "NON_EVALUE"; asOf: string }; role: EmployeeDetailDto["view"] }) {
   return e.status === "AUCUN_RUN" ? (
-    <EmptyState title="Aucun calcul de risque publié">Le niveau de risque apparaîtra après le prochain calcul mensuel.</EmptyState>
+    <EmptyState title="Aucun calcul de risque publié" />
   ) : (
-    <EmptyState title={`Non évalué au ${formatDate(e.asOf)}`}>
-      Hors du calcul : stage ou SIVP, CDD court, arrivée récente, départ à la retraite proche, démission connue ou opposition au calcul.
-    </EmptyState>
+    <EmptyState title={`Non évalué au ${formatDate(e.asOf)}`} action={<TermTip term="nonEvalue" role={role} />} />
   );
 }
 
@@ -545,15 +566,15 @@ function LevelScale({ level }: { level: Level }) {
 const LEVEL_RANK: Record<Level, number> = { FAIBLE: 0, MOYEN: 1, ELEVE: 2 };
 const monthOf = (asOf: string) => formatMonth(asOf.slice(0, 7));
 
-// Titre = le message : dernier changement de niveau, ou stabilité
+// Dernier changement de niveau, ou stabilité, en libellé court
 function levelTrendMessage(points: { asOf: string; level: Level }[]): string {
   const last = points[points.length - 1];
   let k = points.length - 1;
   while (k > 0 && points[k - 1].level === last.level) k--;
-  if (k === 0) return points.length > 1 ? `Niveau ${LEVEL_LABELS[last.level]} stable depuis ${monthOf(points[0].asOf)}` : `Niveau ${LEVEL_LABELS[last.level]} au premier calcul`;
+  if (k === 0) return points.length > 1 ? `Stable depuis ${monthOf(points[0].asOf)}` : "Premier calcul";
   const prev = points[k - 1].level;
-  const dir = LEVEL_RANK[last.level] > LEVEL_RANK[prev] ? "en hausse" : "en baisse";
-  return `Niveau ${dir} : passé de ${LEVEL_LABELS[prev]} à ${LEVEL_LABELS[last.level]} en ${monthOf(points[k].asOf)}`;
+  const dir = LEVEL_RANK[last.level] > LEVEL_RANK[prev] ? "En hausse" : "En baisse";
+  return `${dir} : ${LEVEL_LABELS[prev]} → ${LEVEL_LABELS[last.level]} (${monthOf(points[k].asOf)})`;
 }
 
 // Escalier sur trois crans (Faible, Moyen, Élevé) : se lit sans connaître la probabilité, donc lisible par le manager.
@@ -567,7 +588,7 @@ function LevelTrend({ points, values }: { points: { asOf: string; level: Level }
     order: [LEVEL_LABELS.FAIBLE, LEVEL_LABELS.MOYEN, LEVEL_LABELS.ELEVE],
   });
   return (
-    <Sub title={message} icon="history" intro={`Niveau de risque à chaque calcul mensuel publié (${points.length} ${plural(points.length, "calcul")} sur 12 mois)`}>
+    <Sub title="Niveau de risque sur 12 mois" icon="history" aside={message}>
       <Chart spec={spec} height={170} ariaLabel={`Évolution du niveau de risque sur 12 mois. ${message}.`} />
       <ChartData
         caption="Niveau de risque par mois"
@@ -581,15 +602,15 @@ function LevelTrend({ points, values }: { points: { asOf: string; level: Level }
 }
 
 // Repère concret de la probabilité ; horizon = mois du calcul + 6 (calcul au 31/08/2026 → fin février 2027)
-function outOf100(prob6: number, asOf: string): string {
+function estimatedExits(prob6: number, asOf: string): string {
   const n = Math.min(99, Math.max(1, Math.round(prob6 * 100)));
   const m = Number(asOf.slice(5, 7)) + 5;
   const ym = `${Number(asOf.slice(0, 4)) + Math.floor(m / 12)}-${String((m % 12) + 1).padStart(2, "0")}`;
-  return `Sur 100 collaborateurs avec cette estimation, environ ${n} ${n > 1 ? "partent" : "part"} d'ici fin ${fmt.month(ym)} et ${100 - n} restent.`;
+  return `environ ${n} sur 100 d'ici fin ${fmt.month(ym)}`;
 }
 
 function RhEstimation({ e }: { e: EstimationRh }) {
-  if (e.status !== "OK") return <NoEstimate e={e} />;
+  if (e.status !== "OK") return <NoEstimate e={e} role="RH" />;
   const max = Math.max(...e.factors.map((f) => Math.abs(f.contribution)), 1e-9);
   const probPoints = e.history.filter((h) => h.estimate.type === "PROBABILITE");
   const estimateText = (x: (typeof e.history)[number]["estimate"]) => (x.type === "PROBABILITE" ? formatProb(x.prob6) : formatPoints(x.points));
@@ -612,30 +633,26 @@ function RhEstimation({ e }: { e: EstimationRh }) {
             <span className="col-start-2 row-start-1">
               <TermTip term="probabilite" role="RH" align="start" />
             </span>
-            <p className="col-span-2 text-sm text-fg-muted">
-              Probabilité estimée d&apos;un départ volontaire d&apos;ici 6 mois, soit {formatLiftWords(e.estimate.lift)} des collaborateurs évalués.
-            </p>
-            <p className="col-span-2 mt-1 text-sm text-fg-muted">{outOf100(e.estimate.prob6, e.asOf)}</p>
+            <div className="col-span-2 mt-1 space-y-0.5">
+              <Field label="Risque relatif">{formatLiftWords(e.estimate.lift)}</Field>
+              <Field label="Départs estimés">{estimatedExits(e.estimate.prob6, e.asOf)}</Field>
+            </div>
           </div>
         ) : (
-          <div className="mt-3">
-            <p className="text-lg font-semibold text-heading">{formatPoints(e.estimate.points)}</p>
-            <p className="text-sm text-fg-muted">Nombre de points des conditions de risque remplies : ce n&apos;est pas un pourcentage.</p>
-          </div>
+          <p className="mt-3 flex items-center gap-1 text-lg font-semibold text-heading">
+            {formatPoints(e.estimate.points)}
+            <TermTip term="scoreRegles" role="RH" align="start" />
+          </p>
         )}
         <p className="mt-2 text-xs text-fg-subtle">
-          Estimation calculée avec le {fmt.model(e.modelVersion)}
-          {e.computedAt ? `, publiée le ${fmt.date(e.computedAt)}` : ""}
+          {fmt.model(e.modelVersion).replace(/^m/, "M")}
+          {e.computedAt ? ` · publié le ${fmt.date(e.computedAt)}` : ""}
         </p>
       </div>
 
       <LevelTrend points={e.history} values={{ header: "Estimation", cells: e.history.map((h) => estimateText(h.estimate)) }} />
       {probPoints.length > 1 && (
-        <Sub
-          title={`Probabilité estimée : ${estimateText(probPoints[0].estimate)} en ${monthOf(probPoints[0].asOf)}, ${estimateText(probPoints[probPoints.length - 1].estimate)} en ${monthOf(probPoints[probPoints.length - 1].asOf)}`}
-          icon="history"
-          intro="Probabilité à 6 mois à chaque calcul publié avec le modèle statistique"
-        >
+        <Sub title="Probabilité à 6 mois (%)" icon="history">
           <Chart
             height={180}
             spec={lineChart({
@@ -652,7 +669,6 @@ function RhEstimation({ e }: { e: EstimationRh }) {
         title="Principaux facteurs associés"
         icon="factors"
         aside={<TermTip term="facteursAssocies" role="RH" align="end" />}
-        intro={e.factors.length > 0 && "Du plus au moins important. La barre montre le poids du facteur dans l'estimation."}
       >
         {e.factors.length === 0 ? (
           <Empty>Aucun facteur disponible.</Empty>
@@ -688,7 +704,7 @@ function RhEstimation({ e }: { e: EstimationRh }) {
 }
 
 function ManagerEstimation({ e }: { e: EstimationManager }) {
-  if (e.status !== "OK") return <NoEstimate e={e} />;
+  if (e.status !== "OK") return <NoEstimate e={e} role="MANAGER" />;
   return (
     <>
       <div className={panelCls}>
@@ -703,10 +719,9 @@ function ManagerEstimation({ e }: { e: EstimationManager }) {
         title="Catégories de facteurs associés"
         icon="factors"
         aside={<TermTip term="facteursAssocies" role="MANAGER" align="end" />}
-        intro={e.factors.length > 0 && "Domaines qui font monter l'estimation, du plus au moins important. Le détail est réservé à la RH."}
       >
         {e.factors.length === 0 ? (
-          <Empty>Aucun domaine ne fait nettement monter l&apos;estimation.</Empty>
+          <Empty>Aucun domaine marquant</Empty>
         ) : (
           <ul className="space-y-2">
             {e.factors.map((f, i) => (
@@ -725,7 +740,6 @@ function ManagerEstimation({ e }: { e: EstimationManager }) {
 }
 
 const ACTION_ICON: Record<string, keyof typeof ICONS> = { ENTRETIEN: "chat", REVISION_SALARIALE: "money", CHARGE_TRAVAIL: "clock", PLAN_FORMATION: "training" };
-const TRIGGER_LABELS: Record<string, string> = { NIVEAU_ELEVE: "Niveau de risque Élevé" };
 
 export function SuggestionsZone({
   d,
@@ -745,16 +759,18 @@ export function SuggestionsZone({
   return (
     <Zone
       n={3}
-      hint={
-        d.view === "RH"
-          ? "Ce que vous pouvez faire : actions proposées par l'outil, à décider par la RH. Une aide à la décision, pas une obligation."
-          : "Le niveau sert à choisir avec qui échanger en premier, jamais à juger une personne. Parlez-en avec la RH."
+      aside={
+        <>
+          <StatusBadge tone="neutral" dot={false}>
+            {d.view === "RH" ? "Aide à la décision" : "Aide à l'échange, pas un jugement"}
+          </StatusBadge>
+          {pending > 0 && <StatusBadge tone="info">{d.view === "RH" ? `${pending} à décider` : `${pending} en attente`}</StatusBadge>}
+        </>
       }
-      aside={pending > 0 && <StatusBadge tone="info">{d.view === "RH" ? `${pending} à décider` : `${pending} en attente`}</StatusBadge>}
       className={className}
     >
       {d.recommendations.length === 0 ? (
-        <EmptyState title="Aucune recommandation pour ce collaborateur">Les suggestions sont proposées à chaque calcul mensuel, selon le niveau de risque et les facteurs associés.</EmptyState>
+        <EmptyState title="Aucune recommandation pour ce collaborateur" />
       ) : (
         <ul className="grid items-start gap-3 @3xl:grid-cols-2">
           {d.view === "RH"
@@ -771,9 +787,9 @@ export function SuggestionsZone({
                 >
                   {(r.interventionDate || r.comment || r.feedback) && (
                     <ul className="mt-2 space-y-0.5 rounded-md bg-surface-2 px-2.5 py-1.5 text-xs text-fg-muted ring-1 ring-inset ring-line">
-                      {r.interventionDate && <li>Intervention réalisée le {formatDate(r.interventionDate)}.</li>}
+                      {r.interventionDate && <li>Intervention : {formatDate(r.interventionDate)}</li>}
                       {r.superseded ? (
-                        <li>Remplacée par un nouveau calcul du risque, sans décision de la RH.</li>
+                        <li>Remplacée par un nouveau calcul</li>
                       ) : (
                         r.comment && (
                           <li>
@@ -781,7 +797,7 @@ export function SuggestionsZone({
                           </li>
                         )
                       )}
-                      {r.feedback && <li>Pertinence : {FEEDBACK_LABELS[r.feedback]}.</li>}
+                      {r.feedback && <li>Pertinence : {FEEDBACK_LABELS[r.feedback]}</li>}
                     </ul>
                   )}
                   <RecommendationActions
@@ -812,41 +828,32 @@ export function SuggestionsZone({
   );
 }
 
-const Lead = ({ children }: { children: string }) => <span className="font-semibold text-heading">{children}</span>;
+function TriggerField({ triggerGroup, triggerLabel }: { triggerGroup: string; triggerLabel: string }) {
+  const w = recoWhy(triggerGroup, triggerLabel);
+  return <Field label={w.label}>{w.value}</Field>;
+}
 
-// Pourquoi, côté RH : phrase chiffrée du facteur déclencheur tant que la recommandation est ouverte ; pour l'entretien, les points à aborder
+// Pourquoi, côté RH : valeur chiffrée du facteur déclencheur tant que la recommandation est ouverte ; pour l'entretien, les points à aborder
 function rhWhy(r: EmployeeDetailRh["recommendations"][number], est: EstimationRh | null): ReactNode {
-  const generic = (
-    <p>
-      <Lead>Pourquoi :</Lead> {recoWhy(r.triggerGroup, r.triggerLabel)}
-    </p>
-  );
+  const generic = <TriggerField triggerGroup={r.triggerGroup} triggerLabel={r.triggerLabel} />;
   if (r.status !== "PROPOSEE" || !est || est.status !== "OK") return generic;
   const up = est.factors.filter((f) => f.direction === "HAUSSE" && f.phrase !== f.label);
-  const when = `calcul du ${formatDate(est.asOf)}`;
   if (r.triggerGroup === "NIVEAU_ELEVE") {
     if (up.length === 0) return generic;
     return (
       <>
-        <p>
-          <Lead>Pourquoi :</Lead> points à aborder, d&apos;après le {when}.
-        </p>
-        <ul className="list-disc space-y-0.5 pl-5">
-          {up.slice(0, 3).map((f) => (
-            <li key={f.group}>{f.phrase}</li>
-          ))}
-        </ul>
+        {generic}
+        <Field label={up.length > 1 ? "Facteurs principaux" : "Facteur principal"}>
+          {up
+            .slice(0, 3)
+            .map((f) => lcFirst(f.phrase))
+            .join(" ; ")}
+        </Field>
       </>
     );
   }
   const f = up.find((x) => x.group === r.triggerGroup);
-  return f ? (
-    <p>
-      <Lead>Pourquoi :</Lead> {f.phrase} ({when}).
-    </p>
-  ) : (
-    generic
-  );
+  return f ? <Field label="Facteur principal">{lcFirst(f.phrase)}</Field> : generic;
 }
 
 function RecoCard({
@@ -884,19 +891,11 @@ function RecoCard({
           <span className="font-semibold text-heading">{actionLabel(actionCode)}</span>
           <StatusBadge tone={tone}>{RECO_STATUS_LABELS[shown] ?? shown}</StatusBadge>
         </div>
-        <p className="mt-0.5 text-xs text-fg-muted">
-          Déclenchée par : {TRIGGER_LABELS[triggerGroup] ?? triggerLabel} · proposée le {formatDate(createdAt.slice(0, 10))}
-        </p>
-        {(why || what) && (
-          <div className="mt-2 space-y-1 text-sm text-fg">
-            {why}
-            {what && (
-              <p>
-                <Lead>Que faire :</Lead> {what}
-              </p>
-            )}
-          </div>
-        )}
+        <p className="mt-0.5 text-xs text-fg-muted">Proposée le {formatDate(createdAt.slice(0, 10))}</p>
+        <div className="mt-2 space-y-1">
+          {why ?? <TriggerField triggerGroup={triggerGroup} triggerLabel={triggerLabel} />}
+          {what && <Field label="Action">{what}</Field>}
+        </div>
         {children}
       </div>
     </li>

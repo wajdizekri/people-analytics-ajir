@@ -35,12 +35,13 @@ const render = async () => {
 const as = (k: "rh" | "mgr" | "admin") => (session.current = world.w.ctx[k] as SessionUser);
 
 describe("page /formations", () => {
-  it("RH : question, réponse, indicateurs, visuels, relances avec boutons verbe + objet, probabilité estimée", async () => {
+  it("RH : synthèse, verdict, indicateurs, visuels, relances avec boutons verbe + objet, probabilité estimée", async () => {
     as("rh");
     const t = text(await render());
-    expect(t).toContain("Quelles formations risquent d'être en retard ?");
+    expect(t).toContain("Risque de retard des formations");
     expect(t).toMatch(/Relances urgentes|Relances à prévoir|Retards à rattraper|Dans les temps/);
-    for (const s of ["Formations à risque", "Déjà en retard", "Échéances à venir", "Réalisées à l'échéance", "Que faire ?", "Probabilité estimée"]) expect(t).toContain(s);
+    for (const s of ["Formations à risque", "Déjà en retard", "Échéances à venir", "Réalisées à l'échéance", "Relances proposées", "Probabilité estimée", "Estimation, pas un constat"])
+      expect(t).toContain(s);
     expect(t).toContain("Marquer comme réalisée");
     expect(t).toContain("Rejeter la recommandation");
     expect(t).not.toMatch(/\bEnregistrer\b/);

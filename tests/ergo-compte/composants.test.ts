@@ -61,14 +61,15 @@ describe("formulaires de mot de passe", () => {
     const { PasswordForm } = await import("@/app/(app)/compte/password-form");
     const m = html(h(PasswordForm, { login: "rh.demo", otherSessions: 2 }));
     const t = text(m);
-    for (const s of ["Confirmez que c'est bien vous", "Mot de passe actuel", "Afficher le mot de passe actuel", "Afficher le nouveau mot de passe", "Afficher la confirmation du mot de passe", "Changer mon mot de passe"])
+    for (const s of ["Mot de passe actuel", "Afficher le mot de passe actuel", "Afficher le nouveau mot de passe", "Afficher la confirmation du mot de passe", "Changer mon mot de passe"])
       expect(t, s).toContain(s);
     expect(t).not.toContain("Afficher les mots de passe saisis");
     expect(m).not.toContain('type="checkbox"');
     expect((m.match(/aria-pressed="false"/g) ?? []).length).toBe(3);
     expect(m).toMatch(/novalidate/i);
     expect(m).toMatch(/autocomplete="current-password"/i);
-    expect(t).toContain("vos 2 autres sessions seront fermées");
+    expect(t).not.toContain("Confirmez que c'est bien vous");
+    expect(t).toContain("2 autres sessions seront fermées");
   });
 });
 
@@ -99,7 +100,7 @@ describe("composants ux partagés", () => {
   it("AutoRefresh : état annoncé, bouton Suspendre de 40 px, rien quand inactif", async () => {
     const { AutoRefresh } = await import("@/components/ux/auto-refresh");
     const m = html(h(AutoRefresh, { active: true, label: "Import en cours." }));
-    expect(text(m)).toContain("Import en cours. La page s'actualise toutes les 5 s. Suspendre l'actualisation");
+    expect(text(m)).toContain("Import en cours. Actualisation toutes les 5 s Suspendre l'actualisation");
     expect(m).toContain('aria-live="polite"');
     expect(m).toMatch(/<button[^>]*class="[^"]*min-h-10/);
     expect(html(h(AutoRefresh, { active: false, label: "x" }))).toBe("");

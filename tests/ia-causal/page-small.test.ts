@@ -54,10 +54,10 @@ describe("petits effectifs", () => {
     const s = text(await page({ searchParams: Promise.resolve({}) }));
     expect(s).toContain(MATCHING_TITLE);
     expect(s).toContain(INSUFFICIENT_LABEL);
-    expect(s).toContain("il en faut au moins 20");
+    expect(s).toMatch(/\/ 20 (paires|requis)/);
     expect(s).not.toContain("Écart : ");
-    expect(s).toContain("Observation, pas un effet causal.");
-    expect(s).toContain("Ce qui change après l'action, par type d'action");
+    expect(s).toContain("Observation non causale");
+    expect(s).toContain("Avant / après par type d'action");
     expect(s).not.toMatch(/évit/i);
   });
 });

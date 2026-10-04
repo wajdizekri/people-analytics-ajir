@@ -104,19 +104,19 @@ export function linkLabel(link: string, employeeName?: string | null): string {
   return "Ouvrir l'élément concerné";
 }
 
-// Action proposée : une phrase qui dit quoi faire, selon le type d'alerte et le rôle
+// Action proposée : groupe nominal court, selon le type d'alerte et le rôle
 export function proposedAction(a: Pick<AlertDTO, "type" | "status" | "employeeName" | "departmentName">, role: Role): string {
-  if (a.status === "TRAITEE" || a.status === "REJETEE") return "Aucune : l'alerte est clôturée.";
+  if (a.status === "TRAITEE" || a.status === "REJETEE") return "Aucune (alerte clôturée)";
   switch (a.type) {
     case "TURNOVER":
-      return "Prévoir un échange avec le collaborateur pour comprendre sa situation.";
+      return "Échange individuel avec le collaborateur";
     case "ABSENTEISME":
-      if (a.employeeName) return "Vérifier les absences avec le collaborateur, sans présumer de leur cause.";
-      return role === "MANAGER" ? "Analyser l'absentéisme de votre équipe et en parler avec la RH." : "Analyser l'absentéisme de l'équipe avec son manager.";
+      if (a.employeeName) return "Point sur les absences avec le collaborateur";
+      return role === "MANAGER" ? "Analyse de l'absentéisme de votre équipe, avec la RH" : "Analyse de l'absentéisme de l'équipe, avec son manager";
     case "DONNEES":
-      return role === "ADMIN" ? "Vérifier les lignes rejetées de l'import, puis faire corriger l'export AJIR si besoin." : "Vérifier la qualité de l'import avec l'administrateur.";
+      return role === "ADMIN" ? "Contrôle des lignes rejetées et correction de l'export AJIR" : "Contrôle de l'import avec l'administrateur";
     case "SYSTEME":
-      return "Vérifier que le service de calcul fonctionne, puis relancer le traitement en attente.";
+      return "Contrôle du service de calcul et relance du traitement";
   }
 }
 

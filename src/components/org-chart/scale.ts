@@ -6,9 +6,9 @@ import type { OrgColorBy, OrgMask, OrgMetrics } from "@/lib/dal/org-chart";
 // Échelles de couleur de l'organigramme : la couleur est toujours doublée d'un libellé (légende, infobulle, panneau, vue liste)
 
 export const COLOR_OPTIONS: { value: OrgColorBy; label: string; measure: string }[] = [
-  { value: "effectif", label: "Effectif", measure: "nombre de collaborateurs actifs rattachés (équipe directe et équipes en dessous)" },
-  { value: "risque", label: "Risque de départ", measure: "part des collaborateurs évalués en risque élevé ou moyen, ensemble rattaché" },
-  { value: "absenteisme", label: "Absentéisme", measure: "absentéisme hors santé et hors congés sur les 3 derniers mois, ensemble rattaché" },
+  { value: "effectif", label: "Effectif", measure: "Collaborateurs actifs rattachés : équipe directe et équipes en dessous." },
+  { value: "risque", label: "Risque de départ", measure: "Part des collaborateurs évalués en risque élevé ou moyen, ensemble rattaché." },
+  { value: "absenteisme", label: "Absentéisme", measure: "Absentéisme hors santé et hors congés, 3 derniers mois, ensemble rattaché." },
 ];
 
 export const RISK_TIERS = { watch: 0.1, high: 0.25 } as const;
@@ -35,17 +35,17 @@ export function tiersFor(colorBy: OrgColorBy, ref: Reference): Tier[] {
     ];
   if (colorBy === "risque")
     return [
-      { key: "t1", label: `Moins de ${pctLabel(RISK_TIERS.watch)} en risque élevé ou moyen`, color: sem(SEMANTIC.favorable) },
-      { key: "t2", label: `De ${pctLabel(RISK_TIERS.watch)} à ${pctLabel(RISK_TIERS.high)} : à surveiller`, color: sem(SEMANTIC.attention) },
+      { key: "t1", label: `Moins de ${pctLabel(RISK_TIERS.watch)}`, color: sem(SEMANTIC.favorable) },
+      { key: "t2", label: `${pctLabel(RISK_TIERS.watch)} à ${pctLabel(RISK_TIERS.high)} : à surveiller`, color: sem(SEMANTIC.attention) },
       { key: "t3", label: `${pctLabel(RISK_TIERS.high)} ou plus : prioritaire`, color: sem(SEMANTIC.defavorable) },
-      { key: "na", label: "Non affiché ou aucun collaborateur évalué", color: NA },
+      { key: "na", label: "Non affiché", color: NA },
     ];
   const r = ref.absenteeism;
   return [
-    { key: "t1", label: `Inférieur ou égal à la référence${r != null ? ` (${formatRate(r)})` : ""}`, color: sem(SEMANTIC.favorable) },
+    { key: "t1", label: `Référence ou moins${r != null ? ` (${formatRate(r)})` : ""}`, color: sem(SEMANTIC.favorable) },
     { key: "t2", label: "Au-dessus de la référence", color: sem(SEMANTIC.attention) },
-    { key: "t3", label: `Nettement au-dessus (au moins ${String(ABSENTEEISM_TIERS.ratio).replace(".", ",")} fois la référence et 1 point de plus)`, color: sem(SEMANTIC.defavorable) },
-    { key: "na", label: "Non affiché ou sans donnée", color: NA },
+    { key: "t3", label: "Nettement au-dessus", color: sem(SEMANTIC.defavorable) },
+    { key: "na", label: "Non affiché", color: NA },
   ];
 }
 

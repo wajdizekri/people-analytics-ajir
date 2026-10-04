@@ -1,9 +1,9 @@
-import { EmptyState, Notice, PageHeader, QuestionAnswer, SectionHeader, fmt } from "@/components/ui";
+import { EmptyState, Notice, PageHeader, QuestionAnswer, SectionHeader, StatusBadge, fmt } from "@/components/ui";
 import { KpiCard, VisualCard, frNumber } from "@/components/charts/pbi";
 import { TermTip } from "@/components/help";
 import { ActiveFilters, FilterForm, buildHref, type ActiveFilter } from "@/components/pilotage/filters";
-import { CI_LABEL, ciText, monthsText, pct, retentionChart } from "@/components/retention/chart-options";
-import { GroupTable, ReadingNotes, medianText } from "@/components/retention/sections";
+import { CI_LABEL, ciText, monthsText, retentionChart } from "@/components/retention/chart-options";
+import { GroupTable } from "@/components/retention/sections";
 import { DepartureProfiles } from "@/components/retention/departure-profiles";
 import { getDepartureProfiles } from "@/lib/dal/typology";
 import { PILOTAGE_ROLES, pageContext } from "@/lib/dal/context";
@@ -14,13 +14,6 @@ import type { Role } from "@/db/schema";
 
 export const metadata = { title: "Rétention — People Analytics AJIR" };
 
-const SUBTITLE = "Mesurer la part des embauchés encore présents après 6, 12, 24 ou 36 mois, et voir selon quoi elle varie.";
-const SEGMENT_PHRASE: Record<RetentionSegment, string> = {
-  cohorte: "la cohorte d'embauche",
-  departement: "le département",
-  contrat: "le premier contrat",
-  famille: "la famille de métier",
-};
 const at = (c: CurveSummary, months: number) => c.milestones.find((m) => m.months === months) ?? null;
 const pValue = (p: number) => (p < 0.001 ? "p < 0,001" : `p = ${frNumber(p, 3)}`);
 const plural = (n: number, one: string, many: string) => `${fmt.int(n)} ${n > 1 ? many : one}`;
@@ -43,7 +36,6 @@ export default async function RetentionPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader
         title="Rétention"
-        subtitle={SUBTITLE}
         scope={`${scopeLabel} — ${plural(r.followed, "embauche suivie", "embauches suivies")}`}
         period={start ? `Embauches du ${start} au ${fmt.date(r.referenceDate)}` : `Données au ${fmt.date(r.referenceDate)}`}
       />
@@ -78,19 +70,8 @@ export default async function RetentionPage({ searchParams }: { searchParams: Pr
 
 function Content({ r, role, start, scopeLabel }: { r: RetentionDto; role: Role; start: string | null; scopeLabel: string }) {
   const since = start ? `depuis le ${start}` : "";
-  if (r.followed === 0)
-    return (
-      <EmptyState title="Aucune embauche à suivre" icon="users">
-        Aucun collaborateur de ce périmètre n&apos;a été embauché en CDI ou CDD {since}. Les courbes apparaissent dès qu&apos;un export AJIR contient des embauches.
-      </EmptyState>
-    );
-  if (!r.overall || r.overall.stopMonths <= 0)
-    return (
-      <EmptyState title="Périmètre trop petit pour une courbe de maintien" icon="users">
-        Ce périmètre compte moins de {r.minAtRisk} embauches suivies {since}. Pour protéger l&apos;anonymat et garder des chiffres fiables, aucune courbe n&apos;est affichée en dessous
-        de {r.minAtRisk} personnes.
-      </EmptyState>
-    );
+  if (r.followed === 0) return <EmptyState title="Aucune embauche à suivre" icon="users" />;
+  if (!r.overall || r.overall.stopMonths <= 0) return <EmptyState title="Périmètre trop petit pour une courbe de maintien" icon="users" />;
 
   const o = r.overall;
   const voluntary = r.mode === "volontaires";
@@ -98,45 +79,32 @@ function Content({ r, role, start, scopeLabel }: { r: RetentionDto; role: Role; 
   const m12 = at(o, 12);
   const m24 = at(o, 24);
   const stop = Math.floor(o.stopMonths);
-  const stayed = voluntary ? "n'ont pas quitté volontairement l'entreprise" : "sont encore présentes";
-  const answer = [
-    m12?.survival != null
-      ? `Sur ${plural(r.followed, "embauche suivie", "embauches suivies")} ${since}, ${pct(m12.survival)} ${stayed} après 12 mois${m24?.survival != null ? ` et ${pct(m24.survival)} après 24 mois` : ""}.`
-      : `Le suivi des ${plural(r.followed, "embauche", "embauches")} est encore trop court pour mesurer la rétention à 12 mois.`,
-    o.medianMonths != null
-      ? ` La moitié ${voluntary ? "a quitté volontairement l'entreprise" : "est partie"} au bout de ${monthsText(Math.round(o.medianMonths))}.`
-      : ` Plus de la moitié ${voluntary ? "n'a pas quitté volontairement l'entreprise" : "est encore là"} après ${monthsText(stop)} de suivi.`,
-  ].join("");
 
   const shown = r.groups.filter((g) => g.curve && g.curve.stopMonths > 0);
   const charted = r.groups.filter((g) => g.inChart && g.curve).map((g) => ({ name: g.label, curve: g.curve! }));
   const overallName = r.segment ? `Ensemble (${scopeLabel.toLowerCase()})` : "Ensemble";
   const chart = retentionChart({ overall: { name: overallName, curve: o }, groups: charted, tableGroups: shown.map((g) => ({ name: g.label, curve: g.curve! })), measure });
   const lr = r.logRank;
-  const segPhrase = r.segment ? SEGMENT_PHRASE[r.segment] : "";
-  const title = r.segment
-    ? lr
-      ? lr.pValue < 0.05
-        ? `La rétention varie nettement selon ${segPhrase}`
-        : `Pas d'écart net de rétention selon ${segPhrase}`
-      : `Courbes de maintien selon ${segPhrase}`
-    : o.medianMonths != null
-      ? `La moitié des embauchés ${voluntary ? "a quitté volontairement l'entreprise" : "est partie"} au bout de ${monthsText(Math.round(o.medianMonths))}`
-      : m24?.survival != null
-        ? `${pct(m24.survival)} des embauchés ${voluntary ? "sans départ volontaire" : "encore présents"} après 24 mois`
-        : "Part des embauchés encore présents selon l'ancienneté";
+  const title = r.segment ? `Courbe de maintien par ${RETENTION_SEGMENTS[r.segment].toLowerCase()} (%)` : "Courbe de maintien (%)";
 
   return (
     <>
       <QuestionAnswer
         id="reponse-retention"
-        question="Quelle part des embauchés est encore là ?"
-        verdict={{ tone: "neutre", label: voluntary ? "Départs volontaires" : "Toutes sorties", text: answer }}
-        scope={`${scopeLabel} · embauches en CDI ou CDD ${since} · données au ${fmt.date(r.referenceDate)}.`}
+        question="Maintien des embauchés"
+        verdict={{ tone: "neutre", label: voluntary ? "Départs volontaires" : "Toutes sorties", text: null }}
+        scope={`${scopeLabel} · embauches en CDI ou CDD ${since}`}
         method={
           <>
             Méthode de Kaplan-Meier : à chaque ancienneté, part des collaborateurs encore suivis qui restent. Les arrivées récentes comptent tant qu&apos;elles sont suivies
-            (censure). La courbe s&apos;arrête quand moins de {r.minAtRisk} personnes restent suivies.
+            (censure). La courbe s&apos;arrête quand moins de {r.minAtRisk} personnes restent suivies. Embauche = début du premier CDI ou CDD ; stages et SIVP exclus.{" "}
+            {start
+              ? `L'historique AJIR commence le ${start}. ${plural(r.notFollowed, "collaborateur embauché avant n'est pas suivi", "collaborateurs embauchés avant ne sont pas suivis")} : seuls ceux encore présents à cette date figurent dans l'export, les compter surestimerait la rétention.`
+              : "Début de l'historique inconnu : toutes les embauches sont suivies depuis leur arrivée."}{" "}
+            {voluntary
+              ? "Départs volontaires : les autres sorties (fin de CDD, licenciement, retraite…) arrêtent le suivi. La courbe estime un risque spécifique, pas la part réellement observée en présence de ces risques concurrents."
+              : "Toutes sorties : fins de CDD, licenciements et retraites comptent comme des départs, au même titre que les démissions."}{" "}
+            Département, famille de métier et hiérarchie : ceux du dernier import. Données simulées.
           </>
         }
       >
@@ -161,22 +129,21 @@ function Content({ r, role, start, scopeLabel }: { r: RetentionDto; role: Role; 
           period={voluntary ? "avant un départ volontaire" : "toutes sorties"}
           value={o.medianMonths != null ? fmt.int(o.medianMonths) : "Non atteinte"}
           unit={o.medianMonths != null ? "mois" : undefined}
-          hint={o.medianMonths != null ? "Ancienneté à laquelle la moitié est partie" : `Plus de la moitié encore là après ${monthsText(stop)}`}
+          hint={o.medianMonths != null ? undefined : `Suivi de ${monthsText(stop)}`}
           tip={<TermTip term="dureeMediane" role={role} align="end" />}
         />
         <KpiCard
           label="Embauches suivies"
           period={since ? `CDI ou CDD, ${since}` : "CDI ou CDD"}
           value={fmt.int(r.followed)}
-          hint={`${plural(o.events, voluntary ? "départ volontaire observé" : "sortie observée", voluntary ? "départs volontaires observés" : "sorties observées")}, les autres sont censurées`}
+          hint={plural(o.events, voluntary ? "départ volontaire observé" : "sortie observée", voluntary ? "départs volontaires observés" : "sorties observées")}
           tip={<TermTip term="censure" role={role} align="end" />}
         />
       </QuestionAnswer>
 
       {r.maskedGroups > 0 && (
         <Notice className="mb-4">
-          {r.maskedGroups > 1 ? `${r.maskedGroups} groupes ne sont pas affichés` : "1 groupe n'est pas affiché"} : moins de {r.minAtRisk} personnes, ou chiffres déductibles par différence
-          avec l&apos;ensemble (protection des petits groupes).
+          {r.maskedGroups > 1 ? `${r.maskedGroups} groupes ne sont pas affichés` : "1 groupe n'est pas affiché"} : petits groupes (moins de {r.minAtRisk} personnes)
         </Notice>
       )}
 
@@ -189,47 +156,22 @@ function Content({ r, role, start, scopeLabel }: { r: RetentionDto; role: Role; 
         scope={scopeLabel}
         period={`ancienneté de 0 à ${monthsText(r.horizonMonths)}`}
         className="mb-6"
+        badge={lr && <StatusBadge tone={lr.pValue < 0.05 ? "warning" : "neutral"}>{lr.pValue < 0.05 ? "Écart significatif" : "Écart non significatif"}</StatusBadge>}
         footnote={
           <>
-            Bande grise : {CI_LABEL.toLowerCase()} de l&apos;ensemble. Chaque courbe s&apos;arrête dès que moins de {r.minAtRisk} personnes restent suivies.
-            {shown.length > charted.length && ` Graphique limité aux ${MAX_CHART_GROUPS} groupes les plus nombreux ; tous figurent dans le tableau.`}
-            {lr &&
-              ` Test du log-rank : χ² = ${frNumber(lr.chi2, 1)} pour ${plural(lr.df, "degré de liberté", "degrés de liberté")}, ${pValue(lr.pValue)} ${
-                lr.pValue < 0.05 ? "(écart peu probable s'il n'était dû qu'au hasard)." : "(écart compatible avec le hasard)."
-              }`}
+            Bande grise : {CI_LABEL.toLowerCase()} de l&apos;ensemble · courbes arrêtées sous {r.minAtRisk} personnes suivies
+            {shown.length > charted.length && ` · ${MAX_CHART_GROUPS} groupes les plus nombreux tracés, tous dans le tableau`}
+            {lr && ` · Test du log-rank : χ² = ${frNumber(lr.chi2, 1)}, ${plural(lr.df, "degré de liberté", "degrés de liberté")}, ${pValue(lr.pValue)}`}
           </>
         }
       />
 
       {r.segment && (
         <section aria-labelledby="detail-groupes" className="mb-6">
-          <SectionHeader id="detail-groupes" title={`Détail par ${RETENTION_SEGMENTS[r.segment].toLowerCase()}`} description="Embauches suivies, sorties observées, maintien à 12 et 24 mois et durée médiane, par groupe." />
+          <SectionHeader id="detail-groupes" title={`Détail par ${RETENTION_SEGMENTS[r.segment].toLowerCase()}`} />
           <GroupTable overall={{ label: overallName, n: r.followed, curve: o }} groups={r.groups} caption={`Rétention par ${RETENTION_SEGMENTS[r.segment].toLowerCase()}`} />
         </section>
       )}
-
-      <ReadingNotes
-        helpHref="/aide#glossaire"
-        reading={[
-          "Chaque courbe part de 100 % à l'embauche et descend d'une marche à chaque départ.",
-          "Lue à 12 mois, elle donne la part des embauchés encore présents un an après leur arrivée.",
-          "Les embauches récentes comptent tant qu'elles sont suivies, puis sortent du calcul sans être des départs (censure).",
-          `Bande grise : ${CI_LABEL.toLowerCase()}. Le test du log-rank indique si les écarts entre groupes dépassent le hasard (p < 0,05).`,
-          `Durée médiane : ancienneté à laquelle la moitié des embauchés est partie (${medianText(o)} ici).`,
-        ]}
-        limits={[
-          "Données simulées : les chiffres illustrent la méthode, pas une entreprise réelle.",
-          start
-            ? `L'historique AJIR commence le ${start}. ${plural(r.notFollowed, "collaborateur embauché avant n'est pas suivi", "collaborateurs embauchés avant ne sont pas suivis")} : seuls ceux encore présents à cette date figurent dans l'export, les compter surestimerait la rétention.`
-            : "Début de l'historique inconnu : toutes les embauches sont suivies depuis leur arrivée.",
-          "Embauche = début du premier CDI ou CDD, comme l'effectif du tableau de bord. Stages et SIVP n'en sont pas.",
-          "Département, famille de métier et hiérarchie sont ceux du dernier import, pas ceux de l'embauche.",
-          voluntary
-            ? "Départs volontaires : les autres sorties (fin de CDD, licenciement, retraite…) arrêtent le suivi. La courbe estime un risque spécifique, pas la part réellement observée en présence de ces risques concurrents."
-            : "Toutes sorties : fins de CDD, licenciements et retraites comptent comme des départs, au même titre que les démissions.",
-          "Statistique agrégée : les collaborateurs opposés au calcul de leur risque restent comptés, comme dans les indicateurs du tableau de bord.",
-        ]}
-      />
     </>
   );
 }

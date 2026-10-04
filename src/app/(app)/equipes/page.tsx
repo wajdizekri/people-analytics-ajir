@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { ButtonLink, DataTable, EmptyState, KpiTile, Notice, PageHeader, fmt } from "@/components/ui";
+import { Badge, ButtonLink, DataTable, EmptyState, KpiTile, PageHeader, StatusBadge, fmt } from "@/components/ui";
 import { employeesHref, teamsHref } from "@/components/charts/drill";
 import { VisualCard } from "@/components/charts/pbi";
-import { InfoTip, PageIntro, TermTip } from "@/components/help";
+import { InfoTip, TermTip } from "@/components/help";
 import { ActiveFilters, FilterForm, buildHref } from "@/components/pilotage/filters";
 import { DataDetails } from "@/components/pilotage/data-details";
 import { formatDate, formatMonth, formatRate } from "@/components/pilotage/labels";
@@ -109,7 +109,7 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
       <PageHeader
         eyebrow="Collaborateurs"
         title={rh ? "Équipes" : "Mes équipes"}
-        subtitle={rh ? "Tableau de bord par équipe : signaux de difficulté et niveau de tension." : "Les équipes de votre périmètre hiérarchique : signaux de difficulté et niveau de tension, hors rémunération."}
+        badge={rh ? undefined : <Badge>Hors rémunération</Badge>}
         scope={`${rh ? "Toute l'entreprise" : "Votre périmètre"} : ${fmt.int(t.totalTeams)} équipe${t.totalTeams > 1 ? "s" : ""}, ${fmt.int(t.total.headcount)} collaborateurs actifs`}
         period={`Données au ${formatDate(t.referenceDate)} · absentéisme et heures sup. sur ${window}`}
         actions={
@@ -118,18 +118,6 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
           </ButtonLink>
         }
       />
-      <PageIntro
-        helpHref="/aide#tableau-de-bord"
-        points={[
-          "Une équipe regroupe les collaborateurs rattachés directement à un même manager.",
-          "Cinq signaux sont suivis : risque de départ, absentéisme, heures supplémentaires, formations en retard, recommandations en attente. Plus une équipe en cumule, plus sa tension est forte.",
-          rh
-            ? "Un clic sur le nom d'une équipe ouvre la liste de ses collaborateurs."
-            : `L'absentéisme et les heures supplémentaires d'une équipe de moins de ${MIN_GROUP_SIZE} personnes ne sont pas affichés.`,
-        ]}
-      >
-        Repérer les équipes qui cumulent des signaux de difficulté, pour prioriser les échanges avec leurs managers.
-      </PageIntro>
       <FilterForm
         action="/equipes"
         values={{ departement: t.filters.departement ?? undefined, tension: t.filters.tension ? "oui" : undefined }}
@@ -141,19 +129,22 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
       />
       <ActiveFilters period={`${window} (3 derniers mois)`} filters={filters} ignored={ignored} />
       {t.maskedTeams > 0 && (
-        <div className="mb-4">
-          <Notice tone="warning">
-            {t.maskedTeams} équipe{t.maskedTeams > 1 ? "s" : ""} : absentéisme et heures supplémentaires masqués (moins de {MIN_GROUP_SIZE} personnes, ou déductibles par
-            différence avec le total du périmètre). Ces indicateurs ne produisent alors aucun signal.
-          </Notice>
-        </div>
+        <p className="mb-4 flex items-center gap-1">
+          <StatusBadge tone="warning">
+            Données masquées : {t.maskedTeams} équipe{t.maskedTeams > 1 ? "s" : ""}
+          </StatusBadge>
+          <InfoTip label="Données masquées">
+            Absentéisme et heures supplémentaires masqués pour les équipes de moins de {MIN_GROUP_SIZE} personnes, ou déductibles par différence avec le total du
+            périmètre. Ces indicateurs ne produisent alors aucun signal.
+          </InfoTip>
+        </p>
       )}
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-5">
         <KpiTile
           label="Équipes suivies"
           value={fmt.int(t.totalTeams)}
-          hint={`${fmt.int(watched)} à regarder · ${fmt.int(t.tensionCounts.STABLE)} stable${t.tensionCounts.STABLE > 1 ? "s" : ""} (aucun signal)`}
+          hint={`À regarder : ${fmt.int(watched)} · Stables : ${fmt.int(t.tensionCounts.STABLE)}`}
           detailHref={!t.filters.tension && watched > 0 ? buildHref("/equipes", { departement: t.filters.departement ?? undefined, tension: "oui" }) : undefined}
           detailLabel="Voir les équipes à regarder"
         />
@@ -173,34 +164,27 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
         <KpiTile
           label={rh ? "Absentéisme de l'entreprise" : "Absentéisme du périmètre"}
           value={t.total.masked ? "—" : formatRate(t.total.absenteeismRate)}
-          hint={t.total.masked ? `Groupe de moins de ${MIN_GROUP_SIZE} personnes` : `Sur 3 mois · heures sup. : ${formatHours(t.total.overtimePerHead)} par personne et par mois`}
+          hint={t.total.masked ? `Masqué : moins de ${MIN_GROUP_SIZE} personnes` : `Heures sup. : ${formatHours(t.total.overtimePerHead)} / pers. / mois`}
         />
       </div>
 
       {t.teams.length === 0 ? (
-        <EmptyState title={t.filters.tension ? "Aucune équipe en tension" : "Aucune équipe dans ce périmètre"}>
-          {t.filters.tension ? (
-            <>
-              Aucune équipe ne cumule de signal sur la période.{" "}
-              <Link href={buildHref("/equipes", { departement: t.filters.departement ?? undefined })} className="font-medium text-link underline underline-offset-2 hover:decoration-2">
+        <EmptyState
+          title={t.filters.tension ? "Aucune équipe en tension" : "Aucune équipe dans ce périmètre"}
+          action={
+            t.filters.tension ? (
+              <ButtonLink href={buildHref("/equipes", { departement: t.filters.departement ?? undefined })} variant="secondary">
                 Afficher toutes les équipes
-              </Link>
-              .
-            </>
-          ) : (
-            "Aucun collaborateur actif n'est rattaché à un manager de votre périmètre."
-          )}
-        </EmptyState>
+              </ButtonLink>
+            ) : undefined
+          }
+        />
       ) : (
         <>
           {showMap && (
             <VisualCard
-              title={
-                watched
-                  ? `${fmt.int(watched)} équipe${watched > 1 ? "s" : ""} sur ${fmt.int(t.teams.length)} présente${watched > 1 ? "nt" : ""} au moins un signal de difficulté`
-                  : "Aucune équipe ne présente de signal de difficulté"
-              }
-              subtitle={`Carte des équipes par département du manager · ${window}`}
+              title="Carte des équipes par tension"
+              subtitle={`Par département du manager · ${window}`}
               className="mb-6"
               actions={
                 <InfoTip label="Carte des équipes" align="end">
@@ -209,9 +193,8 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
                 </InfoTip>
               }
             >
-              <div className="mb-3 rounded-control bg-surface-2 px-3 py-2 text-xs text-fg-muted ring-1 ring-inset ring-line">
-                <p className="font-medium text-fg">Comment lire la carte : 1 rectangle = 1 équipe · surface = effectif · couleur = niveau de tension</p>
-                <ul className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+              <div className="mb-3 text-xs text-fg-muted">
+                <ul className="flex flex-wrap gap-x-4 gap-y-1" aria-label="Légende">
                   {LEVELS.map((l) => (
                     <li key={l} className="inline-flex items-center gap-1.5">
                       <TensionDot level={l} className="h-3 w-3 rounded-sm" />
@@ -228,10 +211,7 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
                 />
               </div>
               {bigMap && (
-                <p className="text-xs text-fg-muted sm:hidden">
-                  La carte des {fmt.int(t.teams.length)} équipes s&apos;affiche sur un écran plus large. Le tableau ci-dessous donne les mêmes informations, les équipes les plus
-                  en tension en premier.
-                </p>
+                <p className="text-xs text-fg-muted sm:hidden">Carte disponible sur grand écran</p>
               )}
               <DataDetails
                 summary="Voir les données de la carte"
@@ -245,18 +225,20 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
           <section aria-labelledby="equipes-titre">
             <div className="mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-1">
               <h2 id="equipes-titre" className="flex items-center gap-1 text-lg font-semibold text-heading">
-                Équipes triées par niveau de tension
+                Équipes par niveau de tension
                 <InfoTip label="Signaux de tension">
                   Risque : au moins {Math.round(R.riskShare * 100)} % des évalués en risque élevé ou moyen, ou au moins {R.riskHigh} en risque élevé. Absentéisme : au moins{" "}
                   {R.absenteeismRatio.toLocaleString("fr-FR")} fois celui {rh ? "de l'entreprise" : "du périmètre"} et 1 point au-dessus. Heures supplémentaires : au moins{" "}
                   {R.overtimeAbs} h par personne et par mois, ou {R.overtimeRatio.toLocaleString("fr-FR")} fois la référence. Formations : au moins{" "}
                   {Math.round(R.trainingShare * 100)} % de l&apos;équipe avec une formation obligatoire en retard. Recommandations : au moins {R.recoMin} en attente et{" "}
-                  {Math.round(R.recoShare * 100)} % de l&apos;effectif.
+                  {Math.round(R.recoShare * 100)} % de l&apos;effectif. Effectif et niveaux de risque : collaborateurs actifs. Absentéisme hors maladie, maternité et
+                  congés annuels ; heures supplémentaires pointées rapportées aux personnes présentes chaque mois ; formations obligatoires dont l&apos;échéance est
+                  dépassée sans être terminées.
                 </InfoTip>
               </h2>
               <p className="flex flex-wrap items-center gap-x-1 text-xs text-fg-muted">
-                Forte tension d&apos;abord, puis nombre de signaux · cliquez sur un en-tête pour trier · absentéisme <TermTip term="absenteisme" role={ctx.role} /> et heures
-                sup. sur {window} · risque de départ <TermTip term="niveauRisque" role={ctx.role} align="end" /> au {t.runAsOf ? formatDate(t.runAsOf) : "— (calcul non publié)"}
+                Absentéisme <TermTip term="absenteisme" role={ctx.role} /> · Risque de départ <TermTip term="niveauRisque" role={ctx.role} align="end" /> :{" "}
+                {t.runAsOf ? `calcul du ${formatDate(t.runAsOf)}` : "calcul non publié"}
               </p>
             </div>
             <DataTable
@@ -266,7 +248,7 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
               columns={[
                 { key: "team", label: "Équipe", className: "min-w-[12rem]" },
                 { key: "tension", label: "Niveau de tension" },
-                { key: "why", label: "Pourquoi", sortable: false, hideOnCard: true, className: "min-w-[16rem]" },
+                { key: "why", label: "Signaux", sortable: false, hideOnCard: true, className: "min-w-[16rem]" },
                 { key: "headcount", label: "Effectif", numeric: true },
                 { key: "risk", label: "Risque de départ" },
                 { key: "abs", label: "Absentéisme", numeric: true },
@@ -311,10 +293,6 @@ export default async function TeamsPage({ searchParams }: { searchParams: Promis
           </section>
         </>
       )}
-      <p className="mt-3 text-xs text-fg-muted">
-        Effectif et niveaux de risque : collaborateurs actifs. Absentéisme hors maladie, maternité et congés annuels ; heures supplémentaires pointées rapportées aux
-        personnes présentes chaque mois ; formations obligatoires dont l&apos;échéance est dépassée sans être terminées.
-      </p>
     </>
   );
 }

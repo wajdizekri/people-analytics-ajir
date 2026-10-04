@@ -47,19 +47,19 @@ describe("interventions : lisibilité avant / après", () => {
     const s = text(el);
     expect(s).toMatch(/pt, en baisse/);
     expect(s).toMatch(/h, en baisse/);
-    expect(s).toContain("1 collaborateur sur 1 mesuré");
+    expect(s).toContain("1 / 1 mesuré");
     expect(s).not.toContain("(s)");
     expect(s).toContain("Recul complet (3 mois)");
     expect(s).toContain("Recul partiel : 0 mois sur 3");
-    for (const k of ["Observation, pas un effet causal.", "Ce qui change après l'action, par type d'action", "Toutes les actions"]) expect(s).toContain(k);
+    for (const k of ["Observation non causale", "Avant / après par type d'action", "Toutes les actions"]) expect(s).toContain(k);
   });
 
-  it("type d'action sans réalisation : quoi, pourquoi et bouton pour tout afficher", async () => {
+  it("type d'action sans réalisation : titre seul et bouton pour tout afficher", async () => {
     asRh();
     const page = (await import("@/app/(app)/interventions/page")).default;
     const s = text(await page(sp({ action: "CHARGE_TRAVAIL" })));
     expect(s).toContain("Aucune action réalisée de ce type");
-    expect(s).toContain("Aucune recommandation de ce type n'a encore été marquée « réalisée ».");
+    expect(s).not.toContain("Aucune recommandation de ce type n'a encore été marquée « réalisée ».");
     expect(s).toContain("Afficher tous les types d'action");
   });
 

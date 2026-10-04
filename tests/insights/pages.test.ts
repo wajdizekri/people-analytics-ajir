@@ -49,12 +49,12 @@ async function pages() {
 }
 
 describe("pages insights", () => {
-  it("RH : les quatre pages se rendent avec leur encart d'aide", async () => {
+  it("RH : les quatre pages se rendent, titres sans encart d'explication", async () => {
     as("RH");
     const p = await pages();
     const s = text(html(await p.synthese()));
     expect(s).toContain("Synthèse du mois");
-    expect(s).toContain("À quoi sert cette page");
+    expect(s).not.toContain("À quoi sert cette page");
     expect(s).toContain("2 collaborateurs de Production sont passés en risque élevé");
     expect(s).toContain("Passés en risque élevé");
     // résumé exécutif : priorités avec action « verbe + objet », puis chiffres clés, pluriels accordés
@@ -67,17 +67,17 @@ describe("pages insights", () => {
     expect(e).toContain("Tension");
     expect(e).toMatch(/ignoré\(s\) : d[ée]partement/);
     const i = text(html(await p.interventions(sp())));
-    expect(i).toContain("Observation, pas un effet causal");
+    expect(i).toContain("Observation non causale");
     expect(i).toContain("Entretien de rétention");
     const d = text(html(await p.derive()));
-    expect(d).toContain("Envisager un réentraînement du modèle");
-    expect(d).toContain("Que faire : prévenez l'administrateur de l'outil.");
+    expect(d).toContain("Réentraînement recommandé");
+    expect(d).toContain("Action : Prévenir l'administrateur");
     expect(d).not.toContain("console d'administration");
     expect(d).toContain("Contrat CDD");
     expect(d).toContain("Taux de démission observé et prévu");
-    expect(d).toContain("Feu tricolore par variable");
-    expect(d).toMatch(/Ce qui a changé : .+ des collaborateurs en .+, contre .+/);
-    expect(d).toContain("Que faire :");
+    expect(d).toContain("Dérive par variable (PSI)");
+    expect(d).toMatch(/Écart principal : .+ · .+ → .+/);
+    expect(d).toContain("Action :");
   });
 
   it("MANAGER : synthèse et équipes sans probabilité ; interventions et dérive redirigées", async () => {
@@ -97,9 +97,9 @@ describe("pages insights", () => {
     as("ADMIN");
     const p = await pages();
     const d = text(html(await p.derive()));
-    expect(d).toContain("Rapport observé / prévu des démissions");
-    expect(d).toContain("La mise en service se fait hors de l'interface, par une procédure tracée.");
-    expect(d).toContain("Feu tricolore par variable");
+    expect(d).toContain("Observé / prévu par cohorte");
+    expect(d).toContain("Action : Demander un réentraînement");
+    expect(d).toContain("Dérive par variable (PSI)");
     expect(d).not.toContain("Taux observé");
     expect(d).not.toMatch(/Nom[A-Z]/);
     await expect(p.synthese()).rejects.toThrow("REDIRECT:/interdit");
@@ -112,16 +112,17 @@ describe("pages insights", () => {
     const rhNews = text(html(createElement(WhatsNew, { data: getEmployeeNews(c.rh, f.ids.A1, meta) })));
     expect(rhNews).toContain("Quoi de neuf");
     expect(rhNews).toContain("Augmentation");
-    expect(rhNews).toContain("Absences hors santé non planifiées");
+    expect(rhNews).toContain("Absences hors santé : ");
     const mgrNews = text(html(createElement(WhatsNew, { data: getEmployeeNews(c.manager, f.ids.A1, meta) })));
     expect(mgrNews).toContain("Promotion");
-    expect(mgrNews).not.toMatch(/Augmentation|TND|Absences hors santé non|Heures supplémentaires pointées/);
+    expect(mgrNews).not.toMatch(/Augmentation|TND|Absences hors santé :|Heures supplémentaires :/);
     const journey = text(html(createElement(Journey, { data: getEmployeeJourney(c.rh, f.ids.A1, meta) })));
     expect(journey).toContain("Parcours");
     expect(journey).toContain("Changement de manager");
     expect(journey).toContain("Congé sans solde de 10");
     expect(journey).not.toContain("Maladie");
     const effects = text(html(createElement(InterventionEffects, { data: getEmployeeInterventionEffects(c.rh, f.ids.B1, meta) })));
+    expect(effects).toContain("Observation non causale");
     expect(effects).toContain("Observation, pas un effet causal");
     expect(effects).toContain("Niveau en baisse");
     const mgrEffects = text(html(createElement(InterventionEffects, { data: getEmployeeInterventionEffects(c.manager, f.ids.B1, meta) })));

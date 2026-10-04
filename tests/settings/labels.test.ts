@@ -9,24 +9,23 @@ const NBSP = "\u00a0";
 const plain = (s: string) => s.replace(/\s+/g, " ");
 const sentences = (s: string) => s.split(/(?<=[.!?])\s+/).filter(Boolean);
 const words = (s: string) => s.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
-const longest = (s: string) => Math.max(...sentences(s).map(words));
 
 describe("paramètres : textes courts", () => {
   const ctx = { nScored: 987, asOf: "2026-08-31", lastQuality: 0.981, values: { workload_ot_months: 3, workload_ot_threshold_h: 20 } };
 
-  it("chaque paramètre : libellé, description d'une ligne, bulle d'aide distincte, effet en une phrase de 20 mots au plus", () => {
+  it("chaque paramètre : libellé, bulle d'aide, effet en quelques mots (12 au plus, sans phrase)", () => {
     for (const [key, ui] of Object.entries(SETTINGS_UI)) {
       expect(ui.label.length, key).toBeGreaterThan(0);
-      expect(words(ui.short), key).toBeLessThanOrEqual(14);
-      expect(longest(ui.short), key).toBeLessThanOrEqual(20);
-      expect(ui.help, key).not.toBe(ui.short);
-      expect(ui.help.length, key).toBeGreaterThan(ui.short.length);
+      expect(ui.help.length, key).toBeGreaterThan(0);
+      expect("short" in ui, key).toBe(false);
       const effect = ui.effect(Number(DEFAULT_SETTINGS[key]), ctx);
-      expect(longest(effect), `${key} : ${effect}`).toBeLessThanOrEqual(20);
+      expect(words(effect), `${key} : ${effect}`).toBeLessThanOrEqual(12);
+      expect(sentences(effect), `${key} : ${effect}`).toHaveLength(1);
+      expect(effect, key).not.toMatch(/\.$/);
     }
   });
 
-  it("chaque thème : un titre, un libellé court de navigation, une phrase d'introduction de 20 mots au plus", () => {
+  it("chaque thème : un titre et un libellé court de navigation, sans paragraphe d'introduction", () => {
     const keys = SETTING_GROUPS.flatMap((g) => g.keys);
     expect(new Set(keys).size).toBe(keys.length);
     expect([...keys].sort()).toEqual(Object.keys(SETTINGS_UI).sort());
@@ -34,16 +33,15 @@ describe("paramètres : textes courts", () => {
     for (const g of SETTING_GROUPS) {
       expect(words(g.nav), g.id).toBeLessThanOrEqual(3);
       expect(g.nav.length, g.id).toBeLessThanOrEqual(g.title.length);
-      expect(g.intro.length, g.id).toBeGreaterThan(0);
-      expect(longest(g.intro), g.id).toBeLessThanOrEqual(20);
+      expect("intro" in g, g.id).toBe(false);
     }
   });
 
   it("effets concrets conservés (capacité, qualité du dernier import)", () => {
-    expect(SETTINGS_UI.capacity_rate.effect(0.02, ctx)).toContain("environ 20 personnes classées en risque élevé chaque mois");
-    expect(SETTINGS_UI.quality_threshold.effect(0.95, ctx)).toContain("serait accepté");
-    expect(SETTINGS_UI.quality_threshold.effect(0.99, ctx)).toContain("serait bloqué");
-    expect(SETTINGS_UI.quality_threshold.effect(0.95, { ...ctx, lastQuality: null })).toBe(`Un import dont le score qualité est inférieur à 95${NBSP}% est bloqué.`);
+    expect(SETTINGS_UI.capacity_rate.effect(0.02, ctx)).toBe("≈ 20 classés Élevé sur 987 évalués (calcul du 31/08/2026)");
+    expect(SETTINGS_UI.quality_threshold.effect(0.95, ctx)).toBe(`Dernier import (98,1${NBSP}%) : accepté`);
+    expect(SETTINGS_UI.quality_threshold.effect(0.99, ctx)).toBe(`Dernier import (98,1${NBSP}%) : bloqué`);
+    expect(SETTINGS_UI.quality_threshold.effect(0.95, { ...ctx, lastQuality: null })).toBe(`Import bloqué sous 95${NBSP}%`);
   });
 });
 

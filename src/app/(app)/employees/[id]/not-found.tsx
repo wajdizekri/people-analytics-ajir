@@ -10,8 +10,6 @@ export default function EmployeeNotFound() {
           Rechercher dans la liste des collaborateurs
         </ButtonLink>
       }
-    >
-      La fiche demandée n&apos;existe pas. Vérifiez le lien, ou retrouvez le collaborateur par son nom ou son matricule.
-    </EmptyState>
+    />
   );
 }

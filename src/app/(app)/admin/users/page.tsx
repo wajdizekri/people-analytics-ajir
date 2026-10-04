@@ -16,11 +16,11 @@ const one = (v: string | string[] | undefined) => (typeof v === "string" ? v : u
 const PAGE_SIZE = 25;
 
 const STATES = {
-  verrouille: { label: "Verrouillé", plural: "Verrouillés", tone: "red", hint: "à débloquer" },
-  actif: { label: "Actif", plural: "Actifs", tone: "emerald", hint: "peuvent se connecter" },
-  attente: { label: "En attente d'activation", plural: "En attente d'activation", tone: "amber", hint: "mot de passe non défini" },
-  desactive: { label: "Désactivé", plural: "Désactivés", tone: "slate", hint: "accès coupé" },
-} as const satisfies Record<string, { label: string; plural: string; tone: Tone; hint: string }>;
+  verrouille: { label: "Verrouillé", plural: "Verrouillés", tone: "red" },
+  actif: { label: "Actif", plural: "Actifs", tone: "emerald" },
+  attente: { label: "En attente d'activation", plural: "En attente d'activation", tone: "amber" },
+  desactive: { label: "Désactivé", plural: "Désactivés", tone: "slate" },
+} as const satisfies Record<string, { label: string; plural: string; tone: Tone }>;
 type State = keyof typeof STATES;
 const STATE_KEYS = Object.keys(STATES) as State[];
 const DOT: Record<Tone, string> = { emerald: "bg-success", amber: "bg-warning", red: "bg-danger", slate: "bg-fg-subtle", sky: "bg-primary" };
@@ -76,7 +76,7 @@ function compare(key: SortKey | undefined, dir: SortDir): (a: Row, b: Row) => nu
   };
 }
 
-function CounterTile({ label, hint, value, dot, to, current, urgent, className = "" }: { label: string; hint: string; value: number; dot: string; to: string; current: boolean; urgent?: boolean; className?: string }) {
+function CounterTile({ label, value, dot, to, current, urgent, className = "" }: { label: string; value: number; dot: string; to: string; current: boolean; urgent?: boolean; className?: string }) {
   return (
     <Link
       href={to}
@@ -88,17 +88,16 @@ function CounterTile({ label, hint, value, dot, to, current, urgent, className =
         <span className="text-2xl font-semibold tabular-nums text-heading">{fmt.int(value)}</span>
       </span>
       <span className="mt-0.5 block text-xs font-semibold text-fg">{label}</span>
-      <span className="block text-xs text-fg-muted">{hint}</span>
     </Link>
   );
 }
 
 function StateDetail({ u, state }: { u: UserDTO; state: State }) {
   const lines: string[] = [];
-  if (state === "verrouille" && u.lockedUntil) lines.push(`Après plusieurs échecs de connexion, jusqu'au ${fmt.dateTime(u.lockedUntil)}`);
-  if (u.active && u.activationExpiresAt) lines.push(`Lien en attente, valable jusqu'au ${fmt.date(u.activationExpiresAt)}`);
-  else if (state === "attente") lines.push("Aucun lien valide : générez-en un");
-  if (state !== "verrouille" && u.active && u.failedAttempts > 0) lines.push(`${u.failedAttempts} échec${u.failedAttempts > 1 ? "s" : ""} de connexion récent${u.failedAttempts > 1 ? "s" : ""}`);
+  if (state === "verrouille" && u.lockedUntil) lines.push(`Jusqu'au ${fmt.dateTime(u.lockedUntil)}`);
+  if (u.active && u.activationExpiresAt) lines.push(`Lien valable jusqu'au ${fmt.date(u.activationExpiresAt)}`);
+  else if (state === "attente") lines.push("Aucun lien valide");
+  if (state !== "verrouille" && u.active && u.failedAttempts > 0) lines.push(`Échecs de connexion : ${u.failedAttempts}`);
   return (
     <>
       {lines.map((l) => (
@@ -156,7 +155,7 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
       <PageHeader
         eyebrow="Administration"
         title="Utilisateurs et accès"
-        subtitle={`${fmt.int(users.length)} comptes : ${fmt.int(byRole.ADMIN)} administrateur${byRole.ADMIN > 1 ? "s" : ""}, ${fmt.int(byRole.RH)} responsable${byRole.RH > 1 ? "s" : ""} RH, ${fmt.int(byRole.MANAGER)} manager${byRole.MANAGER > 1 ? "s" : ""}. Un nouveau compte reçoit un lien d'activation valable ${ACTIVATION_DAYS} jours.`}
+        scope={`${fmt.int(users.length)} comptes · ${fmt.int(byRole.ADMIN)} administrateur${byRole.ADMIN > 1 ? "s" : ""} · ${fmt.int(byRole.RH)} RH · ${fmt.int(byRole.MANAGER)} manager${byRole.MANAGER > 1 ? "s" : ""}`}
         actions={
           <ButtonLink href="#nouveau-compte" variant="primary" icon="plus">
             Créer un compte
@@ -165,12 +164,11 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
       />
 
       <nav aria-label="Filtrer par état du compte" className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-        <CounterTile label="Tous les comptes" hint="tous rôles et états" value={users.length} dot="bg-accent" to={href({ ...filters, etat: undefined })} current={!filters.etat} className="col-span-2 sm:col-span-1" />
+        <CounterTile label="Tous les comptes" value={users.length} dot="bg-accent" to={href({ ...filters, etat: undefined })} current={!filters.etat} className="col-span-2 sm:col-span-1" />
         {STATE_KEYS.map((s) => (
           <CounterTile
             key={s}
             label={STATES[s].plural}
-            hint={STATES[s].hint}
             value={byState[s]}
             dot={DOT[STATES[s].tone]}
             to={href({ ...filters, etat: filters.etat === s ? undefined : s })}
@@ -188,16 +186,7 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
             </span>
             Créer un compte
           </h2>
-          <ol className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-fg-muted">
-            {["Saisir l'identifiant et le rôle", "Lier un collaborateur (obligatoire pour un manager)", "Transmettre le lien d'activation"].map((s, i) => (
-              <li key={s} className="flex items-center gap-1.5">
-                <span aria-hidden="true" className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-accent-fg">
-                  {i + 1}
-                </span>
-                {s}
-              </li>
-            ))}
-          </ol>
+          <p className="text-xs text-fg-muted">Lien d&apos;activation : {ACTIVATION_DAYS} jours</p>
         </div>
         <div className="p-4">
           <UserCreateForm />
@@ -212,7 +201,7 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
           <p className="text-xs text-fg-muted" aria-live="polite">
             {shown.length === 0
               ? "Aucun compte affiché"
-              : `${fmt.int(first)}–${fmt.int(last)} sur ${fmt.int(shown.length)}${filtered ? ` (filtrés parmi ${fmt.int(users.length)})` : ""} · ${sortedBy}`}
+              : `${fmt.int(first)}–${fmt.int(last)} sur ${fmt.int(shown.length)}${filtered ? ` (filtrés parmi ${fmt.int(users.length)})` : ""}`}
           </p>
         </div>
 
@@ -260,7 +249,7 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
         {active.length > 0 && <ActiveFilters filters={active} />}
 
         {users.length === 0 ? (
-          <EmptyState title="Aucun compte">Créez le premier compte avec le formulaire ci-dessus.</EmptyState>
+          <EmptyState title="Aucun compte" />
         ) : shown.length === 0 ? (
           <EmptyState
             title="Aucun compte ne correspond à cette recherche"
@@ -269,9 +258,7 @@ export default async function UsersPage({ searchParams }: { searchParams: SP }) 
                 Afficher tous les comptes
               </ButtonLink>
             }
-          >
-            Vérifiez l&apos;orthographe, ou retirez un filtre.
-          </EmptyState>
+          />
         ) : (
           <>
             <div className="lg:overflow-x-auto">

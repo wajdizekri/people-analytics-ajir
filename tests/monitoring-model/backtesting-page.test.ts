@@ -90,38 +90,42 @@ describe("Vérification a posteriori : rendu RH", () => {
     s = text(markup);
   });
 
-  it("résultat en une phrase, modèle nommé sans identifiant technique, bandeau « date vue à l'apprentissage »", () => {
+  it("résultat au format libellé : valeur, modèle nommé sans identifiant technique, badge « date d'apprentissage »", () => {
     expect(s).toContain("Vérification a posteriori (backtesting)");
-    expect(s).toContain("Résultat au 30/11/2024");
-    expect(s).toContain("À cette date, le modèle aurait signalé 2 personnes au niveau Élevé ; 2 ont démissionné dans les 6 mois.");
-    expect(s).toContain("Soit 100,0 % des personnes signalées, contre 40,0 % pour l'ensemble des 10 collaborateurs évalués. C'est 2,5 fois plus que la moyenne.");
-    expect(s).toContain("En ajoutant le niveau Moyen (1 personne) : 2 démissions parmi les 3 personnes signalées.");
-    expect(s).toContain("Les 2 démissions restantes concernaient des collaborateurs classés Faible.");
-    expect(s).toContain("Modèle mis en service le 30/09/2026 ; niveaux du calcul enregistré pour ce mois.");
+    expect(s).toContain("Résultat au 30/11/2024 Date d'apprentissage (30/09/2020 – 28/02/2025) : résultat optimiste");
+    expect(s).toContain("Classés Élevé 2 personnes · 2 démissions Classés Élevé ou Moyen 3 personnes · 2 démissions Démissions classées Faible 2");
+    expect(s).toContain("Modèle Modèle mis en service le 30/09/2026 Niveaux Calcul enregistré du mois");
     expect(s).not.toContain("logreg-toy-v1");
-    expect(s).toContain("Date vue pendant l'apprentissage : résultat optimiste. Ce mois fait partie de la période d'apprentissage du modèle (30/09/2020 au 28/02/2025).");
-    expect(s).toContain("exposition au risque");
+    expect(s).toContain("Dates d'apprentissage (jusqu'à févr. 2025) : résultats optimistes");
+    expect(s).toContain("Exposition au risque, hors effet des actions");
+    expect(s).not.toContain("À quoi sert cette page");
     expect(s).not.toMatch(/départs? évités?/i);
     // La première date écrite après « au » est la date d'origine (repère lu par les tests de bout en bout)
     expect(/au (\d{2})\/(\d{2})\/(\d{4})/.exec(s)!.slice(1)).toEqual(["30", "11", "2024"]);
   });
 
   it("tuiles : collaborateurs évalués, démissions observées, précision, lift et rappel au niveau Élevé", () => {
-    expect(s).toContain("Collaborateurs évalués (suivi complet) 10 à la date d'origine (30/11/2024)");
-    expect(s).toContain("Démissions dans les 6 mois 4 Soit 40,0 % des collaborateurs évalués");
-    expect(s).toContain("Précision au niveau Élevé 100,0 % 2 démissions parmi les 2 classés Élevé");
-    expect(s).toContain("Lift au niveau Élevé 2,5 × fois le taux moyen (40,0 %)");
-    expect(s).toContain("Rappel au niveau Élevé 50,0 % 2 des 4 démissions repérées");
+    for (const [label, value, hint] of [
+      ["Collaborateurs évalués (suivi complet)", "10", "Au 30/11/2024"],
+      ["Démissions dans les 6 mois", "4", "Taux moyen : 40,0 %"],
+      ["Précision au niveau Élevé", "100,0 %", "2 sur 2 classés Élevé"],
+      ["Lift au niveau Élevé", "2,5 ×", "Taux moyen : 40,0 %"],
+      ["Rappel au niveau Élevé", "50,0 %", "2 sur 4 démissions"],
+    ]) {
+      const at = s.indexOf(`${label} ${value}`);
+      expect(at, label).toBeGreaterThan(-1);
+      expect(s.indexOf(hint, at), label).toBeGreaterThan(at);
+    }
   });
 
   it("visuels : taux par niveau, gain avec diagonale et capacité RH, démissions mois par mois", () => {
-    expect(s).toContain("Les classés Élevé ont démissionné 2,5 fois plus que la moyenne");
+    expect(s).toContain("Taux de démission par niveau (%)");
     expect(s).toContain("Élevé (2 sur 2) 100,0 %");
     expect(s).toContain("Ensemble (4 sur 10) 40,0 %");
-    expect(s).toContain("En contactant 20,0 % des collaborateurs, on repère 50,0 % des démissions");
-    expect(s).toContain("trait gris : tirage au hasard");
+    expect(s).toContain("Démissions repérées par part contactée (%)");
     expect(s).toContain("20,0 % (capacité RH) 50,0 % 20,0 %");
-    expect(s).toContain("2 des 4 démissions datées surviennent dans les 3 premiers mois");
+    expect(s).toContain("Démissions par mois et niveau de risque");
+    expect(s).toContain("3 premiers mois : 2 sur 4 démissions");
     expect(s).toContain("mars 2025 1 0 0 1");
     const labels = ariaLabels(markup);
     expect(labels.some((a) => a.startsWith("Courbe de gain") && a.includes("À la capacité RH : 20,0 % contactés : 50,0 % des démissions repérées"))).toBe(true);

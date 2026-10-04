@@ -201,9 +201,7 @@ export function ConfirmButton({
       const min = reason.minLength ?? (reason.required ? 1 : 0);
       if (text.length < min) {
         setError(
-          reason.required && text.length === 0
-            ? `${reason.label} : champ obligatoire. Saisissez un motif puis confirmez.`
-            : `${reason.label} : ${min} caractères au moins (${text.length} saisis).`,
+          reason.required && text.length === 0 ? `${reason.label} : obligatoire.` : `${reason.label} : ${min} caractères minimum (${text.length} saisis).`,
         );
         field.current?.focus();
         return;

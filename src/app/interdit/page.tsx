@@ -6,9 +6,9 @@ import { ButtonLink, cardCls } from "@/components/ui";
 export const metadata = { title: "Accès refusé — People Analytics AJIR" };
 
 const WHY = {
-  ADMIN: "Par séparation des tâches, l'administrateur gère l'outil sans voir les données RH : tableaux de bord, fiches et recommandations lui sont fermés.",
-  RH: "Cette page relève de l'administration de l'outil (comptes, paramètres, journal d'audit), réservée à l'administrateur.",
-  MANAGER: "Cette page est réservée à la RH ou concerne un collaborateur hors de votre équipe. Vous voyez uniquement les collaborateurs de votre hiérarchie.",
+  ADMIN: "Séparation des tâches : pas d'accès aux données RH",
+  RH: "Page réservée à l'administrateur",
+  MANAGER: "Page réservée à la RH ou hors de votre équipe",
 } as const;
 
 const HOME_LABEL = { ADMIN: "Revenir à la console", RH: "Revenir au tableau de bord", MANAGER: "Revenir au tableau de bord" } as const;
@@ -26,16 +26,17 @@ export default async function Forbidden() {
         </span>
         <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-fg-subtle">Erreur 403</p>
         <h1 className="mt-1 text-2xl font-semibold text-heading">Accès refusé</h1>
-        <p className="mt-2 text-sm text-fg-muted">
-          {ctx ? (
-            <>
-              Cette page ne fait pas partie de votre périmètre (rôle : <span className="font-medium">{ROLE_LABEL[ctx.role]}</span>). Rien n&apos;a été modifié.
-            </>
-          ) : (
-            "Cette page demande une connexion avec un compte autorisé."
-          )}
-        </p>
-        {ctx && <p className="mt-2 text-sm text-fg-muted">{WHY[ctx.role]}</p>}
+        {ctx ? (
+          <ul className="mt-2 space-y-0.5 text-sm text-fg-muted">
+            <li>
+              Hors périmètre · rôle : <span className="font-medium text-fg">{ROLE_LABEL[ctx.role]}</span>
+            </li>
+            <li>{WHY[ctx.role]}</li>
+            <li>Aucune modification effectuée</li>
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm text-fg-muted">Connexion requise</p>
+        )}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <ButtonLink href={ctx ? homePath(ctx.role) : "/login"} variant="primary" icon={ctx ? "arrow-left" : "user"}>
             {ctx ? HOME_LABEL[ctx.role] : "Se connecter"}
@@ -46,11 +47,7 @@ export default async function Forbidden() {
             </ButtonLink>
           )}
         </div>
-        {ctx?.role !== "ADMIN" && (
-          <p className="mt-4 text-xs text-fg-muted">
-            Besoin de cet accès pour votre travail ? Demandez-le à l&apos;administrateur de l&apos;outil : les droits dépendent du rôle du compte.
-          </p>
-        )}
+        {ctx && ctx.role !== "ADMIN" && <p className="mt-4 text-xs text-fg-muted">Demande d&apos;accès : administrateur de l&apos;outil</p>}
       </div>
     </main>
   );

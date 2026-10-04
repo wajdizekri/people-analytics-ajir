@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { ButtonLink, EmptyState, KpiTile, Notice, PageHeader, RiskBadge, cardCls, fmt, tableCls } from "@/components/ui";
+import { Badge, ButtonLink, EmptyState, KpiTile, PageHeader, RiskBadge, StatusBadge, cardCls, fmt, tableCls } from "@/components/ui";
 import { ChartCard, VisualCard } from "@/components/charts/pbi";
 import { shareChart } from "@/components/charts/builders";
-import { InfoTip, PageIntro } from "@/components/help";
+import { InfoTip } from "@/components/help";
 import { ActiveFilters, FilterForm, Pagination, buildHref } from "@/components/pilotage/filters";
 import { actionLabel, formatDate, formatRate } from "@/components/pilotage/labels";
 import { CAUSALITY_NOTICE } from "@/components/insights/intervention-effects";
@@ -25,8 +25,8 @@ const CHANGE_STYLE: Record<LevelChange, string> = { BAISSE: "text-success", HAUS
 const sub = "block text-xs font-normal text-fg-subtle";
 const CHANGE_ARROW: Record<LevelChange, string> = { BAISSE: "▼", HAUSSE: "▲", STABLE: "■" };
 
-const share = (n: number, d: number) => (d ? formatRate(n / d, 0) : "—");
 const plural = (n: number, one: string, many = `${one}s`) => `${fmt.int(n)} ${n > 1 ? many : one}`;
+const verdict = (d: number) => (d < 0 ? "favorable" : d > 0 ? "à surveiller" : "stable");
 
 // Une baisse d'absentéisme ou d'heures supplémentaires est favorable : le sens est écrit, pas seulement coloré
 function DeltaText({ value, text }: { value: number | null; text: string }) {
@@ -108,46 +108,42 @@ export default async function InterventionsPage({ searchParams }: { searchParams
       <PageHeader
         eyebrow="Collaborateurs"
         title="Interventions"
-        subtitle="Suivre les actions réalisées à la suite des recommandations et l'évolution des collaborateurs concernés."
+        badge={
+          <span className="inline-flex items-center gap-1">
+            <StatusBadge tone="neutral" dot={false}>
+              Observation non causale
+            </StatusBadge>
+            <InfoTip label="Observation non causale">
+              {CAUSALITY_NOTICE}
+              {matching && " La comparaison avec des collaborateurs similaires en tient compte en partie, sans prouver d'effet."}
+            </InfoTip>
+          </span>
+        }
         scope="Toute l'entreprise"
-        period={`Données au ${formatDate(d.referenceDate)} · ${w} mois avant et ${w} mois après chaque action`}
+        period={`Données au ${formatDate(d.referenceDate)} · ${w} mois avant / après`}
       />
-      <PageIntro
-        helpHref="/aide#recommandations"
-        points={[
-          "Une action réalisée provient d'une intervention enregistrée ou d'une recommandation marquée « réalisée ».",
-          `La mesure compare les ${w} mois avant et les ${w} mois après le mois de l'action ; elle est « complète » après ${w} mois de recul.`,
-        ]}
-      >
-        Savoir quelles recommandations sont suivies d&apos;effet et comment évoluent ensuite le risque, l&apos;absentéisme et les heures supplémentaires des
-        collaborateurs concernés.
-      </PageIntro>
-      <Notice tone="neutral" className="mb-6">
-        <strong className="font-semibold text-fg">Observation, pas un effet causal.</strong> {CAUSALITY_NOTICE.replace(/^Observation, pas un effet causal : (.)/, (_m, c: string) => c.toUpperCase())}
-        {matching && " La comparaison avec des collaborateurs similaires, plus bas, en tient compte en partie, sans prouver d'effet."}
-      </Notice>
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-5">
-        <KpiTile label="Actions réalisées" value={fmt.int(t.actions)} hint={`dont ${fmt.int(t.measured)} avec ${w} mois de recul (mesure complète)`} />
+        <KpiTile label="Actions réalisées" value={fmt.int(t.actions)} hint={`Mesures complètes : ${fmt.int(t.measured)}`} />
         <KpiTile
           label="Taux de réalisation des recommandations"
           value={formatRate(t.completionRate, 0)}
-          hint={`${fmt.int(t.done)} réalisées, ${fmt.int(t.rejected)} rejetées, ${fmt.int(t.proposed)} en attente, sur ${fmt.int(t.total)} émises${t.superseded ? ` ; ${fmt.int(t.superseded)} remplacées par un recalcul, hors total` : ""}`}
+          hint={`${fmt.int(t.done)} / ${fmt.int(t.total)} émises · En attente : ${fmt.int(t.proposed)}`}
         />
         <KpiTile
           label="Niveau de risque en baisse après l'action"
-          value={share(t.levelDown, t.measured)}
-          hint={t.measured ? `${plural(t.levelDown, "collaborateur")} sur ${plural(t.measured, "mesuré")}` : "Aucune mesure complète pour l'instant"}
+          value={t.measured ? formatRate(t.levelDown / t.measured, 0) : "—"}
+          hint={t.measured ? `${fmt.int(t.levelDown)} / ${plural(t.measured, "mesuré")}` : "Aucune mesure complète"}
         />
         <KpiTile
-          label="Absentéisme : écart moyen après l'action"
+          label="Absentéisme : écart après l'action"
           value={formatPoints(t.absenteeismDelta)}
-          hint={t.absenteeismDelta == null ? "Aucune mesure complète" : `Hors santé, après − avant ; ${t.absenteeismDelta < 0 ? "baisse favorable" : t.absenteeismDelta > 0 ? "hausse à surveiller" : "stable"}`}
+          hint={t.absenteeismDelta == null ? "Aucune mesure complète" : `Après − avant · ${verdict(t.absenteeismDelta)}`}
         />
         <KpiTile
-          label="Heures sup. : écart moyen après l'action"
+          label="Heures sup. : écart après l'action"
           value={formatSignedHours(t.overtimeDelta)}
-          hint={t.overtimeDelta == null ? "Aucune mesure complète" : `Par personne et par mois ; ${t.overtimeDelta < 0 ? "baisse favorable" : t.overtimeDelta > 0 ? "hausse à surveiller" : "stable"}`}
+          hint={t.overtimeDelta == null ? "Aucune mesure complète" : `Par personne et par mois · ${verdict(t.overtimeDelta)}`}
         />
       </div>
 
@@ -159,21 +155,16 @@ export default async function InterventionsPage({ searchParams }: { searchParams
               Voir les recommandations
             </ButtonLink>
           }
-        >
-          Les actions apparaîtront ici dès qu&apos;une recommandation sera marquée « réalisée » depuis la fiche d&apos;un collaborateur ou la page Recommandations.
-        </EmptyState>
+        />
       ) : (
         <>
           {t.actions === 0 && (
             <section className={`${cardCls} mb-6 flex flex-wrap items-center justify-between gap-3 border-l-4 border-l-primary p-4 sm:p-5`} aria-labelledby="aucune-action">
               <div className="min-w-0">
                 <h2 id="aucune-action" className="text-base font-semibold text-heading">
-                  Aucune action réalisée pour l&apos;instant
+                  Aucune action réalisée
                 </h2>
-                <p className="mt-0.5 text-sm text-fg-muted">
-                  L&apos;avant / après s&apos;affichera dès qu&apos;une recommandation sera marquée « réalisée ». {plural(t.proposed, "recommandation attend", "recommandations attendent")}{" "}
-                  une décision.
-                </p>
+                <p className="mt-0.5 text-sm text-fg-muted">Recommandations en attente : {fmt.int(t.proposed)}</p>
               </div>
               {t.proposed > 0 && (
                 <ButtonLink href={pendingHref} variant="primary" iconEnd="arrow-right">
@@ -185,12 +176,7 @@ export default async function InterventionsPage({ searchParams }: { searchParams
 
           <div className="mb-6 grid gap-4 lg:grid-cols-2">
             <ChartCard
-              title={
-                t.total
-                  ? `${formatRate(t.completionRate, 0)} des recommandations émises ont été réalisées, ${share(t.proposed, t.total)} attendent une décision`
-                  : "Aucune recommandation émise"
-              }
-              subtitle="Statut des recommandations par type d'action, en % des recommandations émises"
+              title="Statut des recommandations par action (%)"
               actions={
                 <InfoTip label="Statut des recommandations" align="end">
                   Réalisée : l&apos;action a eu lieu. En attente : aucune décision prise. Rejetée : jugée non adaptée, avec un motif. Remplacée : retirée par un
@@ -210,15 +196,13 @@ export default async function InterventionsPage({ searchParams }: { searchParams
               })}
             />
             {measuredActions.length === 0 ? (
-              <VisualCard title="Niveau de risque avant / après l'action" subtitle={`Mesures complètes (${w} mois de recul), par type d'action`}>
-                <EmptyState title="Aucune mesure complète pour l'instant" compact>
-                  Il faut {w} mois de données après le mois de l&apos;action pour comparer le niveau de risque avant et après.
-                </EmptyState>
+              <VisualCard title="Niveau de risque après l'action (%)">
+                <EmptyState title="Aucune mesure complète" compact />
               </VisualCard>
             ) : (
               <ChartCard
-                title={`Après l'action, le niveau de risque a baissé pour ${share(t.levelDown, t.measured)} des collaborateurs mesurés`}
-                subtitle={`Mesures complètes (${w} mois de recul), en % des collaborateurs mesurés, par type d'action`}
+                title="Niveau de risque après l'action (%)"
+                subtitle={`Mesures complètes, ${w} mois de recul`}
                 chart={shareChart({
                   rows: measuredActions.map((a) => ({ name: actionLabel(a.actionCode), values: [a.levelDown, a.levelSame, a.levelUp] })),
                   parts: [
@@ -236,10 +220,14 @@ export default async function InterventionsPage({ searchParams }: { searchParams
           {t.actions > 0 && (
             <section className={`${cardCls} mb-6 overflow-hidden`} aria-labelledby="par-action-titre">
               <div className="flex flex-wrap items-end justify-between gap-2 border-b border-line px-4 py-3 sm:px-5">
-                <h2 id="par-action-titre" className="text-base font-semibold text-heading">
-                  Ce qui change après l&apos;action, par type d&apos;action
+                <h2 id="par-action-titre" className="flex items-center gap-1 text-base font-semibold text-heading">
+                  Avant / après par type d&apos;action
+                  <InfoTip label="Méthode avant / après">
+                    Écarts moyens « après − avant » sur les mesures complètes. Niveau avant : dernier calcul publié antérieur à l&apos;action ; niveau après : calcul
+                    publié {w} mois après le mois de l&apos;action. Absentéisme hors maladie, maternité et congés annuels ; heures supplémentaires pointées. Les
+                    collaborateurs opposés au traitement prédictif ne sont pas mesurés.
+                  </InfoTip>
                 </h2>
-                <p className="text-xs text-fg-muted">Écarts moyens « après − avant » sur les mesures complètes</p>
               </div>
               <div className={tableCls.wrap} tabIndex={0} role="region" aria-labelledby="par-action-titre">
                 <table className={tableCls.table}>
@@ -289,16 +277,14 @@ export default async function InterventionsPage({ searchParams }: { searchParams
                     Afficher tous les types d&apos;action
                   </ButtonLink>
                 }
-              >
-                Aucune recommandation de ce type n&apos;a encore été marquée « réalisée ».
-              </EmptyState>
+              />
             ) : (
               <section className={`${cardCls} overflow-hidden`} aria-labelledby="actions-titre">
                 <div className="flex flex-wrap items-end justify-between gap-2 border-b border-line px-4 py-3 sm:px-5">
                   <h2 id="actions-titre" className="text-base font-semibold text-heading">
-                    Actions réalisées, collaborateur par collaborateur <span className="font-normal tabular-nums text-fg-muted">({fmt.int(d.total)})</span>
+                    Actions réalisées <span className="font-normal tabular-nums text-fg-muted">({fmt.int(d.total)})</span>
                   </h2>
-                  <p className="text-xs text-fg-muted">Les plus récentes d&apos;abord · consultation tracée dans le journal d&apos;audit</p>
+                  <Badge>Consultation tracée</Badge>
                 </div>
                 {/* Mobile : une carte par action (mêmes informations que le tableau) */}
                 <ul className="divide-y divide-line sm:hidden" aria-labelledby="actions-titre">
@@ -340,7 +326,7 @@ export default async function InterventionsPage({ searchParams }: { searchParams
                             </p>
                           </>
                         ) : (
-                          <p className="mt-1 text-xs text-fg-subtle">Non mesuré : opposition au traitement prédictif</p>
+                          <p className="mt-1 text-xs text-fg-subtle">Non mesuré (opposition)</p>
                         )}
                       </li>
                     );
@@ -392,7 +378,7 @@ export default async function InterventionsPage({ searchParams }: { searchParams
                                   )}
                                 </>
                               ) : (
-                                <span className="text-xs text-fg-subtle">Non mesuré : opposition au traitement prédictif</span>
+                                <span className="text-xs text-fg-subtle">Non mesuré (opposition)</span>
                               )}
                             </td>
                             <td className={`${tdR} whitespace-nowrap`}>
@@ -421,10 +407,6 @@ export default async function InterventionsPage({ searchParams }: { searchParams
             ))}
         </>
       )}
-      <p className="mt-3 text-xs text-fg-muted">
-        Niveau avant : dernier calcul publié antérieur à l&apos;action ; niveau après : calcul publié {w} mois après le mois de l&apos;action. Absentéisme hors maladie,
-        maternité et congés annuels ; heures supplémentaires pointées. Les collaborateurs opposés au traitement prédictif ne sont pas mesurés.
-      </p>
     </>
   );
 }

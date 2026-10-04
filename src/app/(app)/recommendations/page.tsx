@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Badge, ButtonLink, EmptyState, Initials, KpiTile, PageHeader, RiskBadge, cardCls, fmt } from "@/components/ui";
+import { InfoTip } from "@/components/help";
 import { ActiveFilters, FilterForm, Pagination, buildHref } from "@/components/pilotage/filters";
 import { FEEDBACK_LABELS, RECO_STATUS_LABELS, actionLabel, formatDate, formatRate, todayTunis } from "@/components/pilotage/labels";
 import { RECO_WHAT, recoWhy } from "@/components/pilotage/reco-text";
@@ -78,7 +79,7 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
       <PageHeader
         eyebrow="Collaborateurs"
         title="Recommandations"
-        subtitle="Décider des actions proposées pour les collaborateurs en risque de départ élevé ou moyen. Une recommandation est une aide, pas une obligation."
+        badge={<Badge>Aide à la décision</Badge>}
         scope="Toute l'entreprise"
         actions={l.total > 0 ? <ExportButton kind="recommendations" searchParams={raw} total={l.total} /> : undefined}
       />
@@ -92,18 +93,16 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
           { name: "departement", label: "Département", allLabel: "Tous les départements", options: depts.map((d) => ({ value: String(d.id), label: d.label })) },
         ]}
       />
-      <ActiveFilters filters={filters} ignored={ignored} note="le suivi de l'adoption ignore le filtre de statut" />
+      <ActiveFilters filters={filters} ignored={ignored} />
 
       <section aria-labelledby="adoption-titre" className={`${cardCls} mb-6 p-4 sm:p-5`}>
-        <h2 id="adoption-titre" className="text-base font-semibold text-heading">
-          Où en sont les {fmt.int(k.total)} recommandations ?
+        <h2 id="adoption-titre" className="flex items-center gap-1 text-base font-semibold text-heading">
+          Suivi des recommandations <span className="font-normal tabular-nums text-fg-muted">({fmt.int(k.total)})</span>
+          <InfoTip label="Taux d'adoption">
+            Taux d&apos;adoption = recommandations réalisées ÷ recommandations décidées par la RH (réalisées ou rejetées). Les recommandations remplacées par un
+            nouveau calcul sont hors du taux. Le suivi ignore le filtre de statut.
+          </InfoTip>
         </h2>
-        <p className="mt-1 text-sm text-fg-muted">
-          {fmt.int(k.done)} réalisée{k.done > 1 ? "s" : ""}, {fmt.int(k.rejected)} rejetée{k.rejected > 1 ? "s" : ""}
-          {k.superseded > 0 && `, ${fmt.int(k.superseded)} remplacée${k.superseded > 1 ? "s" : ""} par un nouveau calcul`} et{" "}
-          <strong className="text-heading">{fmt.int(k.proposed)} en attente de décision</strong>
-          .
-        </p>
         {k.total > 0 && (
           <div className="mt-3">
             <div className="flex h-4 w-full gap-px overflow-hidden rounded-full bg-surface-3" aria-hidden="true">
@@ -119,33 +118,27 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
             </ul>
           </div>
         )}
-        <p className="mt-2 text-xs text-fg-muted">
-          Taux d&apos;adoption = recommandations réalisées ÷ recommandations décidées par la RH (réalisées ou rejetées).
-          {k.superseded > 0 && ` ${fmt.int(k.superseded)} remplacée${k.superseded > 1 ? "s" : ""} par un nouveau calcul, hors du taux.`}
-        </p>
         <div className="mt-4 grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
           <KpiTile
             label="En attente de décision"
             value={fmt.int(k.proposed)}
-            hint="Recommandations à traiter"
             href={buildHref("/recommendations", { statut: "PROPOSEE", action: q.action, departement: q.departement })}
           />
           <KpiTile
             label="Taux d'adoption"
             value={formatRate(k.adoptionRate, 0)}
-            hint={decided ? `${fmt.int(k.done)} réalisée${k.done > 1 ? "s" : ""} sur ${fmt.int(decided)} décidée${decided > 1 ? "s" : ""}` : "Aucune recommandation décidée"}
+            hint={decided ? `${fmt.int(k.done)} / ${fmt.int(decided)} décidées` : "Aucune décidée"}
           />
           <KpiTile
             label="Interventions enregistrées"
             value={fmt.int(k.interventions)}
-            hint="Actions datées, avec leur avant / après"
             detailHref="/interventions"
             detailLabel="Voir les interventions"
           />
           <KpiTile
             label="Jugées pertinentes"
             value={formatRate(k.relevantRate, 0)}
-            hint={k.feedbackCount ? `sur ${fmt.int(k.feedbackCount)} avis donné${k.feedbackCount > 1 ? "s" : ""}` : "Aucun avis donné pour l'instant"}
+            hint={k.feedbackCount ? `Avis : ${fmt.int(k.feedbackCount)}` : "Aucun avis"}
           />
         </div>
       </section>
@@ -167,24 +160,16 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
               </ButtonLink>
             ) : undefined
           }
-        >
-          {q.statut === "PROPOSEE" && filters.length === 1
-            ? "Toutes les recommandations ont été décidées. Les suivantes seront créées au prochain calcul mensuel des risques."
-            : filters.length > 0
-              ? "Aucune recommandation pour cette combinaison de filtres : retirez un filtre pour élargir la sélection."
-              : "Les recommandations sont créées à chaque calcul mensuel des risques."}
-        </EmptyState>
+        />
       ) : (
         <section className={`${cardCls} overflow-hidden`} aria-labelledby="liste-titre">
           <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-3 sm:px-5">
             <h2 id="liste-titre" className="text-base font-semibold text-heading">
               <span className="text-lg tabular-nums">{fmt.int(l.total)}</span> recommandation{l.total > 1 ? "s" : ""}
             </h2>
-            <p className="text-xs text-fg-muted">En attente de décision d&apos;abord ; sur chaque page, priorité haute (risque Élevé) puis moyenne</p>
           </div>
           {!q.action && (q.statut ?? "PROPOSEE") === "PROPOSEE" && l.actions.includes("ENTRETIEN") && (
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-primary-soft px-4 py-2.5 text-sm text-fg sm:px-5">
-              <span>Pour commencer par les plus urgentes : les entretiens de rétention concernent les collaborateurs classés au niveau Élevé.</span>
+            <div className="flex flex-wrap items-center gap-2 border-b border-line bg-primary-soft px-4 py-2.5 text-sm text-fg sm:px-5">
               <ButtonLink href={buildHref("/recommendations", { statut: "PROPOSEE", action: "ENTRETIEN", departement: q.departement })} variant="secondary" size="sm" iconEnd="arrow-right">
                 Voir les entretiens en attente
               </ButtonLink>
@@ -193,6 +178,7 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
           <ol className="divide-y divide-line">
             {rows.map((r) => {
               const p = priorityOf(r);
+              const why = recoWhy(r.triggerGroup, r.triggerLabel);
               return (
                 <li
                   key={r.id}
@@ -225,20 +211,19 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
                       </div>
                     </div>
                     <div className="min-w-0">
-                      <Label>Pourquoi</Label>
-                      <p className="mt-1 text-sm text-fg">{recoWhy(r.triggerGroup, r.triggerLabel)}</p>
+                      <Label>{why.label}</Label>
+                      <p className="mt-1 text-sm text-fg">{why.value.charAt(0).toUpperCase() + why.value.slice(1)}</p>
                     </div>
                     <div className="min-w-0">
-                      <Label>Que faire</Label>
+                      <Label>Action</Label>
                       <p className="mt-1 text-sm font-semibold text-heading">{actionLabel(r.actionCode)}</p>
-                      {RECO_WHAT[r.actionCode] && <p className="text-sm text-fg-muted">{RECO_WHAT[r.actionCode]}</p>}
+                      {RECO_WHAT[r.actionCode] && <p className="text-sm text-fg-muted">{RECO_WHAT[r.actionCode].charAt(0).toUpperCase() + RECO_WHAT[r.actionCode].slice(1)}</p>}
                     </div>
                   </div>
                   {r.status !== "PROPOSEE" && (
                     <p className="mt-3 text-xs text-fg-muted">
                       {r.status === "REALISEE" ? "Réalisée" : r.superseded ? "Remplacée par un nouveau calcul" : "Rejetée"}
                       {r.updatedAt ? ` le ${formatDate(r.updatedAt.slice(0, 10))}` : ""}
-                      {r.superseded && ", sans décision de la RH"}
                       {r.interventionDate && <> · Intervention le {formatDate(r.interventionDate)}</>}
                       {r.comment && !r.superseded && (
                         <>

@@ -1,4 +1,4 @@
-import { ColorLegend } from "@/components/ui";
+import { ColorLegend, StatusBadge } from "@/components/ui";
 import { VisualCard } from "@/components/charts/pbi";
 import { SEMANTIC } from "@/components/charts/theme";
 import { ZONE_COLOR, calibrationChart, type CalibrationBin } from "@/components/monitoring/model-options";
@@ -10,17 +10,18 @@ export function CalibrationChart({ bins, onTarget, className = "" }: { bins: Cal
     <VisualCard
       headingLevel={3}
       className={className}
-      title={onTarget ? "Les points suivent la diagonale : les pourcentages sont fiables" : "Les points s'écartent de la diagonale : pourcentages à prendre avec prudence"}
-      subtitle="Risque annoncé et démissions observées (%), par groupe de collaborateurs au risque proche"
+      title="Risque annoncé et observé (%)"
+      subtitle="Un point par groupe de risque proche"
+      badge={<StatusBadge tone={onTarget ? "success" : "warning"}>{onTarget ? "Dans la cible" : "Hors cible"}</StatusBadge>}
       chart={calibrationChart(bins)}
-      footnote="Marge calculée par groupe (loi binomiale), indicative : les observations répétées d'un même collaborateur ne sont pas corrigées. Taille du point : nombre d'observations du groupe."
+      footnote="IC 95 % par groupe (loi binomiale), indicatif : observations répétées non corrigées. Taille du point : nombre d'observations."
     >
       <ColorLegend
         className="mt-2"
         items={[
-          { color: SEMANTIC.neutre, label: "Modèle : un point par groupe, trait vertical = marge d'incertitude à 95 %" },
+          { color: SEMANTIC.neutre, label: "Modèle (IC 95 %)" },
           { color: SEMANTIC.reference, dashed: true, label: "Accord parfait" },
-          { color: ZONE_COLOR, label: "Écart acceptable : de 0,8 à 1,25 fois le risque annoncé" },
+          { color: ZONE_COLOR, label: "Écart acceptable (0,8 à 1,25)" },
         ]}
       />
     </VisualCard>

@@ -55,7 +55,7 @@ export function SettingsForm({
   // Succès annoncé par un toast ; en cas de refus, le détail reste dans la barre d'enregistrement et sous chaque champ
   useActionToast(state, {
     error: "Paramètres non enregistrés",
-    description: state.fieldErrors ? "Corrigez les champs signalés en rouge, puis enregistrez de nouveau." : state.error ? "Le motif est indiqué dans la barre d'enregistrement." : undefined,
+    description: state.fieldErrors ? "Champs à corriger signalés en rouge" : state.error ? "Motif dans la barre d'enregistrement" : undefined,
   });
   const [vals, setVals] = useState<Record<string, string>>(() => Object.fromEntries(fields.map((f) => [f.key, toInput(f.key, f.value)])));
   const [smigRows, setSmigRows] = useState<SmigRow[]>(() => smigInit(smig.periods));
@@ -99,7 +99,7 @@ export function SettingsForm({
 
   const grouped = new Set(SETTING_GROUPS.flatMap((g) => g.keys));
   const others = fields.filter((f) => !grouped.has(f.key) && SETTINGS_UI[f.key]).map((f) => f.key);
-  const groups: SettingGroup[] = others.length ? [...SETTING_GROUPS, { id: "autres", title: "Autres réglages", nav: "Autres réglages", intro: "", keys: others }] : SETTING_GROUPS;
+  const groups: SettingGroup[] = others.length ? [...SETTING_GROUPS, { id: "autres", title: "Autres réglages", nav: "Autres réglages", keys: others }] : SETTING_GROUPS;
   const changedIn = (g: SettingGroup) =>
     g.keys.filter((k) => changedKeys.has(k)).length + (g.block === "smig" && changedKeys.has("smig_schedule") ? 1 : 0) + (g.block === "budgets" && changedKeys.has("budgets") ? 1 : 0);
 
@@ -151,7 +151,6 @@ export function SettingsForm({
                   <h2 id={`sg-${g.id}`} className="text-base font-semibold text-heading">
                     {g.title}
                   </h2>
-                  {g.intro && <p className="mt-0.5 text-sm text-fg-muted">{g.intro}</p>}
                 </div>
                 <div className="divide-y divide-line px-4 sm:px-5">
                   {g.keys.map(renderRow)}

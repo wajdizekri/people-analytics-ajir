@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { DetailTip } from "@/components/help/info-tip";
 import { Icon, type IconName } from "./icons";
 
 // Composants de présentation partagés. Tous les écrans les utilisent pour rester cohérents (docs/qa/CHARTE_UI.md).
@@ -32,8 +33,8 @@ export { DataTable, type DataTableColumn, type DataTableRow, type SortValue } fr
 export { SortHeader, type SortDir } from "./sort-header";
 import { cardCls } from "./classes";
 
-// En-tête d'écran : titre (= libellé du menu), une phrase d'objectif, périmètre et période, au plus 2 actions visibles
-// (le reste dans <ActionBar more={…}>).
+// En-tête d'écran : titre (= libellé du menu), périmètre et période, au plus 2 actions visibles (le reste dans <ActionBar more={…}>).
+// La phrase d'objectif n'est pas affichée : elle est lue dans la bulle « ? » à côté du titre.
 export function PageHeader({
   title,
   subtitle,
@@ -44,7 +45,7 @@ export function PageHeader({
   badge,
 }: {
   title: string;
-  /** Une phrase : à quoi sert l'écran (« Suivre l'absentéisme de votre équipe et repérer les anomalies »). */
+  /** Bulle « ? » à côté du titre : à quoi sert l'écran. */
   subtitle?: ReactNode;
   actions?: ReactNode;
   eyebrow?: string;
@@ -55,19 +56,24 @@ export function PageHeader({
   /** Mention à côté du titre (au lieu du surtitre) : <StatusBadge tone="warning">Prévision indicative</StatusBadge>. */
   badge?: ReactNode;
 }) {
+  const heading = (
+    <div className="flex min-w-0 items-start gap-1">
+      <h1 className="min-w-0 break-words text-2xl font-semibold leading-tight text-heading sm:text-[26px]">{title}</h1>
+      <DetailTip label={title} details={subtitle} prefix="Aide" className="mt-1" />
+    </div>
+  );
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 border-l-4 border-accent pl-3">
         {eyebrow && <p className="text-xs font-semibold uppercase tracking-wider text-brand-magenta dark:text-fuchsia-300">{eyebrow}</p>}
         {badge ? (
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h1 className="min-w-0 break-words text-2xl font-semibold leading-tight text-heading sm:text-[26px]">{title}</h1>
+            {heading}
             {badge}
           </div>
         ) : (
-          <h1 className="break-words text-2xl font-semibold leading-tight text-heading sm:text-[26px]">{title}</h1>
+          heading
         )}
-        {subtitle && <p className="mt-1 max-w-3xl text-[15px] leading-snug text-fg-muted">{subtitle}</p>}
         {(scope || period) && (
           <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-fg-muted">
             {scope && (
@@ -92,7 +98,8 @@ export function PageHeader({
   );
 }
 
-// Titre de section (niveau 2 par défaut, 3 sous une section) avec une phrase d'explication et des actions à droite
+// Titre de section (niveau 2 par défaut, 3 sous une section) et actions à droite. La bulle « ? » (tip) est posée après le titre,
+// hors du titre (qui reste son seul nom) ; `description` n'est pas affichée : elle est lue dans cette bulle.
 export function SectionHeader({
   title,
   description,
@@ -103,6 +110,7 @@ export function SectionHeader({
   className = "",
 }: {
   title: string;
+  /** Bulle « ? » : ajoutée à `tip`, ou bulle propre sans `tip`. */
   description?: ReactNode;
   actions?: ReactNode;
   /** Bulle « ? » posée après le titre (<TermTip … />). */
@@ -114,12 +122,11 @@ export function SectionHeader({
   const Heading = level === 3 ? "h3" : "h2";
   return (
     <div className={`mb-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2 ${className}`}>
-      <div className="min-w-0">
-        <Heading id={id} className={`flex min-w-0 scroll-mt-4 items-center gap-1 break-words font-semibold text-heading ${level === 3 ? "text-base" : "text-lg"}`}>
+      <div className="flex min-w-0 items-start gap-1">
+        <Heading id={id} className={`min-w-0 scroll-mt-4 break-words font-semibold text-heading ${level === 3 ? "text-base" : "text-lg"}`}>
           {title}
-          {tip}
         </Heading>
-        {description && <p className="mt-0.5 max-w-3xl text-sm text-fg-muted">{description}</p>}
+        <DetailTip label={title} tip={tip} details={description} prefix="Aide" className={level === 3 ? "" : "mt-0.5"} />
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
@@ -139,6 +146,7 @@ export function Card({
   className?: string;
   actions?: ReactNode;
   headingLevel?: 2 | 3;
+  /** Bulle « ? » après le titre. */
   description?: ReactNode;
 }) {
   const Heading = headingLevel === 3 ? "h3" : "h2";
@@ -146,9 +154,9 @@ export function Card({
     <section className={`${cardCls} min-w-0 p-4 sm:p-5 ${className}`}>
       {(title || actions) && (
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            {title && <Heading className="text-base font-semibold text-heading">{title}</Heading>}
-            {description && <p className="mt-0.5 text-[13px] text-fg-muted">{description}</p>}
+          <div className="flex min-w-0 items-start gap-1">
+            {title && <Heading className="min-w-0 text-base font-semibold text-heading">{title}</Heading>}
+            <DetailTip label={title ?? "Détails"} details={description} prefix="Aide" />
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
@@ -188,7 +196,10 @@ function TileDeltaLine({ delta }: { delta: TileDelta }) {
   );
 }
 
-// Tuile d'indicateur simple ; même lecture que KpiCard : libellé, période, valeur + unité, variation facultative (delta)
+const shown = (n: ReactNode) => n != null && n !== false && n !== "";
+
+// Tuile d'indicateur simple ; même lecture que KpiCard : libellé, valeur + unité, variation facultative (delta).
+// Période et aide sont lues dans la bulle « ? » du coin (ajoutées à `tip` s'il est fourni).
 export function KpiTile({
   label,
   value,
@@ -203,9 +214,11 @@ export function KpiTile({
 }: {
   label: string;
   value: ReactNode;
+  /** Bulle « ? ». */
   hint?: ReactNode;
   href?: string;
   unit?: string;
+  /** Bulle « ? ». */
   period?: ReactNode;
   tip?: ReactNode;
   /** Lien de pied (sans rendre la carte cliquable). */
@@ -217,13 +230,11 @@ export function KpiTile({
   const body = (
     <>
       <p className="text-[13px] font-medium leading-snug text-fg-muted">{label}</p>
-      {period && <p className="text-xs text-fg-subtle">{period}</p>}
       <p className="mt-1.5 flex flex-wrap items-baseline gap-x-1 text-2xl font-semibold leading-tight tabular-nums text-heading">
         <span>{value}</span>
         {unit && <span className="text-sm font-medium text-fg-muted">{unit}</span>}
       </p>
       {delta && <TileDeltaLine delta={delta} />}
-      {hint && <p className="mt-1 text-xs leading-snug text-fg-muted">{hint}</p>}
       {href && (
         <span className="mt-auto inline-flex items-center gap-1 pt-2 text-[13px] font-medium text-link underline-offset-2 group-hover:underline">
           {detailLabel} <span aria-hidden="true">›</span>
@@ -238,7 +249,8 @@ export function KpiTile({
       )}
     </>
   );
-  const cls = `flex h-full flex-col ${cardCls} min-w-0 p-4 ${tip ? "pr-10" : ""}`;
+  const help = shown(tip) || shown(period) || shown(hint);
+  const cls = `flex h-full flex-col ${cardCls} min-w-0 p-4 ${help ? "pr-10" : ""}`;
   const card = href ? (
     <Link href={href} className={`group ${cls} transition duration-200 hover:-translate-y-px hover:border-primary/50 hover:shadow-pop active:translate-y-0`}>
       {body}
@@ -246,11 +258,13 @@ export function KpiTile({
   ) : (
     <div className={cls}>{body}</div>
   );
-  if (!tip) return card;
+  if (!help) return card;
   return (
     <div className="relative h-full">
       {card}
-      <span className="absolute right-2 top-2.5">{tip}</span>
+      <span className="absolute right-2 top-2.5">
+        <DetailTip label={label} tip={tip} details={[period, hint]} align="end" />
+      </span>
     </div>
   );
 }
@@ -316,7 +330,8 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
   return <span className={`inline-flex items-center whitespace-nowrap rounded-[4px] px-1.5 py-0.5 text-xs font-medium ${BADGE_TONE[key]}`}>{children}</span>;
 }
 
-// État vide : quoi (title) + pourquoi (children) + action (bouton ou lien). compact : sans pictogramme, dans un petit visuel.
+// État vide : titre + action (bouton ou lien). Le pourquoi (children) n'est pas affiché : il est lu dans la bulle « ? » du titre.
+// compact : sans pictogramme, dans un petit visuel.
 export function EmptyState({
   title,
   children,
@@ -328,8 +343,9 @@ export function EmptyState({
   className = "",
 }: {
   title: string;
+  /** Bulle « ? » à côté du titre. */
   children?: ReactNode;
-  /** Bouton(s) ou lien(s) sous le texte (ButtonLink primaire + secondaire). */
+  /** Bouton(s) ou lien(s) sous le titre (ButtonLink primaire + secondaire). */
   action?: ReactNode;
   /** Alias de action. */
   actions?: ReactNode;
@@ -348,8 +364,10 @@ export function EmptyState({
           <Icon name={icon} className="h-5 w-5" />
         </span>
       )}
-      <Title className={`font-semibold text-fg ${headingLevel === 1 ? "text-xl" : "text-base"}`}>{title}</Title>
-      {children && <div className="mt-1 max-w-prose text-sm text-fg-muted">{children}</div>}
+      <div className="flex max-w-full items-start justify-center gap-1">
+        <Title className={`min-w-0 font-semibold text-fg ${headingLevel === 1 ? "text-xl" : "text-base"}`}>{title}</Title>
+        <DetailTip label={title} details={children} prefix="Aide" align="center" className={headingLevel === 1 ? "mt-0.5" : ""} />
+      </div>
       {act && <div className="mt-4 flex flex-wrap justify-center gap-2">{act}</div>}
     </div>
   );

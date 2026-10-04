@@ -35,7 +35,6 @@ const { factorsChart, FACTOR_LABEL_MARGIN } = await import("@/components/monitor
 const { FACTOR_PHRASE, factorAxisLabel } = await import("@/components/monitoring/model-words");
 const { retentionChart, MEDIAN_LABEL } = await import("@/components/retention/chart-options");
 const { tiersFor } = await import("@/components/org-chart/scale");
-const { absenteeismByDepartmentTitle, absenteeismTitle } = await import("@/app/(app)/dashboard/messages");
 const pbi = await import("@/components/charts/pbi");
 
 const DARK_SURFACE = "#111a2b";
@@ -276,32 +275,6 @@ describe("rétention : repère des 50 %", () => {
     expect(dark.backgroundColor).toBe(readChartTokens(true).surface);
     expect(contrast(dark.color, dark.backgroundColor)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(light.color, light.backgroundColor)).toBeGreaterThanOrEqual(4.5);
-  });
-});
-
-// ---------------------------------------------------------------------------------------------------------------
-// 9. Tableau de bord : titres d'absentéisme arrondis comme les barres (2 décimales)
-// ---------------------------------------------------------------------------------------------------------------
-describe("titres d'absentéisme du tableau de bord", () => {
-  const nb = (s: string) => s.replace(/[  ]/g, " ");
-  // Valeurs des visuels : toPct(r, 2) de dashboard/page.tsx
-  const bar = (r: number) => (Math.round(r * 100 * 10 ** 2) / 10 ** 2).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  it("« 0,98 % contre 0,78 % », comme les barres (jamais « 1,0 % contre 0,8 % »)", () => {
-    const rows = [
-      { name: "Direction logistique", absenteeismRate: 0.009812 },
-      { name: "Direction de la production", absenteeismRate: 0.00831 },
-    ];
-    const title = nb(absenteeismByDepartmentTitle(rows, 0.007804));
-    expect(title).toBe("Direction logistique : absentéisme le plus élevé (0,98 % contre 0,78 % en moyenne)");
-    expect(title).toContain(`${bar(0.009812)} %`);
-    expect(title).toContain(`${bar(0.007804)} %`);
-  });
-
-  it("courbe mensuelle : même arrondi, position comparée sur les valeurs affichées", () => {
-    expect(nb(absenteeismTitle(0.00649, 0.007804, "août 2026"))).toBe("En août 2026, l'absentéisme (0,65 %) est sous la moyenne de la période");
-    expect(nb(absenteeismTitle(0.0078, 0.0080, "août 2026"))).toBe("En août 2026, l'absentéisme (0,78 %) est proche de la moyenne de la période");
-    expect(nb(absenteeismTitle(0.0125, 0.0080, "août 2026"))).toBe("En août 2026, l'absentéisme (1,25 %) est au-dessus de la moyenne de la période");
   });
 });
 

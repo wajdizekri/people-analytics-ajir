@@ -71,7 +71,7 @@ describe("panneau « et si ? » : recherche des leviers", () => {
     );
     expect(out).toContain("Trouver les leviers les plus efficaces");
     expect(out).toContain(FRAMING);
-    expect(out).toContain("Par où commencer ?");
+    expect(out).toContain("Recherche de leviers");
     for (const s of ["Simulation « et si ? »", "Simuler ces actions", "Réinitialiser la simulation", "Augmentation du salaire de base (%)", "Promotion au grade supérieur"])
       expect(out).toContain(s);
     expect(out).not.toContain("Piste 1");
@@ -94,8 +94,8 @@ describe("panneau « et si ? » : recherche des leviers", () => {
     expect((out.match(/Appliquer à la simulation/g) ?? []).length).toBe(2);
     expect(out).toContain("(piste 2)");
     expect(out).toContain("ampleur 0,45");
-    expect(out).toContain("Hors coût de la formation.");
-    expect(out).toMatch(/Hausse de salaire : 1 574 TND par an, charges comprises\./);
+    expect(out).toContain(", hors formation");
+    expect(out).toMatch(/Coût : 1 574 TND \/ an, charges comprises/);
     expect(raw.indexOf("Piste 1")).toBeLessThan(raw.indexOf("Piste 2"));
     // détail de la méthode : grille, coût normalisé, dominance, volume et modèle
     expect(out).toContain("Comment les pistes sont choisies");

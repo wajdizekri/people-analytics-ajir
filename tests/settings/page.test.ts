@@ -67,7 +67,7 @@ describe("page Paramètres : structure", () => {
     for (const g of SETTING_GROUPS) {
       expect(html, g.id).toContain(`<section id="${g.id}" aria-labelledby="sg-${g.id}"`);
       expect(html, g.id).toContain(`<h2 id="sg-${g.id}"`);
-      expect(t, g.id).toContain(`${g.title} ${g.intro}`);
+      expect(t, g.id).toContain(g.title);
     }
     // Deux éléments collants seulement, jamais superposés : la navigation (colonne de gauche, en haut, dès lg) et la barre
     // d'enregistrement (colonne du contenu, en bas, après la dernière carte : elle ne masque pas le dernier champ)
@@ -81,7 +81,7 @@ describe("page Paramètres : structure", () => {
     expect(barAt).toBeGreaterThan(html.lastIndexOf("</section>"));
     expect(count(html, /<form/g)).toBe(1);
     expect(count(html, /<h1/g)).toBe(1);
-    expect(t).toContain("Les changements s'appliquent au prochain calcul ou au prochain import.");
+    expect(t).toContain("Paramètres Effet au prochain calcul ou import");
   });
 
   it("réservée à l'administrateur", async () => {
@@ -109,9 +109,9 @@ describe("page Paramètres : ligne de paramètre", () => {
     for (const [key, ui] of Object.entries(SETTINGS_UI)) {
       expect(html, key).toContain(`<label for="s-${key}"`);
       expect(html, key).toMatch(new RegExp(`<input id="s-${key}" type="number"[^>]*name="${key}"`));
-      expect(html, key).toContain(`aria-describedby="s-${key}-help s-${key}-bornes s-${key}-meta s-${key}-effect"`);
-      for (const part of ["help", "bornes", "meta", "effect"]) expect(count(html, new RegExp(`id="s-${key}-${part}"`, "g")), `${key}-${part}`).toBe(1);
-      expect(t, key).toContain(`${ui.short} `);
+      expect(html, key).toContain(`aria-describedby="s-${key}-bornes s-${key}-meta s-${key}-effect"`);
+      expect(html, key).not.toContain(`id="s-${key}-help"`);
+      for (const part of ["bornes", "meta", "effect"]) expect(count(html, new RegExp(`id="s-${key}-${part}"`, "g")), `${key}-${part}`).toBe(1);
       expect(t, key).toContain(`Définition : ${ui.label}`);
       expect(t, key).toContain(ui.help);
     }
@@ -122,7 +122,7 @@ describe("page Paramètres : ligne de paramètre", () => {
     expect(t).toContain("Valeurs possibles : 0,5 à 20 %");
     expect(t).toContain("Valeurs possibles : 0 à 5 points");
     expect(t).toContain("Valeurs possibles : 1 à 12 mois");
-    expect(t).toContain("Effet : 2 % des collaborateurs évalués seront classés en risque élevé à chaque calcul mensuel.");
+    expect(t).toContain("Effet : 2 % des évalués classés Élevé");
   });
 
   it("textes vérifiés par les tests E2E ; lien « Rétablir » seulement quand la valeur diffère du défaut", async () => {
@@ -163,13 +163,13 @@ describe("page Paramètres : ligne de paramètre", () => {
     expect(changed).toContain('aria-invalid="false"');
 
     const tooHigh = row({ value: "50", raw: 0.5, changed: true, error: "Maximum 20 %." });
-    expect(tooHigh).toMatch(/<input id="s-capacity_rate"[^>]*aria-invalid="true" aria-describedby="s-capacity_rate-err s-capacity_rate-help /);
+    expect(tooHigh).toMatch(/<input id="s-capacity_rate"[^>]*aria-invalid="true" aria-describedby="s-capacity_rate-err s-capacity_rate-bornes /);
     expect(tooHigh).toMatch(/<p id="s-capacity_rate-err"[^>]*>Maximum 20 %\.<\/p>/);
     expect(tooHigh).toContain("border-danger");
     expect(tooHigh).not.toContain("ring-accent");
 
     const empty = row({ value: "", raw: NaN, changed: true, error: "Saisissez une valeur.", effect: null });
-    expect(text(empty)).toContain("Effet : saisissez une valeur valide pour le voir.");
+    expect(text(empty)).toContain("Effet : —");
     expect(text(empty)).toContain("Rétablir la valeur par défaut");
   });
 });
@@ -190,9 +190,9 @@ describe("page Paramètres : barème SMIG et budgets", () => {
     expect(smig).toMatch(/aria-label="Date d&#x27;effet de la période 2"[^>]*value="2026-01-01"/);
     expect(smig).toMatch(/aria-label="SMIG mensuel de la période 1 \(TND\)"[^>]*text-right[^>]*value="528.32"/);
     expect(smig).toMatch(/aria-label="SMIG mensuel de la période 2 \(TND\)"[^>]*text-right[^>]*value="554.736"/);
-    expect(t).toContain("Sans date : couvre tout ce qui précède.");
+    expect(t).toContain("Sans date : période initiale");
     for (const s of ["Retirer la période 1", "Retirer la période 2", "Ajouter une période"]) expect(t).toContain(s);
-    expect(t).toContain("En clair : 528,32 TND jusqu'au 31/12/2025, puis 554,736 TND à partir du 01/01/2026.");
+    expect(t).toContain("Barème : 528,32 TND jusqu'au 31/12/2025, puis 554,736 TND à partir du 01/01/2026");
     expect(html).toMatch(/<input type="hidden" name="smig_schedule" value="[^"]*554\.736/);
   });
 
@@ -206,21 +206,21 @@ describe("page Paramètres : barème SMIG et budgets", () => {
     expect(out).toMatch(/aria-label="Date d&#x27;effet de la période 2"[^>]*aria-invalid="true" aria-describedby="smig-1-date-err"/);
     expect(out).toMatch(/aria-label="SMIG mensuel de la période 3 \(TND\)"[^>]*aria-invalid="true" aria-describedby="smig-2-montant-err"/);
     for (const s of ["Saisissez la date d'effet.", "Entre 100 et 5 000 TND.", "Saisissez un montant."]) expect(text(out)).toContain(s);
-    expect(text(out)).not.toContain("En clair");
+    expect(text(out)).not.toContain("Barème : ");
     expect(out).toMatch(/>Modifié<\/span>/);
     expect(out).not.toContain('disabled=""');
 
     const alone = renderToStaticMarkup(createElement(SmigTable, { rows: [rows[0]], setRows: noop, errors: new Map(), valid: false, changed: false, serverError: "Refus du serveur.", meta }));
     expect(alone).toMatch(/<button type="button" disabled=""[^>]*title="Le barème doit garder au moins une période"/);
-    expect(text(alone)).toContain("Barème actuel absent ou illisible : le contrôle utilise le SMIG de repli.");
+    expect(text(alone)).toContain("Barème illisible : SMIG de repli utilisé");
     expect(alone).toContain('aria-describedby="smig-help smig-err"');
     expect(alone).toMatch(/<p id="smig-err"[^>]*>Refus du serveur\.<\/p>/);
-    expect(text(alone)).toContain("En clair : 528,32 TND sans limite de date.");
+    expect(text(alone)).toContain("Barème : 528,32 TND sans limite de date");
   });
 
   it("budgets : état vide guidé, puis tableau avec montant relu et résumé", async () => {
     const empty = await page();
-    expect(text(empty)).toContain("Aucun budget saisi : ajoutez une année pour activer les recommandations budgétaires.");
+    expect(text(empty)).toContain("Aucun budget saisi");
     expect(text(empty)).toContain("Aucun budget enregistré");
     expect(empty).toContain('<input type="hidden" name="budgets" value="[]"/>');
     expect(empty).toContain('<div role="group" aria-labelledby="sg-budget" aria-describedby="budgets-help"');
@@ -234,7 +234,7 @@ describe("page Paramètres : barème SMIG et budgets", () => {
     expect(table).toMatch(/aria-label="Budget brut 2026 \(TND\)"[^>]*text-right[^>]*value="1717368"/);
     expect(text(table)).toContain("1 717 368 TND");
     for (const s of ["Retirer le budget 2026", "Retirer le budget 2027", "Ajouter une année"]) expect(t).toContain(s);
-    expect(t).toContain("En clair : recommandations budgétaires possibles pour 2026 et 2027.");
+    expect(t).toContain("Recommandations budgétaires : 2026 et 2027");
     expect(t).not.toContain("Aucun budget enregistré");
   });
 
@@ -248,7 +248,7 @@ describe("page Paramètres : barème SMIG et budgets", () => {
     expect(out).toMatch(/aria-label="Année du budget 1"[^>]*aria-invalid="true" aria-describedby="budget-0-annee-err"/);
     expect(out).toMatch(/aria-label="Budget brut 2026 \(TND\)"[^>]*aria-invalid="true" aria-describedby="budget-0-montant-err"/);
     for (const s of ["Année déjà saisie.", "Au moins 1 000 TND.", "Saisissez un montant.", "Entre 2000 et 2100.", "1 500 000 TND"]) expect(text(out)).toContain(s);
-    expect(text(out)).not.toContain("En clair");
+    expect(text(out)).not.toContain("Barème : ");
   });
 });
 

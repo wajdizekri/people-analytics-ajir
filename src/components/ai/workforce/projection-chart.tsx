@@ -27,7 +27,7 @@ function Swatch({ kind, dark }: { kind: "observed" | "projected" | "band" | "ref
   );
 }
 
-// Légende en texte, dans l'ordre de lecture : observé, projection, fourchette (expliquée), référence
+// Légende en texte, dans l'ordre de lecture : observé, projection, fourchette, référence
 export function ProjectionLegend({ observedMonths, simulated }: { observedMonths: number; simulated: boolean }) {
   const dark = useTheme().resolvedTheme === "dark";
   return (
@@ -39,11 +39,11 @@ export function ProjectionLegend({ observedMonths, simulated }: { observedMonths
         <Swatch kind="projected" dark={dark} /> {simulated ? "Projection du scénario simulé" : "Projection (scénario de référence)"}
       </li>
       <li className="inline-flex items-center gap-1.5">
-        <Swatch kind="band" dark={dark} /> {SERIES.band} : la valeur réelle devrait s&apos;y trouver dans 8 cas sur 10
+        <Swatch kind="band" dark={dark} /> {SERIES.band}
       </li>
       {simulated && (
         <li className="inline-flex items-center gap-1.5">
-          <Swatch kind="reference" dark={dark} /> {SERIES.reference}, pour comparaison
+          <Swatch kind="reference" dark={dark} /> {SERIES.reference}
         </li>
       )}
     </ul>
