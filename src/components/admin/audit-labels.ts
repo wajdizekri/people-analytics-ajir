@@ -246,6 +246,21 @@ function phrase(e: AuditEntry, users: Map<string, string>): Phrase {
     }
     case "whatif.search":
       return { verb: V.rechercher, object: `les leviers les plus efficaces pour le collaborateur${n(e.targetId)}` };
+    case "synthesis.narrative":
+      return { verb: V.consulter, object: "la synthèse rédigée" };
+    case "synthesis.narrative.generate":
+      return {
+        verb: V.generer,
+        object: "la synthèse rédigée par IA générative",
+        extra:
+          [
+            d.scope === "EQUIPE" ? "périmètre d'une équipe" : d.scope === "ENTREPRISE" ? "toute l'entreprise" : "",
+            typeof d.payloadBytes === "number" ? `${d.payloadBytes.toLocaleString("fr-FR")} octets d'agrégats transmis` : "",
+            e.outcome === "ECHEC" && typeof d.reason === "string" ? narrativeFailure(d.reason) : "",
+          ]
+            .filter(Boolean)
+            .join(", ") || undefined,
+      };
   }
   if (e.action.endsWith(".view")) {
     const key = e.action.slice(0, -".view".length);
@@ -313,4 +328,27 @@ export const AUDIT_CATEGORIES: { prefix: string; label: string }[] = [
   { prefix: "scoring.", label: "Calculs des risques" },
   { prefix: "model.", label: "Modèles" },
   { prefix: "audit.", label: "Consultations du journal" },
+  { prefix: "synthesis.narrative.", label: "Synthèses rédigées par IA générative" },
 ];
+
+// Raisons d'un repli de la synthèse rédigée sur les phrases types (audit « synthesis.narrative.generate »)
+const NARRATIVE_FAILURE: Record<string, string> = {
+  delai: "délai de réponse dépassé",
+  reseau: "service injoignable",
+  reponse_invalide: "réponse illisible",
+  nombre_non_fourni: "chiffre absent des indicateurs, texte écarté",
+  nombre_en_lettres: "nombre écrit en lettres, texte écarté",
+  format_nombre: "nombre mal formaté, texte écarté",
+  vocabulaire_causal: "formulation causale, texte écarté",
+  trop_de_phrases: "texte trop long, écarté",
+  phrase_trop_longue: "phrase trop longue, texte écarté",
+  phrase_incomplete: "texte incomplet, écarté",
+  mise_en_forme: "mise en forme non autorisée, texte écarté",
+  vide: "réponse vide",
+  erreur_interne: "erreur interne",
+};
+function narrativeFailure(reason: string): string {
+  if (reason.startsWith("http_")) return `erreur du service (code ${reason.slice(5)})`;
+  if (reason.startsWith("arret_")) return "réponse interrompue, texte écarté";
+  return NARRATIVE_FAILURE[reason] ?? reason;
+}

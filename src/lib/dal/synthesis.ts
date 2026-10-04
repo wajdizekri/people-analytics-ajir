@@ -8,6 +8,9 @@ import { listAlerts } from "./alerts";
 import { groupLabel, referenceDate, type AuditMeta, type RiskLevel } from "./employees";
 import { MIN_GROUP_SIZE, addDays, addMonths, countPresent, monthEnd, monthRange, workforce } from "./pilotage-metrics";
 import { absenteeismOf, guardEmployee, levelsOfRun, monthlyMeasures, overtimePerHeadOf, publishedRuns, scopeMembers, sumMeasures } from "./teams";
+import { forbidden } from "./errors";
+import { factsFromSynthesis, type Narrative } from "@/lib/ai/narrative";
+import { narrativeAiConfig, narrativeFor } from "@/lib/ai/narrative/generative";
 
 // Synthèse du mois (RH et MANAGER) : ce qui a changé depuis le calcul publié précédent, en 5 à 8 constats rédigés.
 // MANAGER : sa hiérarchie seulement, sans probabilité ni salaire ; sorties, absentéisme et heures sup masqués sous MIN_GROUP_SIZE.
@@ -620,4 +623,38 @@ export function getEmployeeJourney(ctx: AccessContext, employeeId: number, meta:
   events.sort((a, b) => b.date.localeCompare(a.date) || KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
   audit(ctx.userId, "employee.journey.view", { type: "employee", id: employeeId }, "OK", { source: meta.source, view: global ? "RH" : "MANAGER", events: events.length }, meta.ip);
   return { view: global ? "RH" : "MANAGER", employeeId, referenceDate: ref, longAbsenceDays: LONG_ABSENCE_DAYS, events };
+}
+
+// ---------- Synthèse rédigée (gabarits, reformulation facultative par IA générative) ----------
+
+/**
+ * Texte de la synthèse du mois à partir des seuls agrégats du DTO de l'appelant (getSynthesis du même contexte).
+ * Sans SYNTHESIS_AI_API_KEY : gabarits, aucun appel réseau. Avec : reformulation vérifiée, repli sur les gabarits en cas
+ * d'échec ; chaque appel réel est audité (qui, quand, périmètre, taille de la charge), jamais son contenu.
+ */
+export async function getSynthesisNarrative(
+  ctx: AccessContext,
+  s: SynthesisDto,
+  meta: AuditMeta,
+  deps: { fetchImpl?: typeof fetch; timeoutMs?: number } = {},
+): Promise<Narrative> {
+  ensurePilotage(ctx, "synthesis.narrative");
+  const global = isGlobal(ctx);
+  if (s.view !== (global ? "RH" : "MANAGER")) throw forbidden();
+  const scope = global ? "ENTREPRISE" : "EQUIPE";
+  return narrativeFor(factsFromSynthesis(s, MIN_GROUP_SIZE), {
+    config: narrativeAiConfig(),
+    scopeKey: global ? "RH" : `MANAGER:${ctx.employeeId ?? "aucun"}`,
+    fetchImpl: deps.fetchImpl,
+    timeoutMs: deps.timeoutMs,
+    onCall: (c) =>
+      audit(
+        ctx.userId,
+        "synthesis.narrative.generate",
+        { type: "synthesis", id: s.month },
+        c.outcome,
+        { source: meta.source, view: s.view, scope, payloadBytes: c.payloadBytes, model: c.model, reason: c.reason, durationMs: c.durationMs },
+        meta.ip,
+      ),
+  });
 }

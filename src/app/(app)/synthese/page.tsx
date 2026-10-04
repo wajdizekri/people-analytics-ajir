@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { ButtonLink, DataTable, EmptyState, Icon, Notice, PageHeader, RiskBadge, SectionHeader, cardCls, fmt } from "@/components/ui";
 import { KpiCard } from "@/components/charts/pbi";
@@ -12,6 +13,9 @@ import { getSynthesis, type PersonChange } from "@/lib/dal/synthesis";
 import { countDelta, rateDelta } from "@/app/(app)/dashboard/messages";
 import { PrintButton } from "@/components/export/print-button";
 import { PrintHeader } from "@/components/export/print-header";
+import { draftNarrative, factsFromSynthesis } from "@/lib/ai/narrative";
+import { narrativeAiConfig } from "@/lib/ai/narrative/generative";
+import { AiNarrative, NarrativeBox } from "./narrative";
 
 export const metadata = { title: "Synthèse du mois — People Analytics AJIR" };
 
@@ -94,7 +98,9 @@ function PeopleTable({
 
 export default async function SynthesisPage() {
   const ctx = await pageContext(PILOTAGE_ROLES);
-  const s = getSynthesis(ctx, { source: "page", ip: clientIp(await headers()) });
+  const meta = { source: "page" as const, ip: clientIp(await headers()) };
+  const s = getSynthesis(ctx, meta);
+  const draft = draftNarrative(factsFromSynthesis(s, MIN_GROUP_SIZE));
   const rh = s.view === "RH";
   const k = s.kpis;
   const M = formatMonth(s.month);
@@ -151,6 +157,14 @@ export default async function SynthesisPage() {
       )}
 
       <div className="space-y-8">
+        {narrativeAiConfig() ? (
+          <Suspense fallback={<NarrativeBox narrative={draft} pending />}>
+            <AiNarrative ctx={ctx} synthesis={s} meta={meta} />
+          </Suspense>
+        ) : (
+          <NarrativeBox narrative={draft} />
+        )}
+
         <section aria-labelledby="priorites-titre" className={`${cardCls} p-4 sm:p-5`}>
           <SectionHeader
             id="priorites-titre"

@@ -1,6 +1,6 @@
 import { Skeleton, SkeletonCard, SkeletonKpiRow, SkeletonTable, cardCls } from "@/components/ui";
 
-// Squelette fidèle à la synthèse : en-tête, encart d'aide, « À traiter en priorité », chiffres clés, autres constats, listes nominatives
+// Squelette fidèle à la synthèse : en-tête, encart d'aide, synthèse rédigée, « À traiter en priorité », chiffres clés, autres constats, listes nominatives
 export default function Loading() {
   return (
     <div role="status" aria-live="polite" aria-busy="true">
@@ -19,6 +19,7 @@ export default function Loading() {
           <Skeleton className="mt-2 h-3.5 w-full max-w-lg" />
         </div>
         <div className="space-y-8">
+          <SkeletonCard lines={5} />
           <div className={`${cardCls} p-4 sm:p-5`}>
             <Skeleton className="h-5 w-56" />
             <Skeleton className="mt-2 h-3.5 w-64 max-w-full" />

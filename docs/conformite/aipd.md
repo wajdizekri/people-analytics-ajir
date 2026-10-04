@@ -49,7 +49,7 @@ Aucun motif médical n'est importé : la maladie et la maternité ne sont connue
 - **Manager** : sa hiérarchie seulement ; niveau de risque et catégories de facteurs, sans probabilité, sans salaire, sans signal individuel d'absentéisme ; indicateurs d'équipe masqués sous 5 personnes ([ADR-011](../adr/011-gardes-petites-populations-cote-manager.md)).
 - **Administrateur** de l'outil : comptes, paramètres, imports, santé des données, modèle ; **aucune donnée RH nominative** ; dans les rejets d'import, seul le matricule reste visible (nécessaire pour corriger la donnée dans AJIR) : montants, valeurs brutes sensibles et, pour les absences, dates, catégories et durées sont masqués (`src/lib/privacy/mask.ts`) ; la RH voit le détail.
 - **Consultant de l'éditeur** (sous-traitant), seulement pour un réentraînement du modèle, sur autorisation écrite, à partir d'un panel identifié par un numéro interne ([EXPLOITATION.md, § 9](../EXPLOITATION.md)).
-- Aucun transfert hors de Tunisie n'est prévu par le module.
+- Aucun transfert hors de Tunisie n'est prévu par le module dans sa configuration par défaut. L'option facultative décrite au § 7 transmet des indicateurs agrégés, non nominatifs, à un sous-traitant situé hors de Tunisie.
 
 ### 2.4 Durées de conservation (proposées, à valider)
 
@@ -111,3 +111,31 @@ Points ouverts identifiés par cette analyse :
 | Responsable sécurité du système d'information | à compléter | | |
 
 L'AIPD est à revoir à chaque changement substantiel : nouveau modèle en production, nouvelle source de données, nouvelle catégorie de destinataires, nouvelle finalité.
+
+## 7. Option : synthèse rédigée par IA générative (désactivée par défaut)
+
+Ajout du 04/10/2026. La page « Synthèse du mois » (RH et managers ; jamais l'administrateur) affiche quelques phrases qui résument les indicateurs du mois. Par défaut, ces phrases sont produites sur le serveur par des phrases types : **aucune donnée ne sort de l'installation**. L'option décrite ici fait reformuler ce texte par un service d'IA générative externe. Elle n'est active que si l'exploitant définit la variable `SYNTHESIS_AI_API_KEY` ([EXPLOITATION.md, § 10](../EXPLOITATION.md)).
+
+| Élément | Description |
+|---|---|
+| Finalité | Améliorer la lisibilité du résumé mensuel. Aucune décision, aucune évaluation individuelle, aucune recommandation nominative ; le texte reformulé ne sert qu'à l'affichage |
+| Données transmises | Uniquement des **agrégats non nominatifs** déjà affichés pour le rôle, en liste blanche typée (`src/lib/ai/narrative/payload.ts`) : effectifs, entrées, sorties et départs volontaires, nombre de collaborateurs en risque élevé (et variations), absentéisme hors santé, heures supplémentaires par personne, alertes, recommandations, formations obligatoires en retard, mois, date des données, périmètre générique (« toute l'entreprise » ou « votre équipe »). S'y ajoute le brouillon issu des phrases types, construit à partir des mêmes agrégats |
+| Données jamais transmises | Nom, matricule, identifiant interne, service ou équipe nommés, nom du manager, salaire ou masse salariale, probabilité, facteurs individuels, catégorie ou motif d'absence, texte libre. Les indicateurs masqués côté manager (groupe de moins de 5 personnes, [ADR-011](../adr/011-gardes-petites-populations-cote-manager.md)) partent comme « masqué ». Propriété testée (`tests/ia-synthese/`) |
+| Sous-traitant | Anthropic (API Claude), destinataire hors de Tunisie : transfert d'indicateurs agrégés. Contrat ou conditions commerciales à accepter par le client ; durée de conservation des requêtes chez l'éditeur et absence d'utilisation pour l'entraînement **à vérifier au contrat** (pas sûr des conditions en vigueur à la date d'activation) |
+| Désactivation par défaut | Aucune clé d'API n'est livrée ; sans clé, aucun appel n'est possible et la variable générique `ANTHROPIC_API_KEY` n'active rien. Désactivation immédiate en retirant la clé et en redémarrant le service web |
+| Conservation dans le module | Texte reformulé gardé en mémoire du service web seulement (perdu au redémarrage), jamais en base. Journal d'audit de chaque appel : compte, date, périmètre, taille de la charge, modèle, durée, raison d'un échec ; **ni la charge ni le texte** |
+| Exactitude | Chaque nombre du texte généré doit figurer dans la charge utile ; nombre en lettres, formulation causale, plus de 6 phrases ou phrase de plus de 20 mots : texte écarté. Délai de 10 s. Tout refus ou échec affiche la version par phrases types. Le modèle utilisé est indiqué sous le texte |
+
+| # | Risque | Mesures | V | G |
+|---|---|---|---|---|
+| R11 | **Réidentification** à partir des agrégats d'une petite équipe | Aucun nom d'équipe, de service ni de manager transmis ; valeurs masquées sous 5 personnes ; seuls des comptes et des taux | 1 | 2 |
+| R12 | **Chiffre inventé ou lecture causale** présentés comme un constat | Vérification des nombres et du vocabulaire avant affichage ; repli automatique ; mention « Texte rédigé automatiquement » et modèle affichés | 1 | 2 |
+| R13 | **Transfert hors de Tunisie** sans cadre | Option désactivée par défaut ; activation subordonnée à l'avis du juriste et à la mise à jour du registre | 2 | 2 |
+| R14 | **Dépendance à un service externe** | Fonction non essentielle ; repli sur les phrases types en cas d'erreur ou de délai ; aucun blocage de la page | 1 | 1 |
+
+Points ouverts avant toute activation :
+
+1. **Qualification des agrégats** : à confirmer par le juriste. Des comptes portant sur une équipe de quelques personnes restent des données personnelles au sens large ; pas sûr que leur caractère agrégé suffise à les en exclure.
+2. **Transfert vers l'étranger** : vérifier les conditions de la loi 2004-63 applicables au transfert vers le pays du sous-traitant (autorisation de l'INPDP le cas échéant).
+3. **Clause de sous-traitance** et durée de conservation chez l'éditeur de l'API, à annexer au registre.
+4. **Information** des salariés et des instances représentatives : mentionner l'option dans la note d'information si elle est activée.
