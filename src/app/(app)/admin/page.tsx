@@ -9,6 +9,8 @@ import { getAdminMonitoring, type WeekComparison } from "@/lib/dal/monitoring";
 import { Chart, KpiCard, VisualCard, type ChartSpec, type Delta, type Status } from "@/components/charts/pbi";
 import { DataDetails } from "@/components/pilotage/data-details";
 import { ButtonLink, EmptyState, Notice, PageHeader, SectionHeader, StatusBadge, cardCls, fmt, tableCls } from "@/components/ui";
+import { HelpAssistant } from "@/components/help";
+import { ASSISTANT_EXAMPLES } from "@/lib/help/content";
 import { Icon } from "@/components/admin/admin-ui";
 import { describeAudit } from "@/components/admin/audit-labels";
 import { auditRefusalsHref, authDailyChart, jobsChart, plural, refusalsChart, roleCounts } from "@/components/monitoring/admin-options";
@@ -176,6 +178,7 @@ export default async function AdminConsolePage() {
         }
         period={period}
       />
+      <HelpAssistant examples={ASSISTANT_EXAMPLES[ctx.role]} className="mb-4" />
 
       <div className="mb-6">
         {problems.length === 0 ? (

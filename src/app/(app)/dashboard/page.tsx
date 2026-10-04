@@ -13,7 +13,8 @@ import { countAlerts } from "@/lib/dal/alerts";
 import { listRecommendations } from "@/lib/dal/recommendations";
 import { ShortcutBar, type Shortcut } from "@/components/ux/shortcuts";
 import { levelFromLabel, withDrill, withDrillSpec } from "@/components/charts/drill";
-import { TermTip } from "@/components/help";
+import { HelpAssistant, TermTip } from "@/components/help";
+import { ASSISTANT_EXAMPLES } from "@/lib/help/content";
 import { countDelta, rateDelta, signed } from "./messages";
 
 // Liens de texte : jetons du thème, survol (soulignement épais), focus visible global, léger enfoncement au clic
@@ -265,6 +266,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           </ButtonLink>
         }
       />
+      <HelpAssistant examples={ASSISTANT_EXAMPLES[ctx.role]} className="mb-4" />
       <ShortcutBar items={todo} />
       <FilterForm
         action="/dashboard"
