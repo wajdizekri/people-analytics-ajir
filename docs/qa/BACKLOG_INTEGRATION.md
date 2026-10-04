@@ -17,7 +17,7 @@ Points remontés par les agents, à traiter lors de l'intégration finale (aprè
 - [FAIT] Audit axe-core (Playwright) sur le build final : 39 pages (anonyme, RH, manager, admin, nouvelles pages comprises), voir docs/qa/BUGS_E2E.md.
 - [FAIT] Fiche et what-if : zones en slate-400 et champs border-slate-300 (contraste) dans employee-detail.tsx et what-if-panel.tsx ; idem /compte/password-form.tsx ; titres de page sans « AJIR ».
 - [FAIT] src/app/not-found.tsx en français (test tests/help/help.test.ts « page 404 », page contrôlée par axe).
-- [FAIT en partie] Couleur neutre des graphiques (STATUS_COLORS.neutre, src/components/charts/pbi.tsx) : #94a3b8 (2,6:1) → #7c8aa0 (3,5:1, critère 1.4.11). Non fait : variation favorable/défavorable des KpiCard portée par la couleur pour un daltonien (déjà annoncée aux lecteurs d'écran ; sens et signe lisibles) : arbitrage de charte graphique (mot visible ou pictogramme), laissé au stagiaire.
+- [FAIT en partie] Couleur neutre des graphiques (STATUS_COLORS.neutre, src/components/charts/pbi.tsx) : #94a3b8 (2,6:1) → #7c8aa0 (3,5:1, critère 1.4.11). Variation favorable/défavorable des KpiCard : FAIT le 04/10 (chantier visuels) par une pastille visible « favorable » / « à surveiller » avec flèche (pbi.tsx), le sens ne dépend plus de la couleur seule.
 - [CONSIGNE respectée] Ne pas réécrire alerts/page.tsx en entier (découpage Suspense pour garder les vrais 403/404).
 
 ## Anomalies (agent évaluation, voir docs/RESULTATS_ANOMALIES_QUALITE.md)

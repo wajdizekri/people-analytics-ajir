@@ -59,9 +59,10 @@ test.describe("Tableau de bord RH", () => {
       return;
     }
     expect(await resultCount(page)).toBe(high);
-    const badges = await rows.locator("td").filter({ hasText: /^Risque / }).allInnerTexts();
+    // Colonne « Niveau de risque » : badge compact (« Élevé », sans le préfixe « Risque »)
+    const badges = await rows.locator("td").filter({ hasText: /^\s*(Élevé|Moyen|Faible|Non évalué)\s*$/ }).allInnerTexts();
     expect(badges.length).toBeGreaterThan(0);
-    for (const b of badges) expect(b.trim()).toBe("Risque Élevé");
+    for (const b of badges) expect(b.trim()).toBe("Élevé");
   });
 
   test("drill-down : tableau par département → liste du département et du niveau", async ({ page }) => {
@@ -79,7 +80,7 @@ test.describe("Tableau de bord RH", () => {
     const rows = page.locator("main table tbody tr");
     expect(await rows.count()).toBeGreaterThan(0);
     await expect(rows.filter({ hasNotText: deptName })).toHaveCount(0);
-    await expect(rows.filter({ hasNotText: "Risque Faible" })).toHaveCount(0);
+    await expect(rows.filter({ hasNot: page.locator("td").filter({ hasText: /^\s*Faible\s*$/ }) })).toHaveCount(0);
   });
 
   test("KPI absentéisme → page absentéisme", async ({ page }) => {

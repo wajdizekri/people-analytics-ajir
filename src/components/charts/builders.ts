@@ -1,5 +1,5 @@
 import type { EChartsOption, MarkLineComponentOption } from "echarts";
-import { BAND_FILL, BAND_LABEL, CHART_INK, CHART_PALETTE, CHART_SURFACE, SEMANTIC, axisName, formatShort, formatValue, frNumber, type Tone, type ValueFormat } from "./theme";
+import { BAND_FILL, BAND_LABEL, CHART_INK, CHART_PALETTE, CHART_SURFACE, MARK, SEMANTIC, axisName, formatShort, formatValue, frNumber, type Tone, type ValueFormat } from "./theme";
 
 // Les 5 visuels de la charte (docs/qa/CHARTE_UI.md § 5), prêts à l'emploi : courbe d'évolution, barres horizontales triées,
 // barre empilée 100 %, anneau ≤ 4 parts, histogramme. Chaque helper renvoie un ChartSpec sérialisable (aucune fonction) :
@@ -20,17 +20,16 @@ export type Reference = { value: number; label: string };
 const LABEL_COLOR = CHART_INK.ink;
 const DARK_TEXT = CHART_INK.fg;
 
-// Marques de la compétence dataviz, mêmes valeurs que MARK de pbi.tsx (qui importe ce module : pas d'import en retour ;
-// égalité vérifiée par tests/charts-marks) : barre de 24 px au plus à bout arrondi de 4 px, 2 px entre aplats accolés,
-// courbe de 2 px, repère de 8 px cerclé de la surface, lavis à 10 %.
-const BAR_MAX = 24;
-const BAR_END: [number, number, number, number] = [0, 4, 4, 0];
-const COLUMN_END: [number, number, number, number] = [4, 4, 0, 0];
-const STACK_GAP = { borderColor: CHART_SURFACE, borderWidth: 1 };
-const LINE_WIDTH = 2;
-const MARKER = 8;
-const MARKER_RING = { borderColor: CHART_SURFACE, borderWidth: 2 };
-const AREA_OPACITY = 0.1;
+// Marques de la compétence dataviz (MARK de theme.ts, partagé avec le kit pbi.tsx) : barre de 24 px au plus à bout arrondi
+// de 4 px, 2 px entre aplats accolés, courbe de 2 px, repère de 8 px cerclé de la surface, lavis à 10 %.
+const BAR_MAX = MARK.bar.barMaxWidth;
+const BAR_END = MARK.bar.itemStyle.borderRadius;
+const COLUMN_END = MARK.column.itemStyle.borderRadius;
+const STACK_GAP = MARK.stack.itemStyle;
+const LINE_WIDTH = MARK.line.lineStyle.width;
+const MARKER = MARK.line.symbolSize;
+const MARKER_RING = MARK.line.itemStyle;
+const AREA_OPACITY = MARK.area.opacity;
 
 const lum = (hex: string) => {
   const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));

@@ -22,7 +22,7 @@ test.describe("Santé des données", () => {
       const history = page.getByRole("table", { name: "Historique des imports" });
       await expect(history).toContainText(batch!.source.split(/[\\/]/).pop()!);
       await history.getByRole("link", { name: new RegExp(`Voir les contrôles.*n° ${batch!.id}`) }).click();
-      await expect(page.getByText(`Contrôles de l'import n° ${batch!.id}`)).toBeVisible();
+      await expect(page.getByRole("heading", { level: 2, name: `Contrôles de l'import n° ${batch!.id}` })).toBeVisible();
       const rules = q<{ rule: string }>("SELECT DISTINCT rule FROM import_rejection WHERE batch_id = @id", { id: batch!.id });
       if (rules.length) await expect(page.getByText(rules[0].rule).first()).toBeVisible();
     });
@@ -107,7 +107,7 @@ test.describe("Backtesting", () => {
   test("résultats pour un mois d'origine, changement de mois", async ({ page }) => {
     await page.goto("/backtesting");
     await expect(page.getByRole("heading", { level: 1, name: /Vérification a posteriori/ })).toBeVisible();
-    const select = page.getByLabel("Date d'origine");
+    const select = page.getByRole("combobox", { name: /^Date d'origine/ });
     test.skip((await select.count()) === 0, "aucun mois avec un suivi complet de 6 mois");
     await expect(page.getByText("Collaborateurs évalués (suivi complet)")).toBeVisible();
     const groups = page.getByRole("table", { name: /Exposition au risque et démissions observées/ });

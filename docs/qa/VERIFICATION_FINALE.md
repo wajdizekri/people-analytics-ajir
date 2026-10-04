@@ -1,17 +1,22 @@
 # Vérification finale unique (à lancer quand aziz-pfe-40 et aziz-pfe-e9 ont annoncé la fin de leurs vagues)
 
-État au 04/10/2026 ~10 h 20 (session aziz-pfe-0e) : branchements 4E A–E faits, correctif « Moyenne », fmt.model sur 7 écrans, SortHeader promu ; tsc 0, eslint 0, vitest 99 fichiers / 838 tests. Tests E2E ajoutés mais non exécutés : passe axe en thème sombre (20 pages, a11y.spec.ts) et 3 tests « Connexion 3D » (auth.spec.ts).
+État au 04/10/2026 ~10 h 20 (session aziz-pfe-0e) : branchements 4E A–E faits, correctif « Moyenne », fmt.model sur 7 écrans, SortHeader promu ; tsc 0, eslint 0, vitest 99 fichiers / 838 tests. Tests E2E ajoutés mais non exécutés : passe axe en thème sombre (20 pages, 21 avec admin:parametres ajouté ensuite ; a11y.spec.ts) et 3 tests « Connexion 3D » (auth.spec.ts).
 
 ## Étapes, dans l'ordre
 1. `npx tsc --noEmit`, `npx eslint .`, `npx vitest run --maxWorkers=2` (hors tests/security).
 2. Port 3000 libre (sinon `taskkill /PID <pid> /T /F`) ; mémoire : fermer ce qui peut l'être.
 3. `npx next build` : aucune erreur, relever les avertissements.
 4. `npm run test:e2e` (build `.next-e2e`, copie de base, 1 worker). Corriger l'application pour chaque vrai défaut, les sélecteurs pour les libellés changés par les vagues 40/e9. Surveiller d'abord la passe axe sombre et « Connexion 3D » à 1440 px (messages console de three/R3F).
-5. Captures : `E2E_SKIP_BUILD=1 node tests/e2e/server.mjs` en arrière-plan (port 3200), puis `node docs/qa/captures/design-system/final/ds-final-captures.mjs` (`BASE`, `ONLY=…` facultatifs) → 56 PNG ; relecture visuelle (étiquette « Moyenne » tableau de bord et absentéisme manager, anneau des rôles en sombre, palette Ctrl+K, toast). Arrêter le serveur 3200.
+5. Captures : `E2E_SKIP_BUILD=1 node tests/e2e/server.mjs` en arrière-plan (port 3200), puis `node docs/qa/captures/design-system/final/ds-final-captures.mjs` (`BASE`, `ONLY=<groupe>`, `--liste` facultatifs) → 136 prévues, 128 produites (8 refus de rôle journalisés), 7 à 10 min ; groupes et points à regarder : docs/qa/captures/design-system/final/README.md. Arrêter le serveur 3200.
 6. Écrire `docs/qa/LIVRABLE_DESIGN_SYSTEM.md` : plan d'amélioration ; fichiers par domaine (vagues design system, 4E, visuels 40, ergonomie e9 — voir docs/qa/ergonomie/*.md et CHANTIER_*.md) ; comment tester par rôle (thème, connexion 3D, Ctrl+K, export, impression) ; commandes `npm install three @react-three/fiber` et `npm install -D @types/three` (déjà faites) ; checklist chiffrée ; points restants.
 7. Relancer le serveur de dev détaché (supprimer `.next\dev\cache\turbopack` s'il est corrompu) :
    `Start-Process cmd.exe -ArgumentList '/c','npm run dev -- -p 3000 > data\dev-server.log 2>&1' -WorkingDirectory 'C:\Users\stagiaire1\Desktop\aziz-pfe\people-analytics' -WindowStyle Hidden`
 8. Envoyer le résultat aux sessions encore ouvertes (40, e9, 4e).
+
+## Résultat du 04/10 (12:28–13:00, session ae)
+- Étapes 1–4 vertes : tsc 0, eslint 0, vitest 1079/1 ignoré, build 0 avertissement (42 pages), E2E 152/152 (13,2 min) puis auth.spec 15/15 avec le test « champs vides » (153 au total). axe 43/43 clair, 21/21 sombre, 1/1 rail ; Connexion 3D 3/3. Hypothèses des specs toutes confirmées.
+- Corrections : sélecteurs obsolètes (admin, dashboard-rh, data-model .spec.ts) ; connexion à vide sans bulle native (login-form.tsx, noValidate + message sous le champ).
+- Étape 5 (captures) NON FAITE : lancement refusé par le mode automatique (RAM ~250 Mo libres, serveur de dev de l'utilisateur sur :3000). À lancer par l'utilisateur ou avec son accord explicite.
 
 ## Specs E2E du chantier visuels (écrites le 04/10, non exécutées ; tsc 0, eslint tests/e2e 0)
 - a11y.spec.ts : `admin:parametres` dans DARK_PAGES ; bloc « menu réduit » (axe sur tableau de bord avec `pa-nav=rail`).

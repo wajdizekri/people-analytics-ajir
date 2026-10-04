@@ -60,6 +60,36 @@ test.describe("Authentification", () => {
     await expect(password).toHaveAttribute("aria-describedby", /login-error/);
   });
 
+  test("champs vides : message de l'application sous le champ, pas la bulle du navigateur", async ({ page }) => {
+    await page.goto("/login");
+    const loginField = page.getByLabel("Identifiant");
+    const password = page.getByLabel("Mot de passe", { exact: true });
+    const submit = page.getByRole("button", { name: "Se connecter" });
+    await expect(page.locator("form[novalidate]")).toHaveCount(1);
+
+    // Avant l'hydratation, l'envoi part au serveur, qui renvoie le même message : on réessaie jusqu'à la validation côté client
+    await expect(async () => {
+      await submit.click();
+      await expect(page.locator("#login-erreur")).toHaveText("Saisissez votre identifiant.", { timeout: 1000 });
+    }).toPass();
+    await expect(loginField).toBeFocused();
+    await expect(loginField).toHaveAttribute("aria-invalid", "true");
+    await expect(loginField).toHaveAttribute("aria-describedby", /login-erreur/);
+    await expect(page).toHaveURL(/\/login$/);
+
+    await loginField.fill(USERS.rh.login);
+    await expect(page.locator("#login-erreur")).toHaveCount(0);
+    await submit.click();
+    await expect(page.locator("#password-erreur")).toHaveText("Saisissez votre mot de passe.");
+    await expect(password).toBeFocused();
+    await expect(password).toHaveAttribute("aria-describedby", /password-erreur/);
+    // Aucun envoi : pas d'échec compté pour ce compte
+    expect(q1<{ n: number }>("SELECT failed_attempts AS n FROM app_user WHERE login = @l", { l: USERS.rh.login })?.n).toBe(0);
+
+    await password.fill("x");
+    await expect(page.locator("#password-erreur")).toHaveCount(0);
+  });
+
   test("lien profond sans session : retour à la page demandée après connexion", async ({ page }) => {
     await page.goto("/employees?niveau=ELEVE");
     await expect(page).toHaveURL(/\/login\?next=%2Femployees%3Fniveau%3DELEVE$/);

@@ -24,7 +24,7 @@ test.describe("Administration", () => {
     await form.getByLabel(/E-mail/).fill(`${loginName}@example.test`);
     await form.getByRole("button", { name: "Créer le compte" }).click();
     await expect(page.getByText(`Compte ${loginName} créé.`)).toBeVisible();
-    const link = page.getByLabel(`Lien d'activation pour ${loginName}`);
+    const link = page.getByLabel(`Lien d'activation pour ${loginName}`, { exact: true });
     await expect(link).toHaveValue(/\/activation\?token=[\w-]{20,}/);
     const url = new URL(await link.inputValue());
 
@@ -83,13 +83,13 @@ test.describe("Administration", () => {
     await page.goto("/admin/settings");
     await page.locator("#s-capacity_rate").fill("3");
     await expect(page.getByText(/1 modification à enregistrer/)).toBeVisible();
-    await expect(page.getByText(/Capacité mensuelle .* → 3 %/)).toBeVisible();
+    await expect(page.getByText(/Capacité mensuelle .* → 3\s%/)).toBeVisible();
     await page.getByRole("button", { name: "Enregistrer les paramètres" }).click();
     await expect(page.getByText(/Paramètres enregistrés : Capacité mensuelle/)).toBeVisible();
     expect(Number(settingValue("capacity_rate"))).toBeCloseTo(0.03, 6);
     await page.reload();
     await expect(page.getByText(/Modifié le .* par admin/).first()).toBeVisible();
-    await expect(page.getByText(/Valeur par défaut : 2 %/)).toBeVisible();
+    await expect(page.getByText(/Valeur par défaut : 2\s%/)).toBeVisible();
 
     await saveSettings(page, { capacity_rate: asPercent(original) });
     await expect(page.getByText(/Paramètres enregistrés/)).toBeVisible();

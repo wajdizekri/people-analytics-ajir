@@ -12,7 +12,7 @@ import { cardCls } from "@/components/ui/classes";
 // Pour un nouveau visuel : un helper de ./builders (lineChart, barChart, shareChart, donutChart, histogramChart) + <ChartCard>.
 // Couleurs : SEMANTIC, CHART_PALETTE et CHART_INK seulement (valeurs claires que EChart remplace en thème sombre) ; en HTML, classes de jetons.
 
-export { SEMANTIC, RISK_COLORS, CHART_PALETTE, CHART_INK, CHART_SURFACE, BAND_LABEL, DARK_COLORS, cssChartColor, darkOption, formatValue, frNumber, axisName, type Tone, type ValueFormat } from "./theme";
+export { SEMANTIC, RISK_COLORS, CHART_PALETTE, CHART_INK, CHART_SURFACE, MARK, BAND_LABEL, DARK_COLORS, cssChartColor, darkOption, formatValue, frNumber, axisName, type Tone, type ValueFormat } from "./theme";
 export { lineChart, barChart, stackedBarChart, shareChart, donutChart, histogramChart, levelStepChart, toBins, textOn, monthCategories } from "./builders";
 export type { ChartSpec, ChartTable, Reference, LineSeries, BarRow, Bin } from "./builders";
 
@@ -35,21 +35,6 @@ export const GRID = { left: 44, right: 16, top: 36, bottom: 28, containLabel: fa
 export const LEGEND = { top: 0, left: 0, icon: "roundRect", itemWidth: 12, itemHeight: 12, itemGap: 16, textStyle: { fontSize: 12, color: CHART_INK.ink } } as const;
 export const TOOLTIP_AXIS = { trigger: "axis", backgroundColor: CHART_INK.surface, borderColor: CHART_INK.border, confine: true, textStyle: { color: CHART_INK.fg, fontSize: 13 } } as const;
 export const TOOLTIP_ITEM = { trigger: "item", backgroundColor: CHART_INK.surface, borderColor: CHART_INK.border, confine: true, textStyle: { color: CHART_INK.fg, fontSize: 13 } } as const;
-
-// Marques à étaler dans une série : `{ type: "bar", ...MARK.bar, data }` (un itemStyle propre à la série est à fusionner avec celui de la marque).
-// stack : 1 px de bordure en couleur de surface de chaque côté, soit 2 px entre deux aplats accolés (anneau : borderWidth 2, trait centré).
-export const MARK = {
-  /** Barre horizontale : 24 px au plus, bout arrondi de 4 px côté valeur, base carrée. */
-  bar: { barMaxWidth: 24, itemStyle: { borderRadius: [0, 4, 4, 0] } },
-  /** Colonne : même règle, bout arrondi en haut. */
-  column: { barMaxWidth: 24, itemStyle: { borderRadius: [4, 4, 0, 0] } },
-  /** Segments empilés ou barres jointives : écart de 2 px. */
-  stack: { itemStyle: { borderColor: CHART_INK.surface, borderWidth: 1 } },
-  /** Courbe de 2 px ; repère de 8 px cerclé de la couleur de surface, visible au survol seulement. */
-  line: { symbol: "circle", symbolSize: 8, showSymbol: false, lineStyle: { width: 2 }, itemStyle: { borderColor: CHART_INK.surface, borderWidth: 2 } },
-  /** Aplat sous une courbe : lavis à 10 %. */
-  area: { opacity: 0.1 },
-};
 
 /** Légende à partir de deux séries seulement (une série seule : le titre du visuel la nomme). */
 export function legendFor(names: string[]) {

@@ -35,6 +35,21 @@ export const CHART_INK = { fg: "#0f172a", ink: "#334155", muted: "#475569", axis
 /** Couleur de surface des cartes : écart entre aplats accolés, anneau d'un repère, détourage d'une étiquette. */
 export const CHART_SURFACE = CHART_INK.surface;
 
+// Marques à étaler dans une série : `{ type: "bar", ...MARK.bar, data }` (un itemStyle propre à la série est à fusionner avec celui de la marque).
+// stack : 1 px de bordure en couleur de surface de chaque côté, soit 2 px entre deux aplats accolés (anneau : borderWidth 2, trait centré).
+export const MARK = {
+  /** Barre horizontale : 24 px au plus, bout arrondi de 4 px côté valeur, base carrée. */
+  bar: { barMaxWidth: 24, itemStyle: { borderRadius: [0, 4, 4, 0] as [number, number, number, number] } },
+  /** Colonne : même règle, bout arrondi en haut. */
+  column: { barMaxWidth: 24, itemStyle: { borderRadius: [4, 4, 0, 0] as [number, number, number, number] } },
+  /** Segments empilés ou barres jointives : écart de 2 px. */
+  stack: { itemStyle: { borderColor: CHART_INK.surface, borderWidth: 1 } },
+  /** Courbe de 2 px ; repère de 8 px cerclé de la couleur de surface, visible au survol seulement. */
+  line: { symbol: "circle", symbolSize: 8, showSymbol: false, lineStyle: { width: 2 }, itemStyle: { borderColor: CHART_INK.surface, borderWidth: 2 } },
+  /** Aplat sous une courbe : lavis à 10 %. */
+  area: { opacity: 0.1 },
+};
+
 // Bande d'incertitude (prévisions) et texte associé
 export const BAND_FILL = "rgba(91, 107, 130, 0.16)";
 export const BAND_LABEL = "Fourchette probable à 80 %";
