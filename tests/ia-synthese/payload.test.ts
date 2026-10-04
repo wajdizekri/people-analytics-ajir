@@ -29,7 +29,7 @@ describe("charge utile : liste blanche typée", () => {
   it("depuis un DTO contenant des noms, matricules, identifiants et services : rien de nominatif dans la charge ni dans la requête", () => {
     const f = factsFromSynthesis(synthesisDto(), 5);
     const payload = buildPayload(f);
-    const body = buildRequestBody({ indicateurs: payload, brouillon: draftSentences(f).join(" ") }, "claude-opus-4-7");
+    const body = buildRequestBody({ indicateurs: payload, brouillon: draftSentences(f).join(" ") }, "claude-opus-5-5");
     for (const s of NOMINATIVE) {
       expect(JSON.stringify(payload)).not.toContain(s);
       expect(body).not.toContain(s);
@@ -66,9 +66,9 @@ describe("charge utile : liste blanche typée", () => {
 
   it("requête : prompt système figé en tête (marqué pour le cache), données variables dans le message, ni réflexion ni température", () => {
     const f = facts();
-    const body = JSON.parse(buildRequestBody({ indicateurs: buildPayload(f), brouillon: draftSentences(f).join(" ") }, "claude-opus-4-7"));
+    const body = JSON.parse(buildRequestBody({ indicateurs: buildPayload(f), brouillon: draftSentences(f).join(" ") }, "claude-opus-5-5"));
     expect(Object.keys(body).sort()).toEqual(["max_tokens", "messages", "model", "system"]);
-    expect(body.model).toBe("claude-opus-4-7");
+    expect(body.model).toBe("claude-opus-5-5");
     expect(body.system).toEqual([{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }]);
     expect(SYSTEM_PROMPT).not.toMatch(/\d{4}|août|entreprise de|équipe de/);
     expect(body.messages).toHaveLength(1);

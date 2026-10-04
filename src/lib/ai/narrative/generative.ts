@@ -10,7 +10,7 @@ import { draftNarrative, type Narrative, type NarrativeFacts } from "./template"
 // (connect-src 'self') ne le concerne pas.
 
 export const NARRATIVE_API_URL = "https://api.anthropic.com/v1/messages";
-export const DEFAULT_NARRATIVE_MODEL = "claude-opus-4-7";
+export const DEFAULT_NARRATIVE_MODEL = "claude-opus-5-5";
 export const NARRATIVE_TIMEOUT_MS = 10_000;
 export const FAILURE_RETRY_MS = 15 * 60_000;
 const MAX_TOKENS = 1024;

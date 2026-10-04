@@ -38,9 +38,9 @@ describe("activation par variable d'environnement", () => {
     expect(narrativeAiConfig({})).toBeNull();
     expect(narrativeAiConfig({ SYNTHESIS_AI_API_KEY: "   " })).toBeNull();
     expect(narrativeAiConfig({ ANTHROPIC_API_KEY: "sk-ant-xxx" })).toBeNull();
-    expect(narrativeAiConfig({ SYNTHESIS_AI_API_KEY: " sk-test " })).toEqual({ apiKey: "sk-test", model: "claude-opus-4-7" });
-    expect(narrativeAiConfig({ SYNTHESIS_AI_API_KEY: "k", SYNTHESIS_AI_MODEL: "claude-sonnet-4-6" })?.model).toBe("claude-sonnet-4-6");
-    expect(narrativeAiConfig({ SYNTHESIS_AI_API_KEY: "k", SYNTHESIS_AI_MODEL: "gpt-x; rm -rf" })?.model).toBe("claude-opus-4-7");
+    expect(narrativeAiConfig({ SYNTHESIS_AI_API_KEY: " sk-test " })).toEqual({ apiKey: "sk-test", model: "claude-opus-5-5" });
+    expect(narrativeAiConfig({ SYNTHESIS_AI_API_KEY: "k", SYNTHESIS_AI_MODEL: "claude-sonnet-5-5" })?.model).toBe("claude-sonnet-5-5");
+    expect(narrativeAiConfig({ SYNTHESIS_AI_API_KEY: "k", SYNTHESIS_AI_MODEL: "gpt-x; rm -rf" })?.model).toBe("claude-opus-5-5");
   });
 
   it("sans clé : phrases types, aucun appel réseau, aucun audit", async () => {
@@ -58,7 +58,7 @@ describe("appel de l'API et vérification", () => {
     const api = fakeApi({ text: GOOD });
     const n = await run(api);
     expect(n.source).toBe("IA");
-    expect(n.model).toBe("claude-opus-4-7");
+    expect(n.model).toBe("claude-opus-5-5");
     expect(n.sentences).toHaveLength(6);
     expect(n.fallback).toBeNull();
     expect(api).toHaveBeenCalledTimes(1);
@@ -68,7 +68,7 @@ describe("appel de l'API et vérification", () => {
     expect(init?.headers).toMatchObject({ "content-type": "application/json", "x-api-key": "cle-de-test", "anthropic-version": "2023-06-01" });
     expect(init?.signal).toBeInstanceOf(AbortSignal);
     const body = String(init?.body);
-    expect(calls).toEqual([{ outcome: "OK", reason: "ok", payloadBytes: Buffer.byteLength(body, "utf8"), model: "claude-opus-4-7", durationMs: expect.any(Number) }]);
+    expect(calls).toEqual([{ outcome: "OK", reason: "ok", payloadBytes: Buffer.byteLength(body, "utf8"), model: "claude-opus-5-5", durationMs: expect.any(Number) }]);
     expect(JSON.stringify(calls)).not.toContain("collaborateurs");
   });
 

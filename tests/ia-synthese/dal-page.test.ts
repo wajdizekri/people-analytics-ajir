@@ -101,7 +101,7 @@ describe("DAL : reformulation par IA générative (API simulée)", () => {
     const api = fakeApi({ text: RH_TEXT });
     const s = getSynthesis(c.rh, meta);
     const n = await getSynthesisNarrative(c.rh, s, meta, { fetchImpl: api });
-    expect(n).toMatchObject({ source: "IA", model: "claude-opus-4-7", fallback: null });
+    expect(n).toMatchObject({ source: "IA", model: "claude-opus-5-5", fallback: null });
     const body = String(api.mock.calls[0][1]?.body);
     for (const id of IDENTITIES()) expect(body).not.toContain(id);
     expect(JSON.parse(body).messages[0].content).toContain('"perimetre":"toute l\'entreprise"');
@@ -110,7 +110,7 @@ describe("DAL : reformulation par IA générative (API simulée)", () => {
     expect(rows[0]).toMatchObject({ userId: f.users.rh, outcome: "OK", targetId: "2026-08" });
     const detail = JSON.parse(rows[0].detail ?? "{}");
     expect(Object.keys(detail).sort()).toEqual(["durationMs", "model", "payloadBytes", "reason", "scope", "source", "view"]);
-    expect(detail).toMatchObject({ scope: "ENTREPRISE", view: "RH", model: "claude-opus-4-7", payloadBytes: Buffer.byteLength(body, "utf8") });
+    expect(detail).toMatchObject({ scope: "ENTREPRISE", view: "RH", model: "claude-opus-5-5", payloadBytes: Buffer.byteLength(body, "utf8") });
     expect(rows[0].detail).not.toMatch(/collaborateurs|alertes|risque élevé/);
     await getSynthesisNarrative(c.rh, getSynthesis(c.rh, meta), meta, { fetchImpl: api });
     expect(api).toHaveBeenCalledTimes(1);
@@ -154,8 +154,8 @@ describe("rendu statique de l'encadré", () => {
 
   it("IA générative : modèle affiché ; repli et attente signalés", async () => {
     const { NarrativeBox } = await import("@/app/(app)/synthese/narrative");
-    const ia = text(html(createElement(NarrativeBox, { narrative: { ...sample, source: "IA", model: "claude-opus-4-7" } })));
-    expect(ia).toContain("Reformulé par IA générative (modèle claude-opus-4-7) à partir des seuls agrégats ; chaque chiffre a été vérifié.");
+    const ia = text(html(createElement(NarrativeBox, { narrative: { ...sample, source: "IA", model: "claude-opus-5-5" } })));
+    expect(ia).toContain("Reformulé par IA générative (modèle claude-opus-5-5) à partir des seuls agrégats ; chaque chiffre a été vérifié.");
     const fb = text(html(createElement(NarrativeBox, { narrative: { ...sample, source: "GABARIT", fallback: "delai" } })));
     expect(fb).toContain("la reformulation par IA générative n'a pas abouti");
     const pending = html(createElement(NarrativeBox, { narrative: { source: "GABARIT", ...sample }, pending: true }));
@@ -169,7 +169,7 @@ describe("rendu statique de l'encadré", () => {
     const { AiNarrative } = await import("@/app/(app)/synthese/narrative");
     const t = text(html(await AiNarrative({ ctx: c.rh, synthesis: getSynthesis(c.rh, meta), meta })));
     expect(t).toContain("3 collaborateurs sont en risque élevé, dont 2 nouveaux.");
-    expect(t).toContain("(modèle claude-opus-4-7)");
+    expect(t).toContain("(modèle claude-opus-5-5)");
   });
 });
 

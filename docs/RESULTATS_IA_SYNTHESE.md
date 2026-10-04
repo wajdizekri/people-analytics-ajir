@@ -17,7 +17,7 @@ Encadré « Synthèse du mois en quelques phrases » en tête de la page /synthe
 | Page | `src/app/(app)/synthese/page.tsx`, `narrative.tsx`, `loading.tsx` | `NarrativeBox` (encadré), `AiNarrative` dans un `<Suspense>` dont le repli est la version par phrases types : la page n'attend jamais l'API |
 | Audit | `src/components/admin/audit-labels.ts` (ajouts en fin) | Action `synthesis.narrative.generate`, catégorie « Synthèses rédigées par IA générative », raisons d'échec en clair |
 
-Requête envoyée (`POST https://api.anthropic.com/v1/messages`, en-têtes `x-api-key`, `anthropic-version: 2023-06-01`) : modèle `claude-opus-4-7` par défaut (`SYNTHESIS_AI_MODEL` pour le remplacer si l'éditeur le retire), `max_tokens` 1 024, sans réflexion ni paramètre d'échantillonnage. Prompt système figé en tête, marqué `cache_control` ; il reste sous le minimum de jetons mis en cache par le modèle, donc le vrai cache est applicatif. Le message utilisateur contient la charge utile JSON et le brouillon issu des phrases types.
+Requête envoyée (`POST https://api.anthropic.com/v1/messages`, en-têtes `x-api-key`, `anthropic-version: 2023-06-01`) : modèle `claude-opus-5-5` par défaut (`SYNTHESIS_AI_MODEL` pour le remplacer si l'éditeur le retire), `max_tokens` 1 024, sans réflexion ni paramètre d'échantillonnage. Prompt système figé en tête, marqué `cache_control` ; il reste sous le minimum de jetons mis en cache par le modèle, donc le vrai cache est applicatif. Le message utilisateur contient la charge utile JSON et le brouillon issu des phrases types.
 
 ## Garde-fous
 
