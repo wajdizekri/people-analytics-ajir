@@ -32,7 +32,7 @@ Un fichier Markdown par chapitre. Citations au format auteur-année, bibliograph
 | 2.1 | Vue d'ensemble de la solution | Cahier des charges v2, section 5 (« Vue d'ensemble ») ; [README.md](../../README.md), section « Architecture » |
 | 2.2 | Gantt prévisionnel (et réel, à compléter) | Tableau 2.3 |
 | 4.1 | Diagramme de cas d'utilisation | [architecture/CAS_UTILISATION.md](../architecture/CAS_UTILISATION.md), section « Diagramme » |
-| 5.1 | Architecture logique production / hors ligne | Cahier des charges v2, section 5 ; [README.md](../../README.md) |
+| 5.1 | Architecture logique production / hors ligne + flux sortant facultatif (désactivé par défaut) vers l'API d'IA générative | Cahier des charges v2, section 5 ; [README.md](../../README.md) ; [ADR-014](../adr/014-ia-generative-facultative-hors-donnees-rh.md) |
 | 5.2 | Diagramme de déploiement on-premise | [architecture/DEPLOIEMENT.md](../architecture/DEPLOIEMENT.md), section « Diagramme de déploiement » |
 | 5.3 | Diagramme entité-association | [architecture/MODELE_DONNEES.md](../architecture/MODELE_DONNEES.md), section 1 (détail : sections 2 à 4) |
 | 5.3 bis (annexe) | Diagramme de classes de la couche applicative | [architecture/MODELE_DONNEES.md](../architecture/MODELE_DONNEES.md), section 5 |
@@ -42,6 +42,7 @@ Un fichier Markdown par chapitre. Citations au format auteur-année, bibliograph
 | 5.7 | Séquence : fiche consultée par un manager, refus hors périmètre | [architecture/SEQUENCES.md](../architecture/SEQUENCES.md), section 4 |
 | 5.8 | Séquence : what-if | [architecture/SEQUENCES.md](../architecture/SEQUENCES.md), section 5 |
 | 5.9 | Diagrammes d'états (alerte, recommandation, run, job, lot d'import) | [architecture/ETATS.md](../architecture/ETATS.md) |
+| 5.10 | Chaîne de l'assistant d'aide : corpus (`npm run rag:index`) → index FTS5 en mémoire filtré par rôle → réponse extraite ou reformulée vérifiée → `POST /api/assistant` | [RESULTATS_ASSISTANT.md](../RESULTATS_ASSISTANT.md), section « Architecture » (à dessiner) |
 | 6.2 | Mécanisme de départ du simulateur | [ml/sim/README.md](../../ml/sim/README.md), section « Mécanisme de départ » |
 | 7.1 | Protocole à origines glissantes | `make_split` dans [ml/train/protocol.py](../../ml/train/protocol.py) |
 | 7.2 | Courbe de calibration par déciles (recette de production) | Bloc `calibration.bins` de `models/turnover/logreg-v1-20260930/model.json` ou [RESULTATS_ML.md](../RESULTATS_ML.md), § 4 ; ou capture de `/transparency` |
@@ -51,13 +52,16 @@ Un fichier Markdown par chapitre. Citations au format auteur-année, bibliograph
 
 ### Captures d'écran (base de démonstration, voir [docs/DEMO.md](../DEMO.md))
 
-Prendre les captures sur `http://localhost:3000` après `npm run build && npm run start`, avec la base `data/app.db` (import `mixte_medium_s1`, calcul publié), en résolution d'au moins 1 440 px de large. Comptes : `admin`, `rh.demo`, `mgr.M10451`. Pour les figures 7.3, 7.4 et 8.5, utiliser la même fiche (par exemple `/employees/79`) afin de pouvoir comparer les vues.
+Des captures finales du 04/10/2026 existent dans [docs/qa/captures/design-system/final/](../qa/captures/design-system/final/) (nommage rôle-page-thème-menu-largeur), mais elles précèdent la vague « titres seuls » (chapitre 8, section 8.2.9) : elles sont à reprendre après la passe finale. Prendre les captures sur `http://localhost:3000` après `npm run build && npm run start`, avec la base `data/app.db` (import `mixte_medium_s1`, calcul publié), en résolution d'au moins 1 440 px de large. Comptes : `admin`, `rh.demo`, `mgr.M10451`. Pour les figures 7.3, 7.4 et 8.5, utiliser la même fiche (par exemple `/employees/79`) afin de pouvoir comparer les vues.
 
 | Figure | Écran | Compte | URL |
 |---|---|---|---|
 | 6.1 | Santé des données : lot, score qualité, rejets par règle | `admin` ou `rh.demo` | `/data-health` |
 | 7.3 | Zone « Estimation » : vue RH et vue manager côte à côte | `rh.demo` puis `mgr.M10451` | `/employees/<id d'un collaborateur du manager>` |
 | 7.4 | Panneau what-if (leviers, avant/après, coût, mention non causale) | `rh.demo` | `/employees/<id>` |
+| 7.5 | Pistes du meilleur levier (bouton « Trouver les leviers les plus efficaces ») | `rh.demo` | `/employees/<id d'un salarié Élevé>` |
+| 7.6 | Section « Profils de départs » | `rh.demo` | `/retention` |
+| 7.7 | Encadré « Synthèse du mois en quelques phrases », mode phrases types | `rh.demo` | `/synthese` |
 | 8.1 | Connexion (avec message d'erreur) | — | `/login` |
 | 8.2 | Liste et détail d'une alerte | `rh.demo` | `/alerts`, `/alerts/<id>` |
 | 8.3 | Tableau de bord RH (indicateurs, séries, risque par département) | `rh.demo` | `/dashboard` |
@@ -73,7 +77,9 @@ Prendre les captures sur `http://localhost:3000` après `npm run build && npm ru
 | 8.11 | Transparence du modèle | `admin` ou `rh.demo` | `/transparency` |
 | 8.12 (option) | Paramètres | `admin` | `/admin/settings` |
 | 8.13 (option) | Utilisateurs et lien d'activation | `admin` | `/admin/users` |
+| 8.14 (option) | Tableau de bord RH en thème sombre, menu réduit (capture du 04/10 : `rh-tableau-de-bord-sombre-rail-1440.png`) | `rh.demo` | `/dashboard` |
+| 8.15 (option) | Organigramme (capture du 04/10 : `rh-organigramme-clair-menu-1440.png`) | `mgr.M12037` ou `rh.demo` | `/organigramme` |
 
 ## Liste des tableaux
 
-Chapitre 2 : 2.1 points ouverts du sujet initial, 2.2 phases CRISP-DM, 2.3 planning prévisionnel. Chapitre 3 : 3.1 synthèse comparative et positionnement. Chapitre 4 : 4.1 acteurs, 4.2 cas d'utilisation et droits, 4.3 besoins fonctionnels, 4.4 besoins non fonctionnels, 4.5 MoSCoW. Chapitre 5 : 5.1 couches, 5.2 décisions d'architecture, 5.3 familles de tables, 5.4 menaces et parades. Chapitre 6 : 6.1 fichiers de l'export, 6.2 règles de contrôle, 6.3 défauts injectés et règles déclenchées, 6.4 délais de repli, 6.5 calage du simulateur. Chapitre 7 : 7.1 variables, critères de succès (non numéroté), 7.2 performance comparée, 7.3 différences appariées, 7.4 utilité selon la part ciblée, 7.5 inflation selon le découpage (Q1a), 7.6 effet des variables naïves (Q1b), 7.7 courbe d'apprentissage (Q1d), 7.8 verdict sur les critères, 7.9 rapport d'équité. Chapitre 8 : 8.1 état de réalisation, 8.2 niveaux de test, 8.3 matrice d'autorisation, 8.4 latences sous charge, 8.5 rappel par type d'anomalie. Chapitre 9 : 9.1 correspondance exigences–mesures. Chapitre 10 : 10.1 critères d'acceptation et état.
+Chapitre 2 : 2.1 points ouverts du sujet initial, 2.2 phases CRISP-DM, 2.3 planning prévisionnel. Chapitre 3 : 3.1 synthèse comparative et positionnement. Chapitre 4 : 4.1 acteurs, 4.2 cas d'utilisation et droits, 4.3 besoins fonctionnels, 4.4 besoins non fonctionnels, 4.5 MoSCoW, 4.6 état du périmètre au 04/10/2026 (périmètre initial et extensions). Chapitre 5 : 5.1 couches, 5.2 décisions d'architecture, 5.3 familles de tables, 5.4 menaces et parades. Chapitre 6 : 6.1 fichiers de l'export, 6.2 règles de contrôle, 6.3 défauts injectés et règles déclenchées, 6.4 délais de repli, 6.5 calage du simulateur. Chapitre 7 : 7.1 variables, critères de succès (non numéroté), 7.2 performance comparée, 7.3 différences appariées, 7.4 utilité selon la part ciblée, 7.5 inflation selon le découpage (Q1a), 7.6 effet des variables naïves (Q1b), 7.7 courbe d'apprentissage (Q1d), 7.8 verdict sur les critères, 7.9 rapport d'équité, 7.10 absentéisme, 7.11 effectifs et masse salariale, 7.12 formations, 7.13 charge de travail, 7.14 temps de la recherche du meilleur levier, 7.15 validation semi-synthétique de la comparaison appariée, 7.16 choix du nombre de profils de départs, 7.17 profils de départs, 7.18 couverture conforme absentéisme et charge, 7.19 couverture conforme effectifs et masse salariale. Chapitre 8 : 8.1 état de réalisation, 8.2 niveaux de test, 8.3 matrice d'autorisation, 8.4 latences sous charge, 8.5 rappel par type d'anomalie, 8.6 frictions de la vague d'ergonomie, 8.7 récapitulatif des vérifications. Chapitre 9 : 9.1 correspondance exigences–mesures. Chapitre 10 : 10.1 critères d'acceptation et état.

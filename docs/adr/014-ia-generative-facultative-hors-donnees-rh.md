@@ -1,4 +1,4 @@
-# ADR-014 — IA générative facultative, désactivée par défaut, jamais sur des données RH
+# ADR-014 — IA générative facultative, désactivée par défaut, jamais sur des données individuelles
 
 - **Statut** : acceptée (écart assumé au cahier des charges, décision d'Aymen du 04/10/2026)
 - **Date** : 04/10/2026

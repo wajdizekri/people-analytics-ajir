@@ -1,12 +1,18 @@
 # Bibliographie
 
-Format APA 7 (citation auteur-année dans le texte). Toutes les références ont été vérifiées en septembre 2026 sur une source primaire ou de référence. Les métadonnées d'articles ont été contrôlées sur Crossref (API `api.crossref.org/works/<DOI>`), DataCite, les sites des éditeurs, des actes (NeurIPS, PMLR, JMLR) et arXiv. Les textes juridiques et les pages d'éditeurs de logiciels ont été contrôlés sur les sites officiels ou sur des miroirs signalés. Les points confirmés seulement par des sources secondaires sont marqués **[à confirmer]**.
+Format APA 7 (citation auteur-année dans le texte). Toutes les références ont été vérifiées en septembre 2026 sur une source primaire ou de référence. Les métadonnées d'articles ont été contrôlées sur Crossref (API `api.crossref.org/works/<DOI>`), DataCite, les sites des éditeurs, des actes (NeurIPS, PMLR, JMLR) et arXiv. Les textes juridiques et les pages d'éditeurs de logiciels ont été contrôlés sur les sites officiels ou sur des miroirs signalés. Les points confirmés seulement par des sources secondaires sont marqués **[à confirmer]**. Les références ajoutées le 04/10/2026 pour les sections 7.14 à 7.16, 8.2.7 et 8.4.5 ont été rédigées de mémoire et n'ont pas encore été contrôlées : elles sont marquées **[à vérifier sur source primaire]** jusqu'à ce contrôle.
 
 ## Articles, ouvrages et actes de conférence
 
 AL-Ali, M., Alwateer, M., Alsaedi, S. A., Balaha, H. M., Badawy, M., & Elhosseini, M. A. (2026). Integrating machine learning and explainable AI for employee attrition prediction in HR analytics. *Scientific Reports, 16*, 6344. https://doi.org/10.1038/s41598-026-36424-2
 
 Aalen, O. O., & Johansen, S. (1978). An empirical transition matrix for non-homogeneous Markov chains based on censored observations. *Scandinavian Journal of Statistics, 5*(3), 141–150. https://www.jstor.org/stable/4615704 **[à confirmer : numéro de fascicule, vu dans des sources secondaires]**
+
+Abadie, A., & Imbens, G. W. (2008). On the failure of the bootstrap for matching estimators. *Econometrica, 76*(6), 1537–1557. https://doi.org/10.3982/ECTA6474 **[à vérifier sur source primaire]**
+
+Austin, P. C. (2011). Optimal caliper widths for propensity-score matching when estimating differences in means and differences in proportions in observational studies. *Pharmaceutical Statistics, 10*(2), 150–161. https://doi.org/10.1002/pst.433 **[à vérifier sur source primaire]**
+
+Austin, P. C., & Small, D. S. (2014). The use of bootstrapping when using propensity-score matching without replacement: A simulation study. *Statistics in Medicine, 33*(24), 4306–4319. https://doi.org/10.1002/sim.6276 **[à vérifier sur source primaire]**
 
 Barocas, S., Hardt, M., & Narayanan, A. (2023). *Fairness and machine learning: Limitations and opportunities*. MIT Press. https://fairmlbook.org
 
@@ -50,9 +56,13 @@ Gutierrez, P., & Gérardy, J.-Y. (2017). Causal inference and uplift modelling: 
 
 Hardt, M., Price, E., & Srebro, N. (2016). Equality of opportunity in supervised learning. In *Advances in Neural Information Processing Systems 29* (pp. 3315–3323). Curran Associates. https://proceedings.neurips.cc/paper_files/paper/2016/file/6a9659feb1216f14f7384ba499518b38-Paper.pdf **[à confirmer : pagination, NeurIPS ne pagine pas officiellement]**
 
+Hennig, C. (2007). Cluster-wise assessment of cluster stability. *Computational Statistics & Data Analysis, 52*(1), 258–271. https://doi.org/10.1016/j.csda.2006.11.025 **[à vérifier sur source primaire]**
+
 Hochenbaum, J., Vallis, O. S., & Kejariwal, A. (2017). *Automatic anomaly detection in the cloud via statistical learning* (arXiv:1704.07706). arXiv. https://doi.org/10.48550/arXiv.1704.07706
 
 Hom, P. W., Lee, T. W., Shaw, J. D., & Hausknecht, J. P. (2017). One hundred years of employee turnover theory and research. *Journal of Applied Psychology, 102*(3), 530–545. https://doi.org/10.1037/apl0000103
+
+Hubert, L., & Arabie, P. (1985). Comparing partitions. *Journal of Classification, 2*(1), 193–218. https://doi.org/10.1007/BF01908075 **[à vérifier sur source primaire]**
 
 Kapoor, S., & Narayanan, A. (2023). Leakage and the reproducibility crisis in machine-learning-based science. *Patterns, 4*(9), 100804. https://doi.org/10.1016/j.patter.2023.100804
 
@@ -63,6 +73,8 @@ Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q., & Liu, T.-Y. (
 Kleinberg, J., Mullainathan, S., & Raghavan, M. (2017). Inherent trade-offs in the fair determination of risk scores. In C. H. Papadimitriou (Ed.), *8th Innovations in Theoretical Computer Science Conference (ITCS 2017)* (LIPIcs Vol. 67, pp. 43:1–43:23). Schloss Dagstuhl – Leibniz-Zentrum für Informatik. https://doi.org/10.4230/LIPIcs.ITCS.2017.43
 
 Lee, T. W., & Mitchell, T. R. (1994). An alternative approach: The unfolding model of voluntary employee turnover. *Academy of Management Review, 19*(1), 51–89. https://doi.org/10.5465/amr.1994.9410122008 **[à confirmer : page de fin]**
+
+Lei, J., G'Sell, M., Rinaldo, A., Tibshirani, R. J., & Wasserman, L. (2018). Distribution-free predictive inference for regression. *Journal of the American Statistical Association, 113*(523), 1094–1111. https://doi.org/10.1080/01621459.2017.1307116 **[à vérifier sur source primaire]**
 
 Leonardi, P., & Contractor, N. (2018). Better people analytics: Measure who they know, not just who they are. *Harvard Business Review, 96*(6), 70–81. https://hbr.org/2018/11/better-people-analytics **[à confirmer : pagination]**
 
@@ -80,6 +92,8 @@ Mobley, W. H. (1977). Intermediate linkages in the relationship between job sati
 
 Niculescu-Mizil, A., & Caruana, R. (2005). Predicting good probabilities with supervised learning. In *Proceedings of the 22nd International Conference on Machine Learning* (pp. 625–632). ACM. https://doi.org/10.1145/1102351.1102430
 
+Nielsen, J. (1994). Heuristic evaluation. In J. Nielsen & R. L. Mack (Eds.), *Usability inspection methods* (pp. 25–62). John Wiley & Sons. **[à vérifier sur source primaire]**
+
 Page, E. S. (1954). Continuous inspection schemes. *Biometrika, 41*(1–2), 100–115. https://doi.org/10.1093/biomet/41.1-2.100
 
 Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V., Vanderplas, J., Passos, A., Cournapeau, D., Brucher, M., Perrot, M., & Duchesnay, É. (2011). Scikit-learn: Machine learning in Python. *Journal of Machine Learning Research, 12*, 2825–2830. https://jmlr.org/papers/v12/pedregosa11a.html
@@ -93,6 +107,12 @@ Putter, H., Fiocco, M., & Geskus, R. B. (2007). Tutorial in biostatistics: Compe
 Ribeiro, M. T., Singh, S., & Guestrin, C. (2016). "Why should I trust you?": Explaining the predictions of any classifier. In *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining* (pp. 1135–1144). ACM. https://doi.org/10.1145/2939672.2939778
 
 Roberts, D. R., Bahn, V., Ciuti, S., Boyce, M. S., Elith, J., Guillera-Arroita, G., Hauenstein, S., Lahoz-Monfort, J. J., Schröder, B., Thuiller, W., Warton, D. I., Wintle, B. A., Hartig, F., & Dormann, C. F. (2017). Cross-validation strategies for data with temporal, spatial, hierarchical, or phylogenetic structure. *Ecography, 40*(8), 913–929. https://doi.org/10.1111/ecog.02881
+
+Rosenbaum, P. R., & Rubin, D. B. (1983). The central role of the propensity score in observational studies for causal effects. *Biometrika, 70*(1), 41–55. https://doi.org/10.1093/biomet/70.1.41 **[à vérifier sur source primaire]**
+
+Rousseeuw, P. J. (1987). Silhouettes: A graphical aid to the interpretation and validation of cluster analysis. *Journal of Computational and Applied Mathematics, 20*, 53–65. https://doi.org/10.1016/0377-0427(87)90125-7 **[à vérifier sur source primaire]**
+
+Rubin, D. B. (2001). Using propensity scores to help design observational studies: Application to the tobacco litigation. *Health Services and Outcomes Research Methodology, 2*(3–4), 169–188. https://doi.org/10.1023/A:1020363010465 **[à vérifier sur source primaire]**
 
 Rudin, C. (2019). Stop explaining black box machine learning models for high stakes decisions and use interpretable models instead. *Nature Machine Intelligence, 1*(5), 206–215. https://doi.org/10.1038/s42256-019-0048-x
 
@@ -108,6 +128,8 @@ Steyerberg, E. W. (2019). *Clinical prediction models: A practical approach to d
 
 Štrumbelj, E., & Kononenko, I. (2014). Explaining prediction models and individual predictions with feature contributions. *Knowledge and Information Systems, 41*(3), 647–665. https://doi.org/10.1007/s10115-013-0679-x
 
+Stuart, E. A. (2010). Matching methods for causal inference: A review and a look forward. *Statistical Science, 25*(1), 1–21. https://doi.org/10.1214/09-STS313 **[à vérifier sur source primaire]**
+
 Tashman, L. J. (2000). Out-of-sample tests of forecasting accuracy: An analysis and review. *International Journal of Forecasting, 16*(4), 437–450. https://doi.org/10.1016/S0169-2070(00)00065-0
 
 Tursunbayeva, A., Di Lauro, S., & Pagliari, C. (2018). People analytics—A scoping review of conceptual boundaries and value propositions. *International Journal of Information Management, 43*, 224–247. https://doi.org/10.1016/j.ijinfomgt.2018.08.002
@@ -117,6 +139,8 @@ Van Calster, B., McLernon, D. J., van Smeden, M., Wynants, L., Steyerberg, E. W.
 van Houwelingen, H. C. (2007). Dynamic prediction by landmarking in event history analysis. *Scandinavian Journal of Statistics, 34*(1), 70–85. https://doi.org/10.1111/j.1467-9469.2006.00529.x
 
 Vickers, A. J., & Elkin, E. B. (2006). Decision curve analysis: A novel method for evaluating prediction models. *Medical Decision Making, 26*(6), 565–574. https://doi.org/10.1177/0272989X06295361
+
+Vovk, V., Gammerman, A., & Shafer, G. (2005). *Algorithmic learning in a random world*. Springer. https://doi.org/10.1007/b106715 **[à vérifier sur source primaire]**
 
 Wirth, R., & Hipp, J. (2000). CRISP-DM: Towards a standard process model for data mining. In *Proceedings of the 4th International Conference on the Practical Applications of Knowledge Discovery and Data Mining* (pp. 29–39). **[à confirmer : intitulé des actes et pagination, vus dans des citations secondaires ; pas de DOI]**
 
@@ -155,6 +179,8 @@ Office des publications de l'Union européenne. (2026). *Règlement (UE) 2026/17
 OWASP Foundation. (2025). *OWASP Application Security Verification Standard 5.0.0*. https://github.com/OWASP/ASVS/releases/tag/v5.0.0_release
 
 OWASP Foundation. (s.d.). *Password storage cheat sheet*. Consulté le 29 septembre 2026, à l'adresse https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+
+W3C. (2023). *Web Content Accessibility Guidelines (WCAG) 2.2* (W3C Recommendation). https://www.w3.org/TR/WCAG22/ **[à vérifier sur source primaire]**
 
 ## Organismes, éditeurs et presse
 

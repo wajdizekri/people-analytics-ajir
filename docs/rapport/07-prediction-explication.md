@@ -1,6 +1,6 @@
 # Chapitre 7 — Prédiction et explication du risque de démission
 
-Ce chapitre décrit le volet prédictif du module. Il couvre la formulation du problème, les variables, le protocole d'évaluation temporel, les modèles comparés et les métriques, puis les résultats. Il présente ensuite la règle de décision, l'explication des estimations, la simulation *what-if*, l'audit d'équité, le cycle de vie du modèle (dont la règle de démarrage à froid) et les quatre IA par sujet (absentéisme, effectifs et masse salariale, formations, charge de travail). Il correspond aux contributions C2 (protocole anti-fuite) et C3 (du score à la décision explicable).
+Ce chapitre décrit le volet prédictif du module. Il couvre la formulation du problème, les variables, le protocole d'évaluation temporel, les modèles comparés et les métriques, puis les résultats. Il présente ensuite la règle de décision, l'explication des estimations, la simulation *what-if*, l'audit d'équité, le cycle de vie du modèle (dont la règle de démarrage à froid) et les quatre IA par sujet (absentéisme, effectifs et masse salariale, formations, charge de travail). Les sections 7.13 à 7.17 décrivent enfin cinq fonctions ajoutées le 4 octobre 2026 : la recherche automatique du meilleur levier, la comparaison appariée des interventions (estimation non causale), la typologie des départs, les fourchettes de prévision conformes et la synthèse rédigée, avec l'assistant d'aide. Le chapitre correspond aux contributions C2 (protocole anti-fuite) et C3 (du score à la décision explicable).
 
 ## 7.1 Formulation
 
@@ -67,7 +67,7 @@ Le choix des groupes suit les déterminants du départ volontaire identifiés pa
 - **Visibilité à la date de saisie** : une ligne ne compte que si son événement et sa saisie sont antérieurs ou égaux à t (chapitre 6).
 - **Fenêtres tronquées** : pour un salarié entré depuis moins de 12 mois, ou si les données commencent après t − 12 mois, les fenêtres sont tronquées et l'indicateur `partial_history` est levé.
 - **Masquage de la santé** : les jours de maladie et de maternité visibles à t sont retirés des jours disponibles de toutes les variables tirées des pointages et des absences (ADR-009). Un arrêt maladie ne peut donc ni augmenter les « jours sans pointage » ni faire baisser les heures supplémentaires moyennes. Le congé annuel et les absences justifiées ne comptent pas non plus comme jours sans pointage.
-- **Attributs exclus** : sexe, âge, situation familiale et gouvernorat ne sont pas des variables. Ils sont conservés pour le seul audit d'équité (section 7.9).
+- **Attributs exclus** : sexe, âge, situation familiale et gouvernorat ne sont pas des variables. Ils sont conservés pour le seul audit d'équité (section 7.10).
 - **Imputation fixe** : une valeur manquante (salaire non visible, trop peu d'arrivées, aucune évaluation) prend la valeur d'imputation du contrat, identique à l'entraînement et en production. Les valeurs sont arrondies à 10⁻⁶.
 - **Versionnement** : toute modification du calcul impose une nouvelle version `fsv` et un recalcul de l'historique. Un modèle dont la `fsv` diffère du contrat courant est refusé au chargement.
 
@@ -317,7 +317,7 @@ Les recommandations sont créées à la publication d'un calcul, pour les salari
 - un entretien est proposé pour tout salarié ÉLEVÉ ;
 - une action n'est proposée qu'une fois par salarié et par mois scoré, et jamais en double tant qu'elle est ouverte.
 
-Aucune recommandation n'est déclenchée par l'ancienneté, le contrat, l'équipe, les absences ou un attribut personnel. La révision salariale est réservée à la RH. Une recommandation marquée « réalisée » crée une **intervention** datée : elle garde la trace de l'action RH, qu'un réentraînement futur devra prendre en compte, car un départ évité grâce à l'action ne doit pas être appris comme un faux positif.
+Aucune recommandation n'est déclenchée par l'ancienneté, le contrat, l'équipe, les absences ou un attribut personnel. La révision salariale est réservée à la RH. Une recommandation marquée « réalisée » crée une **intervention** datée : elle garde la trace de l'action RH, qu'un réentraînement futur devra prendre en compte. L'issue observée après une action peut en effet en dépendre : un salarié resté après une intervention ne doit pas être appris sans précaution comme un faux positif. La section 7.14 compare les collaborateurs suivis à des collaborateurs similaires non suivis, sous la forme d'une estimation non causale.
 
 Une limite doit être signalée. Le déclenchement se fait au niveau du **groupe**. Or le groupe Temps de travail contient à la fois des variables de charge (heures supplémentaires) et des signaux de retrait (retards, irrégularité d'arrivée, jours sans pointage). Un groupe dominé par des retards peut donc déclencher une suggestion « charge de travail ». Déclencher sur la variable principale du groupe, ou séparer les signaux de retrait dans un groupe non actionnable comme le prévoyait le plan de cadrage, corrigerait ce point.
 
@@ -330,7 +330,7 @@ Sa conception évite deux pièges :
 - **les leviers agissent sur les données sources, pas sur les variables.** Le système recharge les sources du seul salarié à la date du calcul publié, puis applique le levier comme s'il avait été saisi dans AJIR à cette date. Par exemple, une promotion ajoute un événement de grade et porte le salaire au moins à la médiane du nouveau grade. Les variables sont ensuite recalculées **par les mêmes fonctions que le calcul mensuel**, et les effets de bord (compa-ratio, mois depuis la dernière augmentation, etc.) sont donc cohérents ;
 - **le salarié est replacé dans la population du mois.** Son rang, son lift et son niveau avant et après sont calculés par la même fonction que la publication, face aux vecteurs des autres salariés du mois.
 
-La réponse donne l'estimation et le niveau avant et après, la contribution par groupe avant et après, les variables modifiées et le **coût annuel** en dinars (écart de salaire mensuel × 12 × (1 + taux de charges patronales, 16,57 % par défaut, modifiable)). Elle porte la mention : « Estimation non causale : le modèle décrit des associations, pas l'effet garanti d'une action. » Rien n'est écrit en base hormis l'audit de la simulation. La fonctionnalité est réservée à la RH.
+La réponse donne l'estimation et le niveau avant et après, la contribution par groupe avant et après, les variables modifiées et le **coût annuel** en dinars (écart de salaire mensuel × 12 × (1 + taux de charges patronales, 16,57 % par défaut, modifiable)). Elle porte la mention : « Estimation non causale : le modèle décrit des associations, pas l'effet garanti d'une action. » Rien n'est écrit en base hormis l'audit de la simulation. La fonctionnalité est réservée à la RH. Depuis le 4 octobre 2026, une recherche automatique propose les plus petites combinaisons de leviers suffisantes pour faire baisser le niveau (section 7.13).
 
 *Figure 7.4 — Panneau what-if sur la fiche RH (capture à prendre).*
 
@@ -453,8 +453,286 @@ Le gain est modeste mais significatif pour les équipes sur les deux jeux ; il e
 
 ### 7.12.5 Bilan des quatre volets
 
-Sur le simulateur, deux modèles apportent un gain net sur leurs baselines (absentéisme, formations), un gain modeste mais significatif (charge des équipes), et un ne bat pas la persistance (effectif), ce que le rapport assume. Tous partagent le même cadre : pas de fuite, parité Python / TypeScript vérifiée, intervalles de prévision dont la couverture est mesurée, recommandations explicables et décidées par un humain, prévisions agrégées et petits groupes protégés.
+Sur le simulateur, deux modèles apportent un gain net sur leurs baselines (absentéisme, formations), un gain modeste mais significatif (charge des équipes), et un ne bat pas la persistance (effectif), ce que le rapport assume. Tous partagent le même cadre : pas de fuite, parité Python / TypeScript vérifiée, intervalles de prévision dont la couverture est mesurée (puis recalibrée par prédiction conforme dans une seconde version, section 7.16), recommandations explicables et décidées par un humain, prévisions agrégées et petits groupes protégés.
 
-## 7.13 Conclusion
+## 7.13 Recherche automatique du meilleur levier
+
+### 7.13.1 Objectif
+
+La simulation *what-if* (section 7.9) laisse la RH essayer les leviers un à un. Avec quatre leviers et leurs bornes, les combinaisons sont nombreuses (1 429 sur la grille retenue), et il est difficile de savoir laquelle est la plus modeste. La recherche automatique répond à une question précise : **quelles sont les plus petites combinaisons de leviers qui feraient passer l'estimation du modèle sous le niveau de risque actuel** (Élevé vers Moyen ou Faible, Moyen vers Faible), avec le modèle du calcul publié et les seuils en vigueur, capacité RH et lift du niveau Moyen (section 7.7) ([RESULTATS_IA_LEVIER.md](../RESULTATS_IA_LEVIER.md)).
+
+Sur la fiche, réservée à la RH, un bouton « Trouver les leviers les plus efficaces » affiche au plus trois pistes. Chaque carte donne les leviers, l'estimation avant et après, le niveau atteint et la hausse de salaire chargée. Le bouton « Appliquer à la simulation » pré-remplit le formulaire du *what-if* ; la RH relit les leviers et lance elle-même la simulation. Rien n'est enregistré hormis l'audit.
+
+### 7.13.2 Méthode
+
+- **Grille discrète** dans les bornes du *what-if* : salaire de 0 à 30 % par pas de 2,5 % (13 valeurs), heures supplémentaires retirées de 0 à 40 h par mois par pas de 10 h (5 valeurs), formation de 0 à 200 h par pas de 20 h (11 valeurs), promotion d'un grade ou non. La grille compte 13 × 5 × 11 × 2 − 1 = **1 429 combinaisons**. Un levier inapplicable (salaire de base non visible, grade maximal ou inconnu) est retiré de la grille, et l'écran le signale.
+- **Coût normalisé, ou « ampleur »** : salaire / 30 % + heures supplémentaires / 40 h + formation / 200 h + 1 si promotion. Chaque levier poussé à sa limite vaut 1, et une promotion compte comme un pas fort. À ampleur égale, la combinaison qui utilise le moins de leviers passe d'abord, puis celle qui demande le moins de salaire : l'ordre est total et le résultat déterministe.
+- **Sélection et dominance.** La grille est parcourue par ampleur croissante, et la première combinaison qui fait baisser le niveau est la plus petite. Une combinaison qui utilise chaque levier au moins autant qu'une piste déjà retenue est dite **dominée** : elle est écartée sans calcul, car elle ne ferait qu'en faire plus qu'une piste déjà suffisante. Le résultat est la liste des trois plus petites pistes non dominées, ou moins s'il n'en existe pas trois. Si aucune combinaison ne suffit, l'écran l'écrit (« Aucune combinaison dans les limites de la simulation ne fait baisser le niveau ; voir les facteurs associés ») et renvoie vers la zone Estimation. Un salarié déjà Faible n'est pas concerné.
+- **Aucun second modèle.** Chaque essai passe par les fonctions du calcul mensuel : application des leviers aux données sources, recalcul des variables, score du modèle publié, puis niveau par la règle de capacité (ADR-006). La recherche hérite donc des deux précautions du *what-if* (section 7.9).
+- **Calcul borné.** Les leviers agissent sur des sources disjointes (paie et carrière, pointages, formations), et chaque variable ne lit qu'une de ces sources. Les variables d'une combinaison se composent donc à partir de 39 recalculs au plus (25 pour le salaire et la promotion, 4 pour les heures supplémentaires, 10 pour la formation), au lieu de 1 429. Le placement dans la population du mois réutilise les scores des autres salariés, calculés une seule fois, et une recherche par dichotomie qui reproduit au bit près le départage de la règle de capacité. Chaque piste retenue est enfin recalculée en entier par le moteur *what-if* : les chiffres de la carte sont exactement ceux que donnera la simulation. Le plafond est de 1 + 39 recalculs de variables, 1 429 prédictions et 6 simulations complètes, sans aucun appel réseau.
+
+### 7.13.3 Validation et temps de calcul
+
+La validation repose sur un **oracle exhaustif** (35 tests). Pour chaque salarié testé, les 1 429 combinaisons sont recalculées en entier : avec B0, des salariés Élevé avec et sans piste ; avec la régression logistique, tous les salariés Élevé et Moyen. Les tests vérifient que les variables composées égalent les variables recalculées, que le placement accéléré égale la règle de capacité, et que les pistes retenues sont exactement les plus petites combinaisons suffisantes et non dominées de l'oracle. Sur le scénario de référence, le salarié F (B0, 4 points, Élevé) obtient deux pistes, « promotion seule » et « +15 % de salaire et −20 h supplémentaires », toutes deux au niveau Faible ; un pas de moins sur l'une ou l'autre ne suffit plus. Le salarié A, dont les facteurs associés (absences, formation obligatoire en retard) sont hors des leviers, n'en obtient aucune. Enfin, le *what-if* lancé avec les leviers d'une piste rend la même estimation, le même niveau, les mêmes changements et le même coût que la carte.
+
+Les règles d'accès sont celles du *what-if* : RH seulement (refus audité pour le manager et l'ADMIN), refus pour un salarié non évalué ou opposé au traitement, audit de chaque recherche (statut, nombre de pistes, durée).
+
+*Tableau 7.14 — Temps de la recherche, mesuré par les tests sur le poste de développement le 04/10/2026 (source : [RESULTATS_IA_LEVIER.md](../RESULTATS_IA_LEVIER.md), § 3).*
+
+| Cas | Salariés évalués | Durée | Recalculs | Combinaisons évaluées |
+|---|---|---|---|---|
+| Scénario de référence (B0), salarié F | 8 | 24 ms | 42 | 485 sur 1 429 |
+| Même scénario et 2 000 salariés ajoutés (paie sur 25 mois) | 2 008 | 818 ms | 43 | 53 sur 1 429 (3 pistes) |
+
+Le budget vérifié par les tests est de moins de 10 secondes et d'au plus 46 recalculs. Sur la base de démonstration (987 salariés évalués), l'ordre de grandeur attendu est celui de la seconde ligne ; il n'a pas été mesuré dans l'application pendant le chantier.
+
+*Figure 7.5 — Pistes proposées par la recherche du meilleur levier dans le panneau what-if (capture à prendre).*
+
+### 7.13.4 Limites et cadrage
+
+- **Grille discrète** : une combinaison plus fine (par exemple +13 %) n'est pas explorée ; la piste « +15 % » peut dépasser le strict nécessaire de moins d'un pas.
+- **Le coût normalisé est une convention.** Il ne mesure ni le coût financier (affiché à part, pour le salaire seulement, hors formation) ni la faisabilité : budget, poste disponible pour une promotion, charge de l'équipe si l'on retire des heures supplémentaires.
+- **Monotonie non garantie** : avec la régression logistique, qui n'impose aucune contrainte de signe (section 7.6.8), retirer des heures supplémentaires peut faire monter l'estimation. La recherche évalue chaque combinaison sans supposer la monotonie.
+- **Niveau relatif** : le niveau dépend de la population du mois et de la capacité RH ; une piste peut ne plus suffire au calcul suivant.
+- **Hypothèse de composition** : l'indépendance des sources par levier est vraie dans le calcul actuel des variables. Une variable future qui croiserait deux sources la romprait. L'oracle des tests le détecterait, et les pistes affichées resteraient exactes, puisqu'elles sont recalculées en entier ; elles seraient au pire incomplètes.
+
+Le cadrage éthique est écrit au-dessus du bouton : « Pistes à discuter lors d'un échange, pas une décision. Estimation du modèle, non causale. » La mention non causale du *what-if* est conservée. Une piste dit seulement que **le modèle**, qui décrit des facteurs associés, classerait le salarié plus bas ; elle ne dit pas que l'action changerait sa décision de rester ou de partir. La recherche n'écrit rien en base, ne crée ni recommandation ni alerte, n'utilise que les leviers d'action (aucun attribut sensible, aucune donnée de santé) et n'existe pas côté manager.
+
+## 7.14 Comparaison appariée des interventions (estimation non causale)
+
+### 7.14.1 Objectif
+
+La page Interventions, réservée à la RH, montre ce que devient le niveau de risque après une action (section 7.8.3). Cette lecture « avant / après » ne compare les collaborateurs suivis à personne. Or un niveau Élevé redescend souvent de lui-même le mois suivant : c'est le **retour vers la moyenne**. De plus, la RH choisit qui suivre, ce qui crée un **biais de sélection**. La section ajoutée compare donc, **par type d'action**, chaque collaborateur suivi à un collaborateur **non suivi au profil proche, évalué le même mois**, et affiche l'écart sur deux indicateurs avec une fourchette à 95 % ([RESULTATS_IA_INTERVENTIONS.md](../RESULTATS_IA_INTERVENTIONS.md)).
+
+Son titre à l'écran le dit : il s'agit d'une **estimation non causale, sous hypothèses**. Elle tient compte des variables enregistrées dans AJIR, jamais des raisons invisibles du choix des personnes suivies. Aucun nombre de départs n'en est déduit et aucune décision n'en découle automatiquement.
+
+### 7.14.2 Méthode
+
+- **Unités et date de référence.** Un suivi est la **première** action réalisée d'un type donné pour un collaborateur : intervention enregistrée ou recommandation marquée « réalisée ». Sa date de référence t est la fin du mois qui précède l'action. Les variables sont celles du calcul mensuel, visibles à la date de saisie (ADR-005), et le niveau est celui du dernier calcul publié au plus tard à t. Aucune information postérieure à t n'entre dans le modèle de sélection.
+- **Témoins.** Les candidats sont les collaborateurs évalués au même mois t, sans aucune action réalisée, tous types confondus, dans les six mois qui précèdent ou suivent t. Un témoin n'est associé à un suivi que s'il est encore présent, et sans démission, à la date de l'action de ce suivi. Les collaborateurs opposés au traitement sont exclus des deux groupes.
+- **Score de propension** (Rosenbaum et Rubin, 1983). Une régression logistique ridge estime la probabilité d'être suivi à partir de 27 variables : les 25 variables du modèle de risque (aucun attribut sensible, aucune donnée de santé) et deux indicatrices des niveaux Élevé et Moyen au dernier calcul, premier facteur de sélection puisque les recommandations visent ces niveaux. Les variables sont standardisées, la pénalité vaut λ = 1 et l'intercept n'est pas pénalisé ; la pénalité garantit la convergence avec peu de suivis.
+- **Appariement** 1:1 au plus proche voisin sur le logit du score, **exact sur le mois t**, dans un caliper de 0,2 écart-type du logit (Austin, 2011), sans remise. Un suivi sans voisin dans le caliper reste sans comparaison et fait baisser la part appariée.
+- **Indicateurs.** Le premier est la démission dans les six mois, c'est-à-dire l'étiquette `y6` de la vue `v_label_panel` (section 7.1.2), seulement si le suivi est complet. Le second est la baisse du niveau de risque trois mois après l'action, selon la même lecture que l'avant / après de la page.
+- **Écart et fourchette.** L'écart est la moyenne des différences suivi − témoin sur les paires mesurées, en points de pourcentage. La fourchette à 95 % est obtenue par **bootstrap des paires** (2 000 tirages ; Austin et Small, 2014), avec une graine fixe : la page affiche toujours la même fourchette. L'écart sans appariement figure dans « Voir les données », pour montrer ce que l'appariement corrige.
+- **Diagnostics d'équilibre.** Pour chaque variable, la différence standardisée (DS) est calculée avant et après appariement, ainsi que la part des suivis appariés et le support commun. Le verdict s'affiche en mots : « Groupes comparables » si |DS| < 0,25 sur **toutes** les variables après appariement (Rubin, 2001 ; Stuart, 2010) et si au moins 80 % des suivis sont appariés ; « Comparaison fragile » sinon, avec la raison.
+
+**Le seuil du verdict a été choisi après coup.** Le seuil prévu au départ, 0,1 sur la plus forte DS, classait 100 % des réplications de la validation en « fragile », y compris celles sans biais : avec 27 variables et une centaine de paires, le hasard seul porte la plus forte DS vers 0,2. Il a été relevé à 0,25 après lecture de la validation (section 7.14.3). C'est un degré de liberté du chercheur, à reconsidérer sur des données réelles.
+
+**Gardes.** Sous **20 suivis comparables** pour un type d'action, l'écran affiche « Effectif insuffisant pour comparer », sans aucun chiffre ; sous 20 paires mesurées pour un indicateur, cet indicateur n'est pas chiffré. La section est réservée à la RH, et aucun nom, identifiant, score de propension ni paire ne sort de la couche d'accès aux données. L'écart est affiché dans une couleur neutre, jamais en vert « favorable », et n'est jamais multiplié par un effectif. Cinq hypothèses sont écrites à côté du chiffre : pas de facteur caché (hypothèse fausse si la RH choisit sur des informations absentes d'AJIR, comme un entretien informel, une offre externe connue ou la motivation), support commun, pas d'interférence entre collègues, action unique, issue bien mesurée.
+
+**Exécution en TypeScript.** Contrairement aux modèles prédictifs (ADR-002), le score de propension est estimé à la volée en TypeScript. C'est un intermédiaire descriptif, jamais affiché ni stocké, qui doit être réestimé dès qu'une action est marquée « réalisée » : des coefficients figés hors ligne seraient périmés le lendemain. Le risque de divergence visé par ADR-002 est traité de la même façon que pour les modèles : un jeu golden produit par scikit-learn (900 unités, 122 suivis) est rejoué par les tests. Le TypeScript retrouve les coefficients et le caliper à moins de 10⁻⁶ près, les mêmes 108 paires et les mêmes DS (au plus 0,856 avant appariement, 0,089 après).
+
+### 7.14.3 Validation
+
+**Données synthétiques à effet connu.** Avec un effet constant de −10 points et une sélection confondue par une variable qui pousse aussi l'issue, les tests vérifient plusieurs propriétés. La comparaison brute est biaisée (plus de 5 points d'écart à l'effet), alors que l'estimation appariée retrouve l'effet à moins de 5 points. La plus forte DS passe de plus de 0,5 à moins de 0,1. La fourchette couvre l'effet dans au moins 80 % de 30 réplications et, sous effet nul, exclut zéro dans au plus 20 % des réplications.
+
+**Validation semi-synthétique sur le simulateur.** Le simulateur ne modélise aucune action RH ni aucun effet d'action (ADR-010) : la comparaison directe d'une estimation à un effet simulé est impossible. Nous gardons donc les variables, les niveaux et les démissions réels du jeu `mixte_medium_s1` : mois de référence de mars 2024 à février 2026, suivi de six mois complet, soit 23 669 lignes salarié × mois pour 1 273 salariés. Nous tirons ensuite des suivis fictifs selon une règle connue, puis nous retirons une part π = 0,4 des démissions des suivis : l'effet injecté est donc connu. Quatre scénarios sont rejoués 40 fois chacun avec le code de production.
+
+*Tableau 7.15 — Validation semi-synthétique sur la démission dans les six mois, en points de pourcentage, moyennes sur 40 réplications (source : [RESULTATS_IA_INTERVENTIONS.md](../RESULTATS_IA_INTERVENTIONS.md), § 5.3).*
+
+| Scénario | Sélection des suivis | Effet injecté | Suivis | Effet réalisé | Estimation | Biais | Couverture 95 % | Largeur | Fourchette excluant 0 | « Groupes comparables » |
+|---|---|---|---|---|---|---|---|---|---|---|
+| OBS_EFFET | Variables observées (niveau, heures supplémentaires, compa-ratio) | π = 0,4 | 131 | −1,4 | −1,5 | −0,1 | 93 % | 8,5 | 5 % | 35 sur 40 |
+| OBS_NUL | Variables observées | aucun | 129 | 0,0 | +0,2 | +0,2 | 93 % | 8,9 | 7 % | 34 sur 40 |
+| OBS_PETIT | Variables observées | π = 0,4 | 38 | −1,5 | −1,2 | +0,3 | 80 % | 13,5 | 5 % | 1 sur 40 |
+| LATENT | Niveau et engagement latent du simulateur (**non observé**) | π = 0,4 | 124 | −4,9 | **+3,9** | **+8,8** | **23 %** | 11,9 | 20 % | 35 sur 40 |
+
+Quatre constats se dégagent :
+
+1. **Sélection sur variables observées.** L'estimation est sans biais notable (au plus 0,3 point), et sa couverture (93 %) est proche des 95 % annoncés. Mais l'effet injecté (−1,4 point) est bien plus petit que la demi-largeur de la fourchette, d'environ 4 points : la fourchette exclut zéro dans 5 % des réplications, autant que sous effet nul (7 %). **Avec 130 suivis et un taux de démission de quelques pour cent, un effet de 1 à 2 points est indétectable.**
+2. **Retour vers la moyenne.** Aucun effet n'est injecté sur le niveau de risque. Pourtant, 19 à 21 % des suivis voient leur niveau baisser dans la lecture avant / après, alors que l'écart apparié reste proche de zéro (−1,8 à +0,7 point) et que sa fourchette contient zéro dans 88 à 97 % des réplications. C'est l'apport principal de la comparaison appariée sur ce simulateur. Pour la démission, la comparaison brute était déjà peu biaisée (−0,5 à −0,1 point) : les variables de sélection prédisent faiblement la démission à six mois.
+3. **Petits effectifs.** Avec environ 40 suivis, la couverture tombe à 80 %, l'erreur quadratique moyenne atteint 5,1 points et la plus forte DS 0,41 ; le verdict affiche « comparaison fragile » dans 39 réplications sur 40. Le seuil de 20 suivis est un minimum, pas une garantie.
+4. **Confusion non observée (LATENT).** Quand la sélection dépend de l'engagement, variable du simulateur absente des données, **l'estimation change de signe** : +3,9 points pour un effet réalisé de −4,9. La couverture tombe à 23 %, et l'appariement ne corrige rien (biais sans appariement de +9,0 points). Or le verdict affiche « groupes comparables » dans 35 réplications sur 40 : **les groupes paraissent comparables alors que le signe est inversé**, car les diagnostics d'équilibre ne voient que les variables mesurées. C'est la première ligne de l'encadré « Ce que ce chiffre ne dit pas » de l'écran.
+
+Avec le seuil initial de 0,1, aucune réplication n'aurait été jugée « comparable ».
+
+### 7.14.4 Résultat sur la base de démonstration
+
+La base de démonstration ne contient qu'une intervention : un entretien du 02/10/2026, postérieur à la fin des données. Aucun type d'action n'atteint 20 suivis comparables, et la section affiche « Effectif insuffisant pour comparer » pour chaque type, sans chiffre. Le seul résultat chiffré de la méthode est donc sa validation semi-synthétique.
+
+### 7.14.5 Limites
+
+- **Estimation non causale** : une confusion non observée peut inverser le signe de l'écart sans alerter les diagnostics (scénario LATENT).
+- **Puissance** : avec 130 suivis, la fourchette mesure environ 9 points de large ; avec 40 suivis, sa couverture réelle tombe à 80 %.
+- **Seuil du verdict choisi après la validation** (0,1, puis 0,25).
+- **Appariement glouton sans remise** : le résultat dépend de l'ordre de traitement des suivis, et les suivis les plus atypiques peuvent rester sans paire ; l'écart ne porte alors que sur les suivis appariés.
+- **Bootstrap des paires** : il ignore l'incertitude de l'estimation du score de propension et les dépendances entre collègues d'une même équipe ; la fourchette est probablement un peu trop étroite.
+- **Baisse du niveau** : le niveau est un rang relatif à la capacité RH (ADR-006), et les sortants n'ont pas de niveau « après ».
+- **Première action seulement** par type et par collaborateur ; les actions répétées ne sont pas analysées.
+- **Simulateur sans action RH** : la validation prouve la méthode, pas un effet réel.
+
+Deux variantes ont été écartées : la pondération inverse par le score, dont les poids deviennent extrêmes avec peu de suivis, et l'appariement avec remise, pour lequel le bootstrap naïf donne une variance incorrecte (Abadie et Imbens, 2008). La modélisation d'uplift, qui exige une affectation en partie contrôlée, reste une perspective (chapitre 10).
+
+## 7.15 Typologie des départs
+
+### 7.15.1 Objectif et population
+
+La typologie répond à une question descriptive : **quelles grandes familles de départs volontaires observe-t-on, décrites par des données professionnelles ?** Elle complète la page Rétention, réservée à la RH, par des profils agrégés ; aucun salarié n'y est étiqueté ([RESULTATS_IA_TYPOLOGIE.md](../RESULTATS_IA_TYPOLOGIE.md)).
+
+Un départ est une démission ou un abandon de poste dont la sortie et la saisie sont visibles au 31/08/2026 : 546 départs, du 02/11/2020 au 28/08/2026. Chacun est décrit par les variables du calcul mensuel **à la veille du départ** : celles de la dernière fin de mois avant la date de l'événement (date de démission, sinon date de sortie moins un mois, comme pour l'étiquette du modèle), au plus six mois avant. 480 départs sont classables. Les 66 autres n'ont aucune ligne de variables dans les six mois qui précèdent : arrivées trop récentes, contrat non suivi ou début d'historique. La sélection est écrite une seule fois et exécutée telle quelle par Python et par TypeScript.
+
+### 7.15.2 Variables
+
+Sept variables entrent dans la distance : l'ancienneté, les heures supplémentaires sur 3 mois et les heures de formation sur 12 mois, transformées par log(1 + x) ; les mois depuis la dernière promotion, l'augmentation sur 12 mois et le compa-ratio ; le taux d'absence hors santé sur 12 mois, en racine carrée. Chacune est bornée à ses quantiles de 1 % et 99 %, puis standardisée. Le contrat (CDD) et la famille de métier servent seulement à décrire les profils.
+
+Sont exclus : le sexe, l'âge, la situation familiale, le gouvernorat et toute donnée de santé (ADR-009) ; les retards, la régularité d'arrivée, les jours sans pointage, les absences courtes et le facteur de Bradford, pour que rien ne ressemble à une détection d'abus ; les évaluations ; le contexte d'équipe ; les mois depuis la dernière augmentation, qui mesureraient surtout le mois du départ puisque les augmentations tombent en janvier. Le code TypeScript refuse un modèle qui citerait une variable hors de cette liste blanche ou un libellé sensible.
+
+**Spécification écartée.** Un premier passage gardait l'indicatrice CDD dans la distance. Il donnait des partitions plus stables : 3 profils, ARI moyen de 0,682 [0,403 ; 0,941], Jaccard minimal de 0,718, silhouette de 0,181. Mais la variable binaire structurait le regroupement : à deux profils, la coupure était exactement CDI / CDD (0 % contre 91 % de CDD). Cette stabilité reflétait une coupure triviale, déjà connue de la RH. Le contrat est donc passé en descripteur, au prix d'une stabilité moyenne. Ce choix a été fait après lecture du premier passage, et il est rapporté comme tel.
+
+### 7.15.3 Méthode
+
+1. **k-moyennes** (scikit-learn, 50 initialisations, graine fixe) pour k = 3 à 8.
+2. **Taille minimale** de max(20, 5 % des départs), soit **24** départs : tant qu'un profil est plus petit, son centre est retiré et les k-moyennes sont relancées depuis les centres restants. Le nombre de profils effectif peut donc être inférieur à k.
+3. **Stabilité** (Hennig, 2007) : 200 rééchantillonnages bootstrap, la même procédure sur chacun, puis l'affectation de tous les départs aux centres obtenus. On mesure l'indice de Rand ajusté (ARI ; Hubert et Arabie, 1985) avec la partition de référence et, pour chaque profil, l'indice de Jaccard maximal moyen.
+4. **Choix** : parmi les partitions de 3 à 6 profils effectifs, on garde les partitions stables (ARI moyen ≥ 0,6 et Jaccard minimal ≥ 0,6), puis on retient la meilleure silhouette (Rousseeuw, 1987). **Sans partition stable, une règle de repli retient la plus stable**, c'est-à-dire celle dont l'ARI moyen est le plus élevé.
+5. **Description** : pour chaque profil, l'écart standardisé de chaque variable à l'ensemble des départs donne 3 ou 4 traits, écrits en mots avec la valeur du profil et celle de l'ensemble. Le libellé reprend les deux traits les plus marqués, en privilégiant la carrière, le salaire et le travail ; **les absences ne nomment jamais un profil**.
+
+*Tableau 7.16 — Choix du nombre de profils (source : [RESULTATS_IA_TYPOLOGIE.md](../RESULTATS_IA_TYPOLOGIE.md), « Choix de k »).*
+
+| k demandé | Profils après fusion | Tailles | Silhouette | ARI moyen [IC 95 %] | Jaccard minimal |
+|---|---|---|---|---|---|
+| 3 | 2 | 253, 227 | 0,167 | hors plage (moins de 3 profils) | — |
+| 4 | 3 | 177, 163, 140 | 0,148 | 0,483 [0,249 ; 0,821] | 0,496 |
+| **5** | **4** | **158, 124, 110, 88** | **0,137** | **0,513 [0,249 ; 0,861]** | **0,568** |
+| 6 | 4 | 165, 122, 113, 80 | 0,139 | doublon de la partition à 4 profils | — |
+| 7 | 5 | 145, 104, 97, 78, 56 | 0,136 | 0,401 [0,241 ; 0,613] | 0,374 |
+| 8 | 5 | 142, 97, 95, 78, 68 | 0,135 | doublon de la partition à 5 profils | — |
+
+**Aucune partition de 3 à 6 profils ne passe la règle de stabilité.** La règle de repli retient la plus stable, à 4 profils (ARI moyen de 0,513). Les silhouettes, de 0,13 à 0,17, indiquent des familles qui se chevauchent : les départs forment un continuum plus que des groupes séparés. Nous gardons ce repli plutôt que de forcer une partition.
+
+### 7.15.4 Résultats
+
+*Tableau 7.17 — Les quatre profils de départs volontaires ; entre parenthèses, la valeur sur l'ensemble des 480 départs classés (source : [RESULTATS_IA_TYPOLOGIE.md](../RESULTATS_IA_TYPOLOGIE.md), « Profils obtenus »).*
+
+| Profil | Départs (part) | Ancienneté médiane | Autres traits marqués | Stabilité (Jaccard) |
+|---|---|---|---|---|
+| 1. Arrivées récentes, surtout en CDD | 158 (32,9 %) | 24 mois (55) | 55 % en CDD (26 %) ; sans promotion depuis 17 mois en médiane (35) ; absence hors santé de 0,6 % (1,4 %) | 0,67 |
+| 2. Formation soutenue, salaire au-dessus de la médiane du poste | 124 (25,8 %) | 78,5 mois (55) | 21 h de formation sur 12 mois (12 h) ; salaire à 105 % de la médiane du poste (99 %) ; sans promotion depuis 54 mois (35) | 0,57 |
+| 3. Grande ancienneté, sans promotion depuis longtemps | 110 (22,9 %) | 125 mois (55) | sans promotion depuis 64 mois (35) ; salaire à 92 % de la médiane du poste (99 %) ; 3,7 h supplémentaires par mois (7,0 h) | 0,61 |
+| 4. Peu de formation | 88 (18,3 %) | 46 mois (55) | 3,1 h de formation (12 h) ; absence hors santé de 3,4 % (1,4 %) ; sans promotion depuis 24 mois (35) | 0,57 |
+
+Le profil 3 correspond à une famille attendue : des salariés anciens, sans promotion depuis longtemps, payés sous la médiane du poste. Le profil 1 regroupe les départs précoces, souvent en CDD. Aucun profil « surcharge d'heures supplémentaires » n'apparaît : les heures supplémentaires ne distinguent nettement aucun groupe de départs. Le trait le plus marqué du profil 4 est le taux d'absence ; par choix éthique, il ne nomme pas le profil, dont le libellé vient du second trait.
+
+**Validation externe.** Le croisement avec le mécanisme simulé de chaque démission (480 sur 480 retrouvés ; la vérité terrain n'est jamais importée dans l'application) donne un **ARI de 0,016**, proche de 0, et une information mutuelle normalisée de 0,019. Les profils ne retrouvent pas les causes simulées (offre externe, seuil d'insatisfaction, événement personnel). Ce n'est pas leur objet : ils décrivent des familles de situations observées au moment du départ, pas des causes. Des tendances existent néanmoins : le profil 1 compte 64 % de départs sur offre externe (54 % sur l'ensemble), le profil 4 50 % de départs par seuil d'insatisfaction (36 %).
+
+**Équité.** Le V de Cramér entre profil et sexe vaut **0,048**, et la part de femmes va de 34 à 40 % selon le profil (38 % sur l'ensemble) : aucun profil n'est un indicateur indirect du sexe. Entre profil et tranche d'âge, il vaut **0,269** (0,339 au premier passage). L'âge est exclu des variables, mais l'ancienneté et la carrière en sont des **indicateurs indirects** : le profil « Arrivées récentes » compte 39 % de moins de 30 ans (30 % sur l'ensemble) et 3 % de 45 ans et plus (13 %) ; le profil « Grande ancienneté » compte 27 % de 45 ans et plus. Lire ces profils comme des profils d'âge serait un contresens, et aucune action ne doit viser une tranche d'âge.
+
+**Exécution et affichage.** Le modèle (transformations, bornes, standardisation, quatre centres) est exporté en JSON avec un jeu golden (150 départs réels et 50 points synthétiques hors bornes), rejoué en TypeScript à 10⁻⁹ près ; sur la base de démonstration, la chaîne complète retrouve les mêmes 480 départs et les mêmes effectifs (158, 124, 110, 88). L'affectation est calculée à l'affichage, en 130 ms environ, et mise en cache pendant dix minutes. La section « Profils de départs » de la page Rétention est réservée à la RH : côté manager, dans une hiérarchie de 5 à 12 personnes, un départ par profil se déduirait ; l'ADMIN reçoit un refus audité. Un profil de moins de 5 départs est masqué, avec masquage secondaire, et aucun profil n'est affiché sous 30 départs classés.
+
+*Figure 7.6 — Section « Profils de départs » de la page Rétention (capture à prendre).*
+
+### 7.15.5 Limites
+
+- **Stabilité moyenne** (ARI moyen de 0,51) et silhouettes faibles : les profils sont une lecture simplifiée d'un continuum, et deux d'entre eux (2 et 4) ont un indice de Jaccard de 0,57. Ils sont à réentraîner et à revalider sur les données d'un client avant toute communication.
+- **Indicateurs indirects de l'âge** (V de Cramér de 0,27) par l'ancienneté et la carrière.
+- **Fenêtre « veille du départ »** jusqu'à six mois avant la démission. Dans le simulateur, la décision précède la démission de 0 à 2 mois et s'accompagne de signaux faibles (heures supplémentaires divisées par deux, absences) : les traits d'heures supplémentaires et d'absences peuvent refléter en partie une décision déjà prise.
+- **66 départs non classés** (12 %), et département et famille de métier pris à leur dernière valeur connue.
+- **Spécification fixée après lecture d'un premier passage** (contrat passé en descripteur).
+- **Données simulées** : les profils valident la méthode, pas une réalité d'entreprise.
+
+## 7.16 Fourchettes de prévision conformes
+
+### 7.16.1 Objectif
+
+Les prévisions d'absentéisme, de charge de travail, d'effectifs et de masse salariale (section 7.12) affichent une « fourchette probable à 80 % ». La première version mesurait la couverture de ces fourchettes sans la garantir : le tableau 7.10 la montre à 75,0 % et 70,8 % pour l'absentéisme de l'entreprise. Ce travail mesure, sur une fenêtre de test, la part des valeurs observées qui tombent réellement dans les fourchettes, et la **garantit** par une calibration conforme (Vovk et al., 2005 ; Lei et al., 2018), écrite dans une nouvelle version de chaque modèle ([RESULTATS_IA_CONFORME.md](../RESULTATS_IA_CONFORME.md)). Les modèles eux-mêmes (coefficients, paramètres, saisonnalité) ne changent pas.
+
+### 7.16.2 Méthode
+
+- **Score signé** de chaque prévision hors échantillon : z = (y − ŷ) / s, où s est l'échelle que la version 1 utilisait déjà pour adapter la fourchette au niveau : racine de la prévision rapportée aux jours ouvrés pour l'absentéisme, échelle de bruit du groupe sur log(1 + heures supplémentaires par ETP) pour la charge, écart-type du modèle stock-flux pour l'effectif, prévision elle-même pour la masse.
+- **Quantile conforme à rangs** (*split conformal*). Sur les n scores de calibration triés, on pose m = ⌈(n + 1) × 0,8⌉, i = ⌊(n + 1 − m) / 2⌋ et j = i + m ; la fourchette est [z(i) ; z(j)]. Pour une prévision future échangeable avec celles de la calibration, P(z(i) ≤ Z ≤ z(j)) ≥ (j − i) / (n + 1) ≥ 80 %. Il faut au moins 9 scores. Les bornes appliquées sont [ŷ + bas × s ; ŷ + haut × s], la borne basse étant ramenée à 0 ; elles deviennent asymétriques quand les erreurs le sont.
+- **Un quantile par portée et par horizon** (calibration conforme dite « de Mondrian »). Pour l'absentéisme, l'entreprise, les départements et les équipes sont séparés ; la version 1 regroupait l'entreprise et les départements, d'où 75 % pour l'une et 85 % pour les autres. Pour la charge, les équipes et les départements sont séparés. Pour les effectifs et la masse, l'entreprise et les départements le sont aussi, selon la source des démissions projetées (taux historique ou LOGREG), avec des quantiles rendus monotones : ils ne se resserrent jamais quand l'horizon s'allonge.
+- **Découpage temporel sans fuite.** La calibration utilise les prévisions hors échantillon dont la **cible** est observée au plus tard à la première origine de test. Le test porte sur les prévisions des origines suivantes, jamais utilisées pour caler un quantile. Les quantiles écrits dans le modèle sont exactement ceux mesurés sur le test, sans recalage après coup. Les fenêtres de calibration couvrent 24 mois pour l'absentéisme (2022-07 à 2024-06) et pour les effectifs (2022-10 à 2024-09), 12 mois pour la charge (2023-09 à 2024-08) ; les fenêtres de test couvrent 23 à 26 mois observés, jusqu'en août 2026.
+- **« Avant »** désigne la procédure de la version 1, rejouée sur les **mêmes** prévisions de test : quantiles glissants pour l'absentéisme, quantile du résidu absolu sur les 12 mois précédents pour la charge, quantiles calés sur 2021-2022 pour les effectifs et la masse.
+
+### 7.16.3 Résultats
+
+*Tableau 7.18 — Couverture de la fourchette à 80 % sur la fenêtre de test, absentéisme et charge, tous horizons (source : [RESULTATS_IA_CONFORME.md](../RESULTATS_IA_CONFORME.md), § 3.1 et 3.2).*
+
+| Sujet | Portée | Prévisions de test | Avant : procédure v1 | Après : conforme [IC 95 %] | Largeur moyenne avant → après |
+|---|---|---|---|---|---|
+| Absentéisme | Entreprise | 72 | 75,0 % | 93,1 % [86,1 ; 97,3] | 0,26 → 0,43 point |
+| Absentéisme | Département | 576 | 84,9 % | 86,1 % [84,0 ; 88,2] | 0,78 → 0,77 point |
+| Absentéisme | Équipe | 10 958 | 81,0 % | 83,3 % [82,3 ; 84,3] | 2,30 → 2,24 points |
+| Charge | Équipe | 10 679 | 81,0 % | 83,0 % [81,8 ; 84,1] | 6,75 → 6,88 h |
+| Charge | Département | 552 | 77,5 % | **79,5 %** [76,1 ; 83,0] | 1,76 → 1,88 h |
+
+*Tableau 7.19 — Couverture de la fourchette à 80 % sur la fenêtre de test, effectifs et masse salariale, horizons de 1 à 12 mois (source : [RESULTATS_IA_CONFORME.md](../RESULTATS_IA_CONFORME.md), § 3.3). La largeur relative est rapportée à la valeur observée.*
+
+| Série | Démissions projetées | Niveau | Avant : procédure v1 | Après : conforme | Largeur relative avant → après |
+|---|---|---|---|---|---|
+| Effectif | Taux historique | Entreprise | 100,0 % | 98,6 % | 4,7 → 3,2 % |
+| Effectif | Taux historique | Départements | 90,2 % | 89,3 % | 7,6 → 7,8 % |
+| Effectif | LOGREG | Entreprise | 99,0 % | 98,1 % | 7,1 → 3,6 % |
+| Effectif | LOGREG | Départements | 92,6 % | 88,0 % | 9,0 → 7,8 % |
+| Masse salariale | Taux historique | Entreprise | 100,0 % | 98,6 % | 5,5 → 3,1 % |
+| Masse salariale | Taux historique | Départements | 93,3 % | 89,0 % | 8,7 → 7,7 % |
+| Masse salariale | LOGREG | Entreprise | 100,0 % | 91,4 % | 9,1 → 3,0 % |
+| Masse salariale | LOGREG | Départements | 95,2 % | 89,9 % | 9,0 → 7,6 % |
+
+**Absentéisme.** L'entreprise passe de 75 %, sous la cible, à 93 %, au prix d'une fourchette 1,7 fois plus large ; les départements et les équipes gardent ou réduisent leur largeur et dépassent 80 %. Les bandes publiées de la version 1, calées sur 2024-08 à 2026-07, ne couvraient que 54 à 77 % de la période antérieure : la calibration dépend de la période.
+
+**Pourquoi la fourchette de l'entreprise est plus large.** Sa couverture de 93 % dépasse la cible pour trois raisons, mesurées sur les scores de calibration :
+
+- **la période de calibration est plus erratique que le test.** L'écart quadratique des scores de l'entreprise y va de 2,5 unités d'échelle (horizon de 1 mois) à 3,7 (3 mois), alors que les quantiles de la version 1 valaient ±1,9. Le modèle, réentraîné sur un historique croissant, se trompe moins sur la période de test : la garantie d'au moins 80 % tient, mais la couverture réalisée la dépasse ;
+- **l'échantillon est petit** : 24 scores par horizon. La fourchette [z(2) ; z(22)] a une couverture attendue d'exactement 80 %, mais elle dépend de quelques mois extrêmes. À 3 mois, un seul mois fixe la borne basse à −7,2 unités (contre −3,0 à 1 mois), d'où 100 % de couverture et une largeur de 0,63 point à cet horizon ;
+- **les portées ne sont plus mises en commun** : séparer l'entreprise des départements (192 + 24 scores en version 1) corrige sa sous-couverture, mais la laisse avec peu de données.
+
+Mettre en commun les trois horizons (72 scores) stabiliserait la borne à 3 mois sans resserrer la fourchette en moyenne : la largeur moyenne resterait de 7,6 unités. Une calibration glissante sur les erreurs récentes la resserrerait, mais la procédure de la version 1, qui faisait exactement cela, couvrait 75 %. Le vrai levier est un historique plus long, ce qui n'a pas été mesuré ici.
+
+**Charge de travail.** Les équipes passent à 83 % (+2 points, largeur quasi inchangée). Les départements passent de 77,5 % à **79,5 %, encore sous la cible** ; à l'horizon de 3 mois, leur couverture est de 75,0 %. L'intervalle de confiance reste compatible avec 80 %, mais il n'y a que 8 départements et 96 scores de calibration par horizon. Ce cas est affiché tel quel : l'écran écrit « sous la cible de 80 % » et n'arrondit jamais jusqu'à la cible.
+
+**Effectifs et masse salariale.** La version 1 était **trop prudente** (99 à 100 % au niveau de l'entreprise), parce que ses quantiles avaient été calés sur 2021-2022, quand l'historique disponible était court et les erreurs plus fortes. La calibration conforme garde toutes les couvertures au-dessus de 80 % (88 à 99 %) et resserre nettement les fourchettes de l'entreprise, dont la largeur est divisée par 1,5 à 3. Les quantiles signés corrigent aussi le biais du modèle d'effectif, qui sous-estime les embauches, en décalant la fourchette vers le haut. Les valeurs centrales sont inchangées.
+
+### 7.16.4 Intégration et état
+
+Quatre nouvelles versions de modèles sont produites, pour l'absentéisme, la charge, l'effectif et la masse salariale ; les versions 1 ne sont pas modifiées. Chaque version 2 reprend le modèle de la version 1 et ajoute un champ `conformal` : méthode, fenêtres, quantiles signés et couvertures mesurées. L'inférence TypeScript utilise ces quantiles quand ils existent, et sinon exactement les bornes de la version 1 ; un modèle dont les quantiles excluraient la prévision est refusé. La parité Python ↔ TypeScript est vérifiée sur les jeux golden régénérés (20 tests Python et 113 tests TypeScript réussis le 04/10/2026). Sous chaque prévision, une ligne rappelle la couverture mesurée, par exemple : « Fourchette calibrée : sur les 26 derniers mois de test, 93 % des valeurs observées y sont tombées (cible 80 %). »
+
+**Ces versions sont versionnées dans le dépôt, mais pas encore enregistrées ni promues sur la base de démonstration** (au 04/10/2026, avant la passe finale). D'ici leur promotion, les écrans affichent les fourchettes de la version 1, sans phrase de couverture. Les commandes d'enregistrement, de promotion et de retour arrière figurent dans le bilan ([RESULTATS_IA_CONFORME.md](../RESULTATS_IA_CONFORME.md), § 6).
+
+### 7.16.5 Limites
+
+- **Échangeabilité supposée** : la garantie suppose que les erreurs futures ressemblent à celles de la calibration. Avec une dérive (nouvelle organisation, données réelles), la couverture peut baisser ; la mesure est à refaire à chaque nouvelle version, avec des fenêtres décalées.
+- **Petits groupes** : avec 24 scores par horizon pour l'entreprise ou 8 unités pour les départements, le quantile conforme est prudent (absentéisme de l'entreprise à 93 %) ou instable (charge des départements à 79,5 %).
+- **Couverture marginale** : 80 % en moyenne sur la portée et la période, pas pour chaque unité ni chaque mois ; un département atypique peut rester mal couvert.
+- **Choix antérieurs** : la configuration du ridge d'absentéisme a été choisie sur 2023-06 à 2024-05, période qui recouvre la fenêtre de calibration (32 configurations aux scores voisins, effet attendu négligeable) ; la fenêtre de test reste intacte.
+- **Données simulées** : les couvertures valent pour le simulateur, pas pour une entreprise réelle.
+
+## 7.17 Synthèse rédigée et assistant d'aide : l'IA générative en option
+
+### 7.17.1 Cadrage : un écart assumé au cahier des charges (ADR-014)
+
+Le cahier des charges classe l'assistant conversationnel fondé sur un grand modèle de langage en *Won't* et impose un traitement sur site, sans service externe. Deux fonctions ajoutées le 4 octobre 2026 s'en approchent : la synthèse du mois rédigée et l'assistant d'aide. L'ADR-014 fixe leur cadre :
+
+- **le cœur des deux fonctions n'utilise aucun modèle de langage et fonctionne hors ligne** : gabarits de phrases déterministes pour la synthèse, recherche plein texte dans la documentation pour l'assistant ;
+- **la reformulation par IA générative est une extension facultative, désactivée par défaut** : elle ne s'active que si une clé propre à la fonction est définie, et aucun flux ne sort sans elle ;
+- elle ne reçoit **aucune donnée nominative** : une liste blanche d'agrégats pour la synthèse, la question et des extraits de documentation pour l'assistant ;
+- tout texte généré est **vérifié avant affichage** ; à défaut, la version sans IA s'affiche ;
+- chaque appel est audité sans son contenu.
+
+Il s'agit d'un écart au cahier des charges, assumé et tracé par l'ADR-014 (chapitre 4). En installation sans Internet, le comportement reste strictement celui du périmètre initial. L'activation de l'option créerait un transfert vers un sous-traitant hors de Tunisie, traité dans l'analyse d'impact ([aipd.md](../conformite/aipd.md), § 7 et 8) et au chapitre 9.
+
+### 7.17.2 Synthèse du mois rédigée
+
+**Objectif.** En tête de la page Synthèse (RH et manager ; l'ADMIN n'y a pas accès), un encadré résume en quelques phrases les indicateurs déjà affichés pour le rôle ([RESULTATS_IA_SYNTHESE.md](../RESULTATS_IA_SYNTHESE.md)).
+
+**Mode par défaut : phrases types.** Six phrases déterministes d'au plus 20 mots chacune (effectif, mouvements, risque élevé, absentéisme, points ouverts, mise en garde) sont construites à partir des agrégats du rôle, jamais à partir d'une liste nominative. C'est le seul mode qui fonctionne sans Internet. Côté manager, les indicateurs masqués par les gardes de petites populations (ADR-011) restent masqués.
+
+**Option : reformulation par IA générative.** Quand la clé `SYNTHESIS_AI_API_KEY` est définie, le serveur appelle l'API Claude d'Anthropic par une simple requête HTTP, sans dépendance ajoutée. La variable générique de l'éditeur n'active rien, pour qu'un poste de développement ne transmette rien par accident. La requête contient une **charge utile en liste blanche typée** de 28 champs, chacun contrôlé par un motif strict (périmètre générique, mois, entiers, taux, heures), sans aucun texte libre, ainsi que le brouillon issu des phrases types.
+
+**Vérification et repli.** Le texte reçu est refusé si un nombre n'appartient pas à la charge utile (nombre inventé, calculé ou arrondi). Il l'est aussi pour un nombre écrit en lettres ou au format anglais, une mise en forme, plus de 6 phrases, une phrase de plus de 20 mots, un texte tronqué ou une **formulation causale** (« à cause », « explique », « évités »…) ; « non causale » et « facteurs associés » restent permis. En cas de refus, d'erreur réseau ou HTTP, ou après 10 secondes, les phrases types s'affichent avec la mention « la reformulation par IA générative n'a pas abouti ». La page n'attend jamais l'API : la version par phrases types s'affiche d'abord. Une mention visible indique toujours la méthode employée (« Rédaction par phrases types, sans IA générative », ou reformulation « à partir des seuls agrégats ; chaque chiffre a été vérifié »). Chaque appel réel est audité (périmètre, taille de la requête, modèle, durée, raison d'un échec), sans la charge utile ni le texte.
+
+**Validation.** 51 tests ont été écrits, l'API étant toujours simulée. Ils couvrent 12 jeux d'agrégats pour les phrases types (RH, manager en petite population, premier calcul, singuliers, grands nombres, etc.), l'absence de toute clé d'identification dans la charge utile même quand les données de la page contiennent noms et matricules, le refus des nombres inventés et du vocabulaire causal, l'absence d'appel sans clé et le repli sur chaque type d'échec. Avec les tests existants des indicateurs, 88 tests réussissent le 04/10/2026. Aucun appel réel à l'API n'a été fait.
+
+**Limites.** Les mots « un », « une » et « aucun » ne sont pas contrôlés : un texte qui écrirait « aucune alerte » alors qu'il y en a 2 passerait la vérification des nombres. Un nombre de la charge utile peut aussi être attribué au mauvais indicateur, car la vérification porte sur l'appartenance, pas sur le sens. Enfin, la durée de conservation chez l'éditeur et l'absence d'entraînement sur les données dépendent du contrat du client et n'ont pas été vérifiées.
+
+*Figure 7.7 — Encadré « Synthèse du mois en quelques phrases », mode phrases types (capture à prendre).*
+
+### 7.17.3 Assistant d'aide
+
+L'assistant prolonge l'explication à l'utilisateur (section 7.8) du côté de la **méthode** : il répond à des questions comme « comment est calculé le niveau de risque ? » à partir de la **documentation et de l'aide seulement**, jamais à partir des données des collaborateurs ([RESULTATS_ASSISTANT.md](../RESULTATS_ASSISTANT.md)). Un champ « Poser une question… » est placé sous l'en-tête du tableau de bord (RH, manager) et de la console (ADMIN). Par défaut, une recherche plein texte (index SQLite FTS5 en mémoire, classement bm25, synonymes métier) renvoie un extrait du passage le plus pertinent avec ses sources ; sans passage pertinent, la réponse est « L'aide ne couvre pas cette question », plutôt qu'une invention. Le filtre par rôle, tiré de la session, est appliqué dans la requête avant le classement : l'ADMIN ne lit aucun passage de méthodologie ni de pilotage RH, et le manager aucun passage réservé à la RH. La reformulation par IA générative suit le même cadre que la synthèse (clé dédiée, désactivée par défaut). Seuls la question et quatre passages au plus sont transmis ; une question qui contient un matricule ou une adresse électronique ne l'est pas ; la réponse doit citer les passages fournis, sans nombre absent de ceux-ci. Les limites tiennent à une recherche **lexicale** et non sémantique, à un corpus statique qu'il faut réindexer après chaque modification de l'aide, et à l'absence de mémoire de conversation : ce n'est pas un assistant conversationnel.
+
+## 7.18 Conclusion
 
 Le volet prédictif est conçu pour être honnête avant d'être performant. La cible est définie sans ambiguïté, les variables ne voient que ce que la RH savait, le protocole n'autorise aucun chevauchement entre passé et futur, et l'incertitude est chiffrée par un bootstrap qui respecte la structure des données. L'explication est exacte et adaptée au rôle, la décision est bornée par la capacité humaine de traitement, et l'équité fait l'objet d'un rapport soumis à une décision humaine. Sur le simulateur, ce cadre répond à la question de recherche. Les fuites temporelles surestiment surtout les modèles flexibles. Neutralisées, elles laissent à la régression logistique un gain réel et significatif sur les règles métier (+0,07 d'AUC), avec des probabilités calibrées. LightGBM n'apporte rien de plus, et l'essentiel du signal reste hors de portée des données RH. Le même cadre, appliqué à l'absentéisme, aux effectifs, aux formations et à la charge de travail, donne des gains nets sur les baselines pour deux volets, modeste pour un, et aucun pour l'effectif, résultat assumé.
+
+Les cinq fonctions ajoutées le 4 octobre 2026 suivent la même discipline. La recherche du meilleur levier réutilise le moteur existant au lieu d'en créer un second. La comparaison appariée des interventions affiche ses hypothèses et ses gardes, et sa validation montre qu'une confusion non observée peut en inverser le signe sans alerte. La typologie des départs rapporte une stabilité moyenne plutôt que de forcer une partition. Les fourchettes conformes mesurent et garantissent leur couverture, y compris lorsqu'elle reste sous la cible. L'IA générative, enfin, reste une option désactivée par défaut, vérifiée et sans donnée nominative. Toutes restent descriptives : elles décrivent des facteurs associés et proposent des pistes à discuter, et la décision revient à la RH.
