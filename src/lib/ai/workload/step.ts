@@ -51,10 +51,10 @@ export function collectiveRecommendation(rows: Predicted[], threshold: number, l
     `Prévision : ${h1(peak.value)} h supplémentaires par ETP (équivalent temps plein) en ${monthFr(peak.month)} ` +
     `(fourchette probable à 80\u00a0% : ${h1(peak.lower)} à ${h1(peak.upper)} h), ` +
     `contre ${h1(peak.I12)} h en moyenne sur les 12 derniers mois et ${Number.isNaN(peak.last) ? "—" : h1(peak.last)} h le dernier mois. ` +
-    `Seuil de tension : ${h1(threshold)} h par ETP, niveau atteint seulement par les 15\u00a0% de mois les plus chargés de l'historique. ` +
+    `Seuil de surcharge : ${h1(threshold)} h par ETP, niveau atteint seulement par les 15\u00a0% de mois les plus chargés de l'historique. ` +
     (others.length ? `Autre${others.length > 1 ? "s" : ""} mois au-dessus du seuil : ${others.join(", ")}. ` : "") +
     `${team ? "Équipe" : "Département"} de ${peak.n} collaborateurs.` +
-    (confident ? " Même la borne basse de la fourchette dépasse le seuil : la tension est probable." : "");
+    (confident ? " Même la borne basse de la fourchette dépasse le seuil : la surcharge est probable." : "");
   return {
     scope: label.scope,
     audience: team ? "MANAGER" : "RH",

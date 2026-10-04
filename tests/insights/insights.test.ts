@@ -6,6 +6,7 @@ import { getSynthesis, getEmployeeJourney, getEmployeeNews, pickStatements, MAX_
 import { getTeams, tensionSignals } from "@/lib/dal/teams";
 import { getEmployeeInterventionEffects, getInterventions } from "@/lib/dal/interventions";
 import { clearDriftCache, getDrift, retrainAdvice } from "@/lib/dal/drift";
+import { SUPERSEDED_COMMENT } from "@/lib/engine/recommendations";
 import { CONSTANT_P, auditRows, createFixture, ctxOf, destroyFixture, leaks, logregManifest, meta, type Fixture } from "./fixture";
 
 let f: Fixture;
@@ -247,6 +248,22 @@ describe("interventions", () => {
     expect(d.totals.overtimeDelta).toBeCloseTo(-8, 12);
     expect(getInterventions(c.rh, { action: "ENTRETIEN", page: 1 }, meta).rows).toHaveLength(1);
     expect(auditRows("interventions.view").some((r) => r.userId === f.users.rh && r.outcome === "OK")).toBe(true);
+  });
+
+  it("recommandations remplacées par un recalcul : comptées à part, hors total et hors rejets", () => {
+    const id = Number(
+      db()
+        .prepare("INSERT INTO recommendation (employee_id, action_code, trigger_group, status, comment, created_at, updated_at) VALUES (?, 'CHARGE_TRAVAIL', 'NIVEAU_ELEVE', 'REJETEE', ?, ?, ?)")
+        .run(f.ids.A1, SUPERSEDED_COMMENT, "2026-09-10T08:00:00Z", "2026-09-30T20:00:00Z").lastInsertRowid,
+    );
+    try {
+      const d = getInterventions(c.rh, { page: 1 }, meta);
+      const by = Object.fromEntries(d.byAction.map((a) => [a.actionCode, a]));
+      expect(by.CHARGE_TRAVAIL).toMatchObject({ rejected: 1, superseded: 1, total: 1, completionRate: 0 });
+      expect(d.totals).toMatchObject({ proposed: 2, done: 2, rejected: 1, superseded: 1, total: 5, completionRate: 0.4 });
+    } finally {
+      db().prepare("DELETE FROM recommendation WHERE id = ?").run(id);
+    }
   });
 
   it("fiche : RH mesure complète ; manager niveaux de risque seulement, au mois près", () => {

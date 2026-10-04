@@ -127,7 +127,7 @@ export const SCREENS: Screen[] = [
   },
   { href: "/absenteeism", label: "Absentéisme", purpose: "Taux d'absence par équipe ou par département et anomalies détectées.", roles: PILOTAGE, help: "absenteisme" },
   { href: "/formations", label: "Formations", purpose: "Formations obligatoires : taux de réalisation, échéances à venir, retards, formations à risque de dépasser leur échéance et relances proposées.", roles: PILOTAGE },
-  { href: "/charge", label: "Charge de travail", purpose: "Heures supplémentaires par équipe : 12 derniers mois, prévision à 3 mois avec fourchette, équipes en tension et recommandations (surcharges individuelles réservées à la RH).", roles: PILOTAGE },
+  { href: "/charge", label: "Charge de travail", purpose: "Heures supplémentaires par équipe : 12 derniers mois, prévision à 3 mois avec fourchette, équipes en surcharge prévue et recommandations (surcharges individuelles réservées à la RH).", roles: PILOTAGE },
   { href: "/retention", label: "Rétention", purpose: "Part des embauchés encore présents après 6, 12, 24, 36 ou 48 mois (courbes de maintien), par cohorte d'embauche, département, premier contrat ou famille de métier.", roles: PILOTAGE },
   { href: "/previsions", label: "Prévisions effectifs", purpose: "Projection à 12 mois de l'effectif et de la masse salariale par département, avec fourchette, scénario modifiable (embauches, hausse de janvier, budget) et recommandations.", roles: ["RH"] },
   { href: "/recommendations", label: "Recommandations", purpose: "Suivi des actions proposées, décidées et réalisées.", roles: ["RH"], help: "recommandations" },

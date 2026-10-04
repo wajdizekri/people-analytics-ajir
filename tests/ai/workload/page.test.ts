@@ -37,7 +37,7 @@ describe("page /charge", () => {
     expect(await render()).toContain("Aucune prévision de charge disponible");
   });
 
-  it("RH : départements, équipes en tension, surcharges individuelles et recommandations modifiables", async () => {
+  it("RH : départements, équipes en surcharge prévue, surcharges individuelles et recommandations modifiables", async () => {
     runStep(getDb().sqlite, AS_OF);
     session.current = { userId: 1, login: "rh", role: "RH", employeeId: null };
     const html = await render();
@@ -49,7 +49,7 @@ describe("page /charge", () => {
     expect(html).not.toContain(nameOf(fx.opposed));
     expect(html).toContain("Marquer comme réalisée");
     expect(html).toContain("Rejeter la recommandation");
-    expect(html).toContain("Tension");
+    expect(html).toContain("Surcharge prévue");
   });
 
   it("MANAGER : équipes agrégées et recommandations collectives seulement", async () => {

@@ -132,7 +132,7 @@ export default async function InterventionsPage({ searchParams }: { searchParams
         <KpiTile
           label="Taux de réalisation des recommandations"
           value={formatRate(t.completionRate, 0)}
-          hint={`${fmt.int(t.done)} réalisées, ${fmt.int(t.rejected)} rejetées, ${fmt.int(t.proposed)} en attente, sur ${fmt.int(t.total)} émises`}
+          hint={`${fmt.int(t.done)} réalisées, ${fmt.int(t.rejected)} rejetées, ${fmt.int(t.proposed)} en attente, sur ${fmt.int(t.total)} émises${t.superseded ? ` ; ${fmt.int(t.superseded)} remplacées par un recalcul, hors total` : ""}`}
         />
         <KpiTile
           label="Niveau de risque en baisse après l'action"
@@ -193,8 +193,8 @@ export default async function InterventionsPage({ searchParams }: { searchParams
               subtitle="Statut des recommandations par type d'action, en % des recommandations émises"
               actions={
                 <InfoTip label="Statut des recommandations" align="end">
-                  Réalisée : l&apos;action a eu lieu. En attente : aucune décision prise. Rejetée : jugée non adaptée, avec un motif. Les recommandations remplacées par un
-                  nouveau calcul sont comptées comme rejetées.
+                  Réalisée : l&apos;action a eu lieu. En attente : aucune décision prise. Rejetée : jugée non adaptée, avec un motif. Remplacée : retirée par un
+                  nouveau calcul, sans décision ; comptée à part, hors des pourcentages{t.superseded ? ` (${fmt.int(t.superseded)})` : ""}.
                 </InfoTip>
               }
               chart={shareChart({

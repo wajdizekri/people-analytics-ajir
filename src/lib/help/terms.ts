@@ -210,6 +210,10 @@ export const TERMS = {
     text: "Famille de démissions qui se ressemblent sur des données professionnelles observées le mois précédant la démission : ancienneté, carrière, salaire, heures supplémentaires, absences hors santé, formation, contrat. Description non causale ; aucun collaborateur n'est étiqueté.",
     roles: ["RH"],
   },
+  surchargePrevue: {
+    label: "Équipe en surcharge prévue",
+    text: "Équipe dont le pic d'heures sup prévu sur les 3 prochains mois dépasse le seuil de surcharge. Probable : même le bas de la fourchette dépasse le seuil. Possible : seule la prévision centrale le dépasse. À distinguer de la tension de l'écran Équipes, qui cumule plusieurs signaux.",
+  },
   fourchetteCalibree: {
     label: "Fourchette calibrée",
     text: "Fourchette recalée sur les erreurs passées du modèle pour contenir la valeur réelle au moins 8 fois sur 10. La couverture est la part des valeurs observées tombées dans la fourchette. Elle est mesurée sur des mois récents, jamais utilisés pour la caler.",

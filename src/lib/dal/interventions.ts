@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { getDb } from "@/db/client";
 import { audit } from "@/lib/audit";
+import { SUPERSEDED_COMMENT } from "@/lib/engine/recommendations";
 import { RH_ONLY_ACTIONS } from "@/lib/features/spec";
 import { opposedEmployeeIds } from "@/lib/privacy";
 import { ensureRole } from "./admin";
@@ -61,6 +62,8 @@ export type ActionStats = {
   proposed: number;
   done: number;
   rejected: number;
+  // Remplacées par un recalcul (REJETEE + SUPERSEDED_COMMENT) : hors total et hors rejets
+  superseded: number;
   total: number;
   completionRate: number | null;
   actions: number;
@@ -169,12 +172,15 @@ function measureActions(actions: ActionRaw[], ref: string, opposed: Set<number>)
 
 const mean = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
 
-export function actionStats(actionCode: string, counts: { proposed: number; done: number; rejected: number }, measures: (EffectMeasure | null)[]): ActionStats {
+type StatusCounts = { proposed: number; done: number; rejected: number; superseded?: number };
+
+export function actionStats(actionCode: string, counts: StatusCounts, measures: (EffectMeasure | null)[]): ActionStats {
   const complete = measures.filter((m): m is EffectMeasure => !!m && m.complete);
   const total = counts.proposed + counts.done + counts.rejected;
   return {
     actionCode,
     ...counts,
+    superseded: counts.superseded ?? 0,
     total,
     completionRate: total ? counts.done / total : null,
     actions: measures.length,
@@ -195,16 +201,17 @@ export function getInterventions(ctx: AccessContext, q: InterventionsQuery, meta
   const all = (sqlite.prepare(ACTIONS_SQL).all() as ActionRaw[]).sort((a, b) => b.date.localeCompare(a.date) || (b.interventionId ?? 0) - (a.interventionId ?? 0));
   const measures = measureActions(all, ref, opposed);
 
-  const counts = new Map<string, { proposed: number; done: number; rejected: number }>();
+  const counts = new Map<string, Required<StatusCounts>>();
   for (const r of sqlite
     .prepare(
       `SELECT action_code AS action, COALESCE(SUM(status = 'PROPOSEE'), 0) AS proposed, COALESCE(SUM(status = 'REALISEE'), 0) AS done,
-        COALESCE(SUM(status = 'REJETEE'), 0) AS rejected FROM recommendation GROUP BY action_code`,
+        COALESCE(SUM(status = 'REJETEE' AND comment IS NOT @superseded), 0) AS rejected,
+        COALESCE(SUM(status = 'REJETEE' AND comment IS @superseded), 0) AS superseded FROM recommendation GROUP BY action_code`,
     )
-    .all() as { action: string; proposed: number; done: number; rejected: number }[])
-    counts.set(r.action, { proposed: r.proposed, done: r.done, rejected: r.rejected });
+    .all({ superseded: SUPERSEDED_COMMENT }) as ({ action: string } & Required<StatusCounts>)[])
+    counts.set(r.action, { proposed: r.proposed, done: r.done, rejected: r.rejected, superseded: r.superseded });
   const codes = [...new Set([...counts.keys(), ...all.map((a) => a.actionCode)])].sort();
-  const zero = { proposed: 0, done: 0, rejected: 0 };
+  const zero = { proposed: 0, done: 0, rejected: 0, superseded: 0 };
   const byAction = codes.map((code) =>
     actionStats(
       code,
@@ -212,7 +219,10 @@ export function getInterventions(ctx: AccessContext, q: InterventionsQuery, meta
       measures.filter((_, i) => all[i].actionCode === code),
     ),
   );
-  const sum = [...counts.values()].reduce((s, c) => ({ proposed: s.proposed + c.proposed, done: s.done + c.done, rejected: s.rejected + c.rejected }), zero);
+  const sum = [...counts.values()].reduce(
+    (s, c) => ({ proposed: s.proposed + c.proposed, done: s.done + c.done, rejected: s.rejected + c.rejected, superseded: s.superseded + c.superseded }),
+    zero,
+  );
   const totals = actionStats("TOUTES", sum, measures);
 
   const filtered = all.map((a, i) => ({ a, m: measures[i] })).filter(({ a }) => !q.action || a.actionCode === q.action);

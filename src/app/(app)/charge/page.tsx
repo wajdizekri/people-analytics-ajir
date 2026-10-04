@@ -30,11 +30,11 @@ const lastForecastMonth = (gs: (GroupView | null)[]) => {
 const peakTip = (g: GroupView) =>
   g.peak
     ? `${fr.hours(g.peak.value)} en ${fr.monthLong(g.peak.month)}${g.peak.lower != null && g.peak.upper != null ? ` (fourchette ${fr.hours(g.peak.lower)} à ${fr.hours(g.peak.upper)})` : ""}${
-        g.tension === "PROBABLE" ? " · tension probable" : g.tension === "POSSIBLE" ? " · tension possible" : ""
+        g.tension === "PROBABLE" ? " · surcharge probable" : g.tension === "POSSIBLE" ? " · surcharge possible" : ""
       }`
     : "—";
 
-// Réponse « Quelles équipes sont en surcharge ? » à partir des équipes prévues et du seuil de tension
+// Réponse « Quelles équipes sont en surcharge ? » à partir des équipes prévues et du seuil de surcharge
 function tensionVerdict(teams: GroupView[], threshold: number | null, until: string, overloads: number | null): Answer {
   const probable = teams.filter((t) => t.tension === "PROBABLE");
   const possible = teams.filter((t) => t.tension === "POSSIBLE");
@@ -49,7 +49,7 @@ function tensionVerdict(teams: GroupView[], threshold: number | null, until: str
     return {
       tone: "critique",
       label: "Surcharge probable",
-      text: `${probable.length} ${plural(probable.length, "équipe dépassera", "équipes dépasseront")} probablement le seuil de tension${thr} d'ici ${until} : ${names(probable)}.${
+      text: `${probable.length} ${plural(probable.length, "équipe dépassera", "équipes dépasseront")} probablement le seuil de surcharge${thr} d'ici ${until} : ${names(probable)}.${
         possible.length ? ` ${possible.length} autre${possible.length > 1 ? "s" : ""} pourrai${possible.length > 1 ? "ent" : "t"} le dépasser.` : ""
       }${extra}`,
     };
@@ -59,7 +59,7 @@ function tensionVerdict(teams: GroupView[], threshold: number | null, until: str
       label: "Surcharge possible",
       text: `Aucune équipe ne dépasse le seuil de façon probable, mais ${possible.length} ${plural(possible.length, "pourrait", "pourraient")} le dépasser d'ici ${until} : ${names(possible)}.${extra}`,
     };
-  return { tone: "bon", label: "Pas de surcharge prévue", text: `Aucune équipe ne devrait dépasser le seuil de tension${thr} d'ici ${until}.${extra}` };
+  return { tone: "bon", label: "Pas de surcharge prévue", text: `Aucune équipe ne devrait dépasser le seuil de surcharge${thr} d'ici ${until}.${extra}` };
 }
 
 export default async function ChargePage() {
@@ -76,7 +76,8 @@ export default async function ChargePage() {
       />
       {!w.asOf ? (
         <EmptyState title="Aucune prévision de charge disponible" icon="chart">
-          Les prévisions apparaissent après le calcul mensuel, une fois le modèle « charge de travail » mis en service par l&apos;administrateur.
+          Les prévisions apparaissent après le calcul mensuel, une fois le modèle « charge de travail » mis en service. La mise en service se fait hors de
+          l&apos;interface, par une procédure tracée.
         </EmptyState>
       ) : w.view === "RH" ? (
         <RhView w={w} />
@@ -99,8 +100,8 @@ function Method({ w }: { w: WorkloadRh | WorkloadManager }) {
         et des départs récents. {DEFS.fourchette.text}
       </li>
       <li>
-        Seuil de tension : {fr.hours(w.threshold)} par ETP et par mois, soit le niveau des 15 % de mois les plus chargés de l&apos;historique des équipes.
-        Tension probable : même le bas de la fourchette dépasse le seuil.
+        Seuil de surcharge : {fr.hours(w.threshold)} par ETP et par mois, soit le niveau des 15 % de mois les plus chargés de l&apos;historique des équipes.
+        Surcharge probable : même le bas de la fourchette dépasse le seuil.
       </li>
       <li>Seules les équipes d&apos;au moins {MIN_GROUP_SIZE} personnes sont prévues.</li>
     </ReadingGuide>
@@ -139,13 +140,13 @@ function RhView({ w }: { w: WorkloadRh }) {
         scope={`Toute l'entreprise · ${fr.count(w.teams.length, "équipe prévue", "équipes prévues")} · 12 derniers mois observés et 3 mois prévus, au ${fmt.date(w.asOf)}.`}
         method={
           <>
-            Une équipe est en tension si son pic d&apos;heures sup prévu sur 3 mois dépasse le seuil de {fr.hours(w.threshold)} par ETP. Probable : même le bas
+            Une équipe est en surcharge prévue si son pic d&apos;heures sup prévu sur 3 mois dépasse le seuil de {fr.hours(w.threshold)} par ETP. Probable : même le bas
             de la fourchette à 80 % dépasse le seuil ; possible : seule la prévision centrale le dépasse.
           </>
         }
       >
         <KpiCard
-          label="Équipes en tension"
+          label="Équipes en surcharge prévue"
           period={`d'ici ${until}`}
           value={fmt.int(tensionTeams.length)}
           unit={`sur ${fmt.int(w.teams.length)}`}
@@ -156,7 +157,7 @@ function RhView({ w }: { w: WorkloadRh }) {
           }
           hint={
             tensionTeams.length
-              ? `${probable} tension${probable > 1 ? "s" : ""} probable${probable > 1 ? "s" : ""}, ${tensionTeams.length - probable} possible${tensionTeams.length - probable > 1 ? "s" : ""}`
+              ? `${probable} surcharge${probable > 1 ? "s" : ""} probable${probable > 1 ? "s" : ""}, ${tensionTeams.length - probable} possible${tensionTeams.length - probable > 1 ? "s" : ""}`
               : "Toutes sous le seuil"
           }
           detailHref={tensionTeams.length ? "#equipes" : undefined}
@@ -217,7 +218,7 @@ function RhView({ w }: { w: WorkloadRh }) {
                 ? `${tensionTeams.length} ${plural(tensionTeams.length, "équipe pourrait", "équipes pourraient")} dépasser le seuil de ${fr.hours(w.threshold)}`
                 : "Aucune équipe au-dessus du seuil : voici les plus chargées"
           }
-          subtitle={`Pic d'heures sup par ETP prévu sur les 3 prochains mois (h), par équipe désignée par son manager · toute l'entreprise, d'ici ${until} · rouge : tension probable · ambre : possible · tirets : seuil de tension`}
+          subtitle={`Pic d'heures sup par ETP prévu sur les 3 prochains mois (h), par équipe désignée par son manager · toute l'entreprise, d'ici ${until} · rouge : surcharge probable · ambre : possible · tirets : seuil de surcharge`}
           className="xl:col-span-3"
           chart={
             barTeams.length
@@ -233,7 +234,7 @@ function RhView({ w }: { w: WorkloadRh }) {
               : undefined
           }
           footnote={
-            tensionTeams.length > barTeams.length ? `${tensionTeams.length - barTeams.length} autres équipes en tension dans le tableau du détail.` : undefined
+            tensionTeams.length > barTeams.length ? `${tensionTeams.length - barTeams.length} autres équipes en surcharge prévue dans le tableau du détail.` : undefined
           }
         >
           {!barTeams.length && <EmptyState title="Aucune équipe prévue ce mois-ci" compact />}
@@ -276,7 +277,7 @@ function RhView({ w }: { w: WorkloadRh }) {
       <SectionHeader
         id="actions"
         title="Que faire ?"
-        description="Actions proposées pour les équipes en tension et, pour la RH, entretiens avec les collaborateurs en surcharge."
+        description="Actions proposées pour les équipes en surcharge prévue et, pour la RH, entretiens avec les collaborateurs en surcharge."
         className="mt-8"
       />
       <div className={`${cardCls} p-4 sm:p-5`}>
@@ -284,23 +285,23 @@ function RhView({ w }: { w: WorkloadRh }) {
           items={recos}
           action={updateWorkloadRecoAction}
           emptyTitle="Aucune action à traiter sur la charge de travail"
-          emptyText="Des actions sont proposées après le calcul mensuel pour les équipes en tension et les surcharges individuelles."
+          emptyText="Des actions sont proposées après le calcul mensuel pour les équipes en surcharge prévue et les surcharges individuelles."
         />
       </div>
 
-      <SectionHeader title="Détail" description="Équipes en tension, départements et surcharges individuelles." className="mt-8" />
+      <SectionHeader title="Détail" description="Équipes en surcharge prévue, départements et surcharges individuelles." className="mt-8" />
       <section id="equipes" aria-labelledby="equipes-titre" className="scroll-mt-4">
         <SectionHeader
           id="equipes-titre"
           level={3}
-          title={`Équipes en tension (${tensionTeams.length})`}
+          title={`Équipes en surcharge prévue (${tensionTeams.length})`}
           tip={<Def id="tension" align="start" />}
           description={`${w.teams.length} équipes d'au moins ${MIN_GROUP_SIZE} personnes prévues ; les équipes plus petites ne sont pas prévues.`}
         />
         <GroupTable
           groups={tensionTeams}
-          caption="Équipes dont le pic prévu dépasse le seuil de tension"
-          empty={<EmptyState title="Aucune équipe au-dessus du seuil de tension sur les 3 prochains mois" icon="success" compact />}
+          caption="Équipes dont le pic prévu dépasse le seuil de surcharge"
+          empty={<EmptyState title="Aucune équipe au-dessus du seuil de surcharge sur les 3 prochains mois" icon="success" compact />}
         />
         <CoverageNote cell={coverage?.EQUIPE} />
       </section>
@@ -343,11 +344,11 @@ function ManagerView({ w }: { w: WorkloadManager }) {
   const recos = workloadRecoItems(w.recommendations, fmt.date);
   const chartTitle = single
     ? single.tension
-      ? `${single.label} : tension ${single.tension === "PROBABLE" ? "probable" : "possible"} en ${fr.monthLong(single.peak!.month)}`
-      : `${single.label} : sous le seuil de tension jusqu'en ${until}`
+      ? `${single.label} : surcharge ${single.tension === "PROBABLE" ? "probable" : "possible"} en ${fr.monthLong(single.peak!.month)}`
+      : `${single.label} : sous le seuil de surcharge jusqu'en ${until}`
     : tension.length
-      ? `${tension.length} de vos équipes ${plural(tension.length, "pourrait", "pourraient")} dépasser le seuil de tension`
-      : `Vos équipes restent sous le seuil de tension jusqu'en ${until}`;
+      ? `${tension.length} de vos équipes ${plural(tension.length, "pourrait", "pourraient")} dépasser le seuil de surcharge`
+      : `Vos équipes restent sous le seuil de surcharge jusqu'en ${until}`;
   const multi = w.teams.slice(0, 8);
   const teamCoverage = coverageOf(w)?.EQUIPE;
   return (
@@ -359,13 +360,13 @@ function ManagerView({ w }: { w: WorkloadManager }) {
         scope={`${fr.count(w.teams.length, "équipe suivie", "équipes suivies")}, en agrégé · 12 derniers mois observés et 3 mois prévus, au ${fmt.date(w.asOf)}.`}
         method={
           <>
-            Une équipe est en tension si son pic d&apos;heures sup prévu sur 3 mois dépasse le seuil de {fr.hours(w.threshold)} par ETP. Seules les équipes
+            Une équipe est en surcharge prévue si son pic d&apos;heures sup prévu sur 3 mois dépasse le seuil de {fr.hours(w.threshold)} par ETP. Seules les équipes
             d&apos;au moins {MIN_GROUP_SIZE} personnes sont prévues ; aucun chiffre individuel n&apos;est affiché.
           </>
         }
       >
         <KpiCard
-          label="Équipes en tension"
+          label="Équipes en surcharge prévue"
           period={`d'ici ${until}`}
           value={fmt.int(tension.length)}
           unit={`sur ${fmt.int(w.teams.length)}`}
@@ -396,7 +397,7 @@ function ManagerView({ w }: { w: WorkloadManager }) {
             value={fr.hours(loaded?.peak?.value)}
             status={
               loaded?.tension
-                ? { tone: loaded.tension === "PROBABLE" ? "critique" : "attention", label: loaded.tension === "PROBABLE" ? "Tension probable" : "Tension possible" }
+                ? { tone: loaded.tension === "PROBABLE" ? "critique" : "attention", label: loaded.tension === "PROBABLE" ? "Surcharge probable" : "Surcharge possible" }
                 : loaded?.peak
                   ? { tone: "bon", label: "Sous le seuil" }
                   : undefined
@@ -405,7 +406,7 @@ function ManagerView({ w }: { w: WorkloadManager }) {
             tip={<Def id="heuresSup" />}
           />
         )}
-        <KpiCard label="Seuil de tension" period="par ETP et par mois" value={fr.hours(w.threshold)} tip={<Def id="seuil" />} />
+        <KpiCard label="Seuil de surcharge" period="par ETP et par mois" value={fr.hours(w.threshold)} tip={<Def id="seuil" />} />
       </QuestionAnswer>
 
       {w.hiddenTeams > 0 && (
@@ -417,7 +418,7 @@ function ManagerView({ w }: { w: WorkloadManager }) {
         single ? (
           <VisualCard
             title={chartTitle}
-            subtitle="Heures sup par ETP et par mois (h) · 12 mois observés puis 3 mois prévus · tirets : seuil de tension"
+            subtitle="Heures sup par ETP et par mois (h) · 12 mois observés puis 3 mois prévus · tirets : seuil de surcharge"
             chart={groupLineChart(single, w.threshold)}
             footnote="Bleu : observé. Gris en tirets : prévision. Bande grise : fourchette probable à 80 %, qui contient la valeur réelle environ 8 fois sur 10."
           >
@@ -426,7 +427,7 @@ function ManagerView({ w }: { w: WorkloadManager }) {
         ) : (
           <VisualCard
             title={chartTitle}
-            subtitle="Heures sup par ETP et par mois (h) · 12 mois observés puis 3 mois prévus · trait plein : observé · tirets : prévu · ligne grise : seuil de tension"
+            subtitle="Heures sup par ETP et par mois (h) · 12 mois observés puis 3 mois prévus · trait plein : observé · tirets : prévu · ligne grise : seuil de surcharge"
             footnote={`Fourchette probable à 80 % de chaque équipe (elle contient la valeur réelle environ 8 fois sur 10) : dans « Voir les données » et dans le tableau du détail.${
               w.teams.length > multi.length ? ` Graphique limité à ${multi.length} équipes ; les ${w.teams.length} figurent dans le tableau du détail.` : ""
             }`}
@@ -471,7 +472,7 @@ function ManagerView({ w }: { w: WorkloadManager }) {
           items={recos}
           action={updateWorkloadRecoAction}
           emptyTitle="Aucune action à traiter pour vos équipes"
-          emptyText="Une action vous est proposée après le calcul mensuel si l'une de vos équipes risque de dépasser le seuil de tension."
+          emptyText="Une action vous est proposée après le calcul mensuel si l'une de vos équipes risque de dépasser le seuil de surcharge."
         />
       </div>
 

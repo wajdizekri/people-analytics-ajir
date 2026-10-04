@@ -338,7 +338,7 @@ export default async function FormationsPage() {
         />
         {!o.asOf ? (
           <EmptyState title="Aucune estimation disponible" icon="chart" compact>
-            Le risque est calculé chaque mois, une fois le modèle « formation » mis en service par l&apos;administrateur.
+            Le risque est calculé chaque mois, une fois le modèle « formation » mis en service. La mise en service se fait hors de l&apos;interface, par une procédure tracée.
           </EmptyState>
         ) : (
           <DataTable

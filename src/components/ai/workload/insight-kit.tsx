@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Icon, type Verdict } from "@/components/ui";
 import { InfoTip } from "@/components/help";
+import { TERMS } from "@/lib/help/terms";
 
 // Éléments communs aux pages /absenteeism, /charge et /formations : formats français, définitions des bulles « ? », type de la réponse.
 
@@ -40,12 +41,9 @@ export const DEFS = {
     label: "Heures sup par ETP",
     text: "Heures supplémentaires pointées dans le mois, divisées par le nombre d'ETP du groupe. Unité : heures par ETP et par mois.",
   },
-  tension: {
-    label: "Équipe en tension",
-    text: "Équipe dont le pic d'heures sup prévu sur les 3 prochains mois dépasse le seuil de tension. Tension probable : même le bas de la fourchette dépasse le seuil. Tension possible : seule la prévision centrale le dépasse.",
-  },
+  tension: TERMS.surchargePrevue,
   seuil: {
-    label: "Seuil de tension",
+    label: "Seuil de surcharge",
     text: "Niveau atteint par les 15 % de mois les plus chargés de l'historique des équipes. Au-delà, la charge est jugée inhabituellement élevée.",
   },
   surcharge: {

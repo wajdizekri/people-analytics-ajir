@@ -43,6 +43,6 @@ describe("/charge", () => {
     session.current = { userId: 3, login: "mgr", role: "MANAGER", employeeId: fx.head };
     const t = await render();
     expect(t).toMatch(/[Ff]ourchette probable à 80 %/);
-    if (t.includes("Équipe la plus chargée")) expect(t).toMatch(/Équipe la plus chargée.*(Sous le seuil|Tension probable|Tension possible)/);
+    if (t.includes("Équipe la plus chargée")) expect(t).toMatch(/Équipe la plus chargée.*(Sous le seuil|Surcharge probable|Surcharge possible)/);
   });
 });

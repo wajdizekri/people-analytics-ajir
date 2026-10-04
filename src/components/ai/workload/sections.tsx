@@ -9,8 +9,8 @@ export const hours = fr.hours;
 const range = (lo: number | null, hi: number | null) => (lo == null || hi == null ? null : `${fr.hours(lo)} à ${fr.hours(hi)}`);
 
 export function TensionBadge({ tension }: { tension: GroupView["tension"] }) {
-  if (tension === "PROBABLE") return <StatusBadge tone="danger">Tension probable</StatusBadge>;
-  if (tension === "POSSIBLE") return <StatusBadge tone="warning">Tension possible</StatusBadge>;
+  if (tension === "PROBABLE") return <StatusBadge tone="danger">Surcharge probable</StatusBadge>;
+  if (tension === "POSSIBLE") return <StatusBadge tone="warning">Surcharge possible</StatusBadge>;
   return <StatusBadge tone="success">Sous le seuil</StatusBadge>;
 }
 
@@ -41,7 +41,7 @@ export function GroupTable({
     { key: "last", label: lastMonth ? `${fr.monthShort(lastMonth)} (observé)` : "Dernier mois", numeric: true },
     { key: "mean", label: "Moyenne 12 mois", numeric: true },
     { key: "peak", label: "Pic prévu (3 mois)", numeric: true },
-    { key: "tension", label: "Tension" },
+    { key: "tension", label: "Surcharge prévue" },
   ];
   const rows: DataTableRow[] = groups.map((g) => {
     const r = g.peak ? range(g.peak.lower, g.peak.upper) : null;

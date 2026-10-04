@@ -64,7 +64,7 @@ export function AbsenteeismForecastCard({ d, preferKey, coverage }: { d: AbsFore
           <EmptyState title="Aucune prévision disponible pour le moment" icon="chart" compact>
             {d.asOf
               ? "Aucune prévision n'a été calculée pour votre périmètre."
-              : "Les prévisions apparaissent après le calcul mensuel, une fois le modèle « absentéisme » mis en service par l'administrateur."}
+              : "Les prévisions apparaissent après le calcul mensuel, une fois le modèle « absentéisme » mis en service. La mise en service se fait hors de l'interface, par une procédure tracée."}
           </EmptyState>
         </>
       ) : (

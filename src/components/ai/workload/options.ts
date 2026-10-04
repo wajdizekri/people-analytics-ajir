@@ -30,7 +30,7 @@ export function groupLineChart(g: GroupView, threshold: number | null, height = 
     measure: MEASURE,
     unit: "h",
     digits: 1,
-    references: threshold != null ? [{ value: threshold, label: "Seuil de tension" }] : undefined,
+    references: threshold != null ? [{ value: threshold, label: "Seuil de surcharge" }] : undefined,
     categoryName: "Mois",
     height,
   });
@@ -65,7 +65,7 @@ export function peakBars(rows: { name: string; value: number; tension: Tension; 
         measure: "Pic prévu d'heures sup par ETP",
         unit: "h",
         digits: 1,
-        references: threshold != null ? [{ value: threshold, label: "Seuil de tension" }] : undefined,
+        references: threshold != null ? [{ value: threshold, label: "Seuil de surcharge" }] : undefined,
         categoryName: "Équipe (manager)",
       }),
     ),
@@ -122,7 +122,7 @@ export function observedForecastOption(groups: SeriesInput[], threshold: number 
       silent: true,
       symbol: "none",
       lineStyle: { color: SEMANTIC.reference, type: "dashed", width: 1.5 },
-      label: { formatter: `Seuil de tension : ${fr.hours(threshold)}`, position: "insideEndTop", color: SEMANTIC.reference, fontSize: 12, fontWeight: 600 },
+      label: { formatter: `Seuil de surcharge : ${fr.hours(threshold)}`, position: "insideEndTop", color: SEMANTIC.reference, fontSize: 12, fontWeight: 600 },
       data: [{ yAxis: threshold }],
     };
   return {
