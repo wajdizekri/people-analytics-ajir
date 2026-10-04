@@ -495,6 +495,11 @@ export const FAQ: Faq[] = [
     a: `Elle teste une grille d'actions et garde les plus petites qui feraient baisser le niveau de risque. Exemple : une promotion seule, ou 15${NB}% de salaire avec 20 heures supplémentaires de moins par mois. Ce sont des pistes à discuter lors d'un échange, pas une décision ni un effet garanti.`,
     roles: ["RH"],
   },
+  {
+    topic: "donnees",
+    q: "Comment fonctionne l'assistant d'aide ?",
+    a: "Il cherche la réponse dans la documentation et l'aide de votre rôle, puis cite ses sources. Il ne voit jamais les données des collaborateurs. Si l'aide ne couvre pas la question, il le dit. Vos questions ne sont pas conservées : seule la demande est tracée, jamais son texte.",
+  },
 ];
 
 // ---------- Droits par rôle ----------
@@ -530,4 +535,12 @@ export const ROLE_SCOPE: Record<Role, { sees: string[]; neverSees: string[] }> =
     ],
     neverSees: ["Les fiches collaborateurs, les salaires et les estimations individuelles.", "Le tableau de bord, l'absentéisme et les recommandations."],
   },
+};
+
+// ---------- Assistant d'aide : questions d'exemple par rôle (HelpAssistant) ----------
+
+export const ASSISTANT_EXAMPLES: Record<Role, string[]> = {
+  ADMIN: ["Comment importer un export AJIR ?", "Comment modifier la capacité d'entretiens RH ?", "Comment débloquer un compte verrouillé ?"],
+  RH: ["Comment est calculé le niveau de risque ?", "Comment traiter une alerte ?", "Que signifie la fourchette d'une prévision ?"],
+  MANAGER: ["Comment lire le niveau de risque de mon équipe ?", "Comment est calculé le taux d'absentéisme ?", "Que faire d'une recommandation ?"],
 };

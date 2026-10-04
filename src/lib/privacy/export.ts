@@ -41,6 +41,7 @@ const ACTION_LABEL: Record<string, string> = {
   "privacy.opposition.record": "Enregistrement de l'opposition",
   "privacy.opposition.lift": "Levée de l'opposition",
   "privacy.export": "Export du droit d'accès",
+  "assistant.ask": "Question posée à l'assistant d'aide",
 };
 
 const groupLabel = (code: string) => GROUPS[code]?.label_rh ?? code;

@@ -39,6 +39,7 @@ const V = {
   activer: er("activ"),
   mettreEnService: { p3: "a mis en service", p2: "avez mis en service", inf: "mettre en service" },
   revenir: { p3: "est revenu à", p2: "êtes revenu à", inf: "revenir à" },
+  poser: { p3: "a posé", p2: "avez posé", inf: "poser" },
 } satisfies Record<string, Verb>;
 
 const de = (inf: string) => (/^[aeéèêiîoôuh]/i.test(inf) ? `d'${inf}` : `de ${inf}`);
@@ -261,6 +262,20 @@ function phrase(e: AuditEntry, users: Map<string, string>): Phrase {
             .filter(Boolean)
             .join(", ") || undefined,
       };
+    case "assistant.ask":
+      return {
+        verb: V.poser,
+        object: "une question à l'assistant d'aide",
+        extra:
+          [
+            count(d.length, "caractère"),
+            count(d.hits, "passage"),
+            typeof d.mode === "string" ? (ASSISTANT_MODE[d.mode] ?? d.mode) : "",
+            typeof d.reason === "string" ? (ASSISTANT_REASON[d.reason] ?? d.reason) : "",
+          ]
+            .filter(Boolean)
+            .join(", ") || undefined,
+      };
   }
   if (e.action.endsWith(".view")) {
     const key = e.action.slice(0, -".view".length);
@@ -329,6 +344,7 @@ export const AUDIT_CATEGORIES: { prefix: string; label: string }[] = [
   { prefix: "model.", label: "Modèles" },
   { prefix: "audit.", label: "Consultations du journal" },
   { prefix: "synthesis.narrative.", label: "Synthèses rédigées par IA générative" },
+  { prefix: "assistant.", label: "Assistant d'aide" },
 ];
 
 // Raisons d'un repli de la synthèse rédigée sur les phrases types (audit « synthesis.narrative.generate »)
@@ -352,3 +368,8 @@ function narrativeFailure(reason: string): string {
   if (reason.startsWith("arret_")) return "réponse interrompue, texte écarté";
   return NARRATIVE_FAILURE[reason] ?? reason;
 }
+
+// Audit « assistant.ask » : longueur, passages et mode seulement, jamais le texte de la question
+const count = (k: unknown, word: string) => (typeof k === "number" ? `${k} ${word}${k > 1 ? "s" : ""}` : "");
+const ASSISTANT_MODE: Record<string, string> = { EXTRAIT: "extrait de l'aide", IA: "reformulation par IA générative", AUCUN: "aucune réponse dans l'aide" };
+const ASSISTANT_REASON: Record<string, string> = { limite_usage: "limite d'usage atteinte", erreur_interne: "erreur interne" };

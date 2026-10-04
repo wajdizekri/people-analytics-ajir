@@ -12,6 +12,7 @@ export const RATE_RULES = {
   activationIp: { limit: 20, windowMs: 15 * MINUTE },
   activationAccount: { limit: 10, windowMs: 15 * MINUTE },
   passwordChange: { limit: 5, windowMs: 15 * MINUTE },
+  assistant: { limit: 30, windowMs: 15 * MINUTE },
 } satisfies Record<string, Rule>;
 
 type Entry = { count: number; resetAt: number };
@@ -45,6 +46,15 @@ function prune(s: Map<string, Entry>, now: number): void {
     if (s.size < MAX_KEYS) break;
     s.delete(k);
   }
+}
+
+// Quota d'usage (assistant d'aide) : compte chaque appel, pas seulement les échecs.
+// Renvoie l'attente en millisecondes ; 0 = appel autorisé et compté.
+export function consume(key: string, rule: Rule, now = Date.now()): number {
+  const wait = retryAfter(key, rule, now);
+  if (wait) return wait;
+  recordFailure(key, rule, now);
+  return 0;
 }
 
 export function resetRateLimits(): void {

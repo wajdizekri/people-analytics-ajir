@@ -139,3 +139,30 @@ Points ouverts avant toute activation :
 2. **Transfert vers l'étranger** : vérifier les conditions de la loi 2004-63 applicables au transfert vers le pays du sous-traitant (autorisation de l'INPDP le cas échéant).
 3. **Clause de sous-traitance** et durée de conservation chez l'éditeur de l'API, à annexer au registre.
 4. **Information** des salariés et des instances représentatives : mentionner l'option dans la note d'information si elle est activée.
+
+## 8. Assistant d'aide : questions en texte libre
+
+Ajout du 04/10/2026. Un champ « Poser une question… » (tableau de bord RH et manager, console ADMIN) répond à partir de la documentation et de l'aide du rôle connecté ([RESULTATS_ASSISTANT.md](../RESULTATS_ASSISTANT.md)). Le corpus interrogé ne contient **aucune donnée de collaborateur** ni chiffre issu de la base. Par défaut, la réponse est un extrait de l'aide calculé sur le serveur : **aucune donnée ne sort de l'installation**. La reformulation par IA générative n'est active que si l'exploitant définit `ASSISTANT_AI_API_KEY` ([EXPLOITATION.md, § 11](../EXPLOITATION.md)).
+
+| Élément | Description |
+|---|---|
+| Finalité | Aider l'utilisateur à trouver une réponse dans l'aide. Aucune décision, aucune évaluation individuelle |
+| Donnée traitée | La question : **texte libre** de 3 à 300 caractères saisi par l'utilisateur. Malgré son objet, elle peut contenir une donnée personnelle : nom, matricule, adresse e-mail ou situation d'un collaborateur |
+| Traitement par défaut | Recherche en mémoire sur le serveur, sans flux sortant. La question n'est enregistrée ni en base ni dans les journaux |
+| Envoi à l'API (option) | Seulement si `ASSISTANT_AI_API_KEY` est définie : la question et au plus 4 passages d'aide trouvés, rien d'autre. **Filtre** : une question qui contient un matricule (`M` suivi de 4 chiffres ou plus) ou une adresse e-mail n'est jamais transmise ; l'extrait s'affiche avec la mention « Question non transmise : elle contient un identifiant personnel » (propriété testée, `tests/rag/answer.test.ts`). Un nom ou la description d'une situation ne sont pas détectés |
+| Filtrage par rôle | Rôle lu dans la session, jamais dans la requête ; passages filtrés avant le classement : l'administrateur ne lit aucun passage de pilotage RH, le manager aucun passage réservé à la RH |
+| Conservation dans le module | Réponses reformulées gardées en mémoire du service web (200 au plus, perdues au redémarrage), sous une empreinte SHA-256 de la question, jamais en clair |
+| Audit | Action `assistant.ask` : compte, date, longueur de la question, nombre de passages, mode de réponse, raison d'un refus ; **jamais le texte de la question** |
+| Sous-traitant | Option IA seulement : Anthropic (API Claude), comme au § 7. La question peut sortir de Tunisie si l'option est activée |
+| Information des utilisateurs | Question fréquente « Comment fonctionne l'assistant d'aide ? » dans l'aide de chaque rôle : ce qu'il lit, ce qu'il ne voit jamais, questions non conservées |
+
+| # | Risque | Mesures | V | G |
+|---|---|---|---|---|
+| R15 | **Donnée personnelle saisie dans la question** puis transmise à l'éditeur de l'API | Option désactivée par défaut ; filtre matricule et e-mail avant envoi ; question jamais enregistrée ni journalisée ; aide qui rappelle que l'assistant ne voit pas les données des collaborateurs | 2 | 2 |
+| R16 | **Passage d'un autre rôle** révélé par une réponse (méthodologie RH lue par un manager) | Rôle de la session ; filtre avant classement, refiltré par le service ; corpus sans donnée individuelle | 1 | 2 |
+| R17 | **Réponse inexacte ou consigne détournée** par le texte de la question | Réponse limitée aux passages fournis, citations et nombres vérifiés, sources affichées ; question traitée comme une donnée ; sinon « l'aide ne couvre pas cette question » ou repli sur l'extrait | 1 | 1 |
+
+Points ouverts avant toute activation de l'option IA :
+
+1. **Noms et situations** : non détectés par le filtre. Pas sûr qu'un filtre de noms soit fiable sans lire la base des collaborateurs, ce que l'assistant s'interdit. Mesure proposée : consigne aux utilisateurs de ne saisir ni nom ni situation individuelle.
+2. **Transfert, sous-traitance, information** : mêmes points que le § 7 (loi 2004-63, clause de sous-traitance, note d'information).

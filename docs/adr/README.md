@@ -17,5 +17,6 @@ Format commun : statut, date, références ; **Contexte** ; **Décision** ; **Al
 | [011](011-gardes-petites-populations-cote-manager.md) | Gardes de petites populations côté manager (seuil 5, masquage secondaire) | acceptée |
 | [012](012-sessions-opaques-plutot-que-jwt.md) | Sessions opaques révocables plutôt que JWT | acceptée |
 | [013](013-worker-separe-et-file-de-jobs-sqlite.md) | Worker Node séparé et file de jobs dans SQLite | acceptée |
+| [014](014-ia-generative-facultative-hors-donnees-rh.md) | IA générative facultative (synthèse, assistant d'aide), désactivée par défaut, jamais sur des données RH | acceptée (écart assumé au cahier des charges) |
 
 Vue d'ensemble et diagrammes : [docs/architecture/](../architecture/ARCHITECTURE.md). Dictionnaire des données, KPI et variables : [docs/DICTIONNAIRE.md](../DICTIONNAIRE.md).
