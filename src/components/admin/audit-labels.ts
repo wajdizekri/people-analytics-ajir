@@ -244,6 +244,8 @@ function phrase(e: AuditEntry, users: Map<string, string>): Phrase {
       const required = Array.isArray(d.required) ? (d.required as string[]).map((r) => ROLE_NAME[r] ?? r).join(" ou ") : null;
       return { verb: V.ouvrir, object: pageName(e.targetId), extra: required ? `réservée au rôle ${required}` : undefined };
     }
+    case "whatif.search":
+      return { verb: V.rechercher, object: `les leviers les plus efficaces pour le collaborateur${n(e.targetId)}` };
   }
   if (e.action.endsWith(".view")) {
     const key = e.action.slice(0, -".view".length);

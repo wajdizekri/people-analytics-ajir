@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
 import { Button, FormActions, Notice, RiskBadge, Skeleton, cardCls, fieldCls, fmt, tableCls, toast } from "@/components/ui";
-import type { WhatIfDto } from "@/lib/dal/whatif";
+import type { LeverSearchDto, WhatIfDto } from "@/lib/dal/whatif";
 import { formatDate, formatLiftWords, formatPoints, formatProb } from "./labels";
 
 type Limits = { salaryPct: number; overtimeCutH: number; trainingHours: number };
@@ -306,6 +306,135 @@ function ResultSkeleton() {
   );
 }
 
+type Proposal = LeverSearchDto["proposals"][number];
+type LeverValues = Proposal["levers"];
+
+const SEARCH_FRAMING = "Pistes à discuter lors d'un échange, pas une décision. Estimation du modèle, non causale.";
+const pct = (n: number) => `${dec(n, Number.isInteger(n) ? 0 : 1)} %`;
+
+function proposalLines(p: Proposal): { icon: keyof typeof ICONS; text: string }[] {
+  const l = p.levers;
+  const lines: { icon: keyof typeof ICONS; text: string }[] = [];
+  if (l.promotion) lines.push({ icon: "grade", text: p.applied.grade ? `Promotion de ${p.applied.grade.before} à ${p.applied.grade.after}` : "Promotion d'un grade" });
+  if (l.salaryPct > 0) lines.push({ icon: "money", text: `Salaire de base +${pct(l.salaryPct)}` });
+  if (l.overtimeCutH > 0) lines.push({ icon: "clock", text: `Heures supplémentaires −${dec(l.overtimeCutH, 0)} h par mois` });
+  if (l.trainingHours > 0) lines.push({ icon: "training", text: `Formation +${dec(l.trainingHours, 0)} h` });
+  return lines;
+}
+
+function ProposalCard({ p, index, r, onApply }: { p: Proposal; index: number; r: LeverSearchDto; onApply: (l: LeverValues) => void }) {
+  const b0 = r.model.kind === "B0";
+  const value = (x: Placement) => (b0 ? `${dec(x.score, 0)} point${x.score > 1 ? "s" : ""}` : formatProb(x.score));
+  const lines = proposalLines(p);
+  return (
+    <li className={`flex flex-col rounded-control border-l-4 bg-surface p-3.5 ring-1 ring-inset ring-line ${LEVEL_BORDER[p.after.level]}`}>
+      <h4 className="text-sm font-semibold text-heading">
+        Piste {index + 1}
+        <span className="font-normal text-fg-muted">
+          {" "}
+          · {lines.length} action{lines.length > 1 ? "s" : ""}, ampleur {dec(p.effort, 2)}
+        </span>
+      </h4>
+      <ul className="mt-2 space-y-1 text-sm text-fg">
+        {lines.map((x) => (
+          <li key={x.icon} className="flex items-start gap-2">
+            <Icon name={x.icon} className="mt-0.5 h-4 w-4 shrink-0 text-link" />
+            <span>{x.text}</span>
+          </li>
+        ))}
+      </ul>
+      {p.applied.salary && <p className="mt-1 text-xs text-fg-muted">Nouveau salaire de base : {fmt.tnd(p.applied.salary.after)} par mois.</p>}
+      <p className="mt-2 text-sm text-fg-muted">
+        {b0 ? "Score à règles" : "Probabilité à 6 mois"} : {value(r.before)} <span aria-hidden="true">→</span>
+        <span className="sr-only">puis</span> <span className="font-semibold text-heading">{value(p.after)}</span>
+      </p>
+      <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-fg-muted">
+        Niveau atteint : <RiskBadge level={p.after.level} />
+      </p>
+      <p className="mt-1 text-xs text-fg-muted">
+        {p.cost.annual > 0 ? `Hausse de salaire : ${fmt.tnd(p.cost.annual)} par an, charges comprises.` : "Sans hausse de salaire."}
+        {p.levers.trainingHours > 0 ? " Hors coût de la formation." : ""}
+      </p>
+      <div className="mt-auto pt-3">
+        <Button size="sm" icon="edit" onClick={() => onApply(p.levers)}>
+          Appliquer à la simulation<span className="sr-only"> (piste {index + 1})</span>
+        </Button>
+      </div>
+    </li>
+  );
+}
+
+// Résultat de la recherche de leviers : pistes en cartes, ou message explicite quand il n'y en a pas
+export function LeverSearchResults({ r, onApply }: { r: LeverSearchDto; onApply: (l: LeverValues) => void }) {
+  const m = r.method;
+  return (
+    <div className="mt-3 animate-fade-in space-y-3">
+      {r.status === "TROUVE" ? (
+        <>
+          <p className="flex flex-wrap items-center gap-1.5 text-sm text-fg">
+            Niveau actuel : <RiskBadge level={r.before.level} />
+            <span className="text-fg-muted">{r.message}</span>
+          </p>
+          <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {r.proposals.map((p, i) => (
+              <ProposalCard key={i} p={p} index={i} r={r} onApply={onApply} />
+            ))}
+          </ol>
+        </>
+      ) : (
+        <Notice tone="info" title={r.status === "AUCUNE" ? "Aucune piste dans les limites de la simulation" : "Niveau de risque déjà faible"}>
+          {r.message}
+          {r.status === "AUCUNE" && (
+            <>
+              {" "}
+              <a href="#estimation" className="font-medium text-link underline-offset-4 hover:underline">
+                Voir les facteurs associés
+              </a>
+            </>
+          )}
+        </Notice>
+      )}
+      {r.notes.map((n) => (
+        <Notice key={n} tone="warning">
+          {n}
+        </Notice>
+      ))}
+      {r.status !== "DEJA_FAIBLE" && (
+        <details className="group">
+          <summary className="inline-flex min-h-10 cursor-pointer list-none items-center gap-1 rounded-control pr-2 text-sm font-medium text-link transition-colors hover:bg-primary-soft hover:underline [&::-webkit-details-marker]:hidden">
+            <Icon name="chevron" className="h-4 w-4 transition-transform group-open:rotate-180" />
+            Comment les pistes sont choisies
+          </summary>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-fg-muted">
+            <li>
+              Pas testés : {pct(m.steps.salaryPct)} de salaire, {m.steps.overtimeCutH}&nbsp;h supplémentaires, {m.steps.trainingHours}&nbsp;h de formation, promotion ou non.
+            </li>
+            <li>
+              Ampleur : part de chaque limite utilisée ({pct(m.limits.salaryPct)}, {m.limits.overtimeCutH}&nbsp;h et {m.limits.trainingHours}&nbsp;h valent 1), plus{" "}
+              {dec(m.promotionEffort, 0)} par promotion.
+            </li>
+            <li>Les pistes retenues ont la plus petite ampleur. Une piste qui en contient une autre, déjà suffisante, est écartée.</li>
+            <li>
+              {fmt.int(m.evaluated)} combinaisons évaluées sur {fmt.int(m.combos)}, en {dec(m.ms / 1000, 1)}&nbsp;s, avec le {fmt.model(r.model.version)} et les seuils
+              en vigueur.
+            </li>
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function SearchSkeleton() {
+  return (
+    <div aria-hidden="true" className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {[0, 1, 2].map((i) => (
+        <Skeleton key={i} className="h-44" />
+      ))}
+    </div>
+  );
+}
+
 const SALARY_PRESETS = [3, 5, 10];
 
 export function WhatIfPanel({
@@ -330,6 +459,9 @@ export function WhatIfPanel({
   const [pending, setPending] = useState(false);
   // Valeurs des leviers envoyées pour le résultat affiché : s'en écarter rend le résultat périmé
   const [computedFor, setComputedFor] = useState<Form | null>(null);
+  const [search, setSearch] = useState<LeverSearchDto | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const num = (k: keyof Omit<Form, "promotion">) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [k]: e.target.value === "" ? 0 : Number(e.target.value) }));
   const nothing = form.salaryPct <= 0 && form.overtimeCutH <= 0 && form.trainingHours <= 0 && !form.promotion;
@@ -377,6 +509,49 @@ export function WhatIfPanel({
     }
   }
 
+  async function findLevers() {
+    setSearching(true);
+    setSearchError(null);
+    try {
+      const res = await fetch(`/api/employees/${employeeId}/what-if/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chargeRatePct: form.chargeRatePct }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        const code: string | null = body?.error?.code ?? null;
+        const message: string = body?.error?.message ?? "Recherche impossible. Réessayez dans un instant.";
+        setSearch(null);
+        if (code === "OPPOSITION") {
+          setError({ code, message });
+          toast.error("Recherche refusée", { description: message });
+        } else {
+          setSearchError(message);
+          toast.error(message);
+        }
+      } else {
+        const r = body as LeverSearchDto;
+        setSearch(r);
+        if (r.status === "TROUVE") toast.success("Recherche terminée", { description: `${r.message} Rien n'est enregistré.` });
+        else toast.info("Recherche terminée", { description: r.message });
+      }
+    } catch {
+      setSearch(null);
+      setSearchError("Recherche impossible : le serveur ne répond pas. Réessayez dans un instant.");
+      toast.error("Recherche impossible : le serveur ne répond pas. Réessayez dans un instant.");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  // Pré-remplit les leviers ; la RH relit puis lance elle-même la simulation
+  function applyProposal(l: LeverValues) {
+    setForm((f) => ({ ...f, salaryPct: l.salaryPct, overtimeCutH: l.overtimeCutH, trainingHours: l.trainingHours, promotion: l.promotion }));
+    toast.info("Leviers reportés dans la simulation", { description: "Vérifiez les valeurs, puis cliquez sur « Simuler ces actions »." });
+    document.getElementById(`whatif-${employeeId}-salary`)?.focus();
+  }
+
   const id = `whatif-${employeeId}`;
   // 409 OPPOSITION : opposition au traitement prédictif enregistrée, la simulation est refusée
   const opposed = error?.code === "OPPOSITION";
@@ -402,6 +577,20 @@ export function WhatIfPanel({
         </div>
       </header>
       <Notice tone="warning">{notice}</Notice>
+      <div className="mt-4 rounded-control bg-surface-2 p-3.5 ring-1 ring-inset ring-line">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-semibold text-heading">Par où commencer ?</h3>
+            <p className="text-sm text-fg-muted">L&apos;outil cherche les plus petites combinaisons d&apos;actions qui feraient baisser le niveau de risque.</p>
+            <p className="mt-1 text-sm font-medium text-fg">{SEARCH_FRAMING}</p>
+          </div>
+          <Button icon="search" onClick={findLevers} pending={searching} pendingLabel="Recherche en cours…" disabled={opposed}>
+            Trouver les leviers les plus efficaces
+          </Button>
+        </div>
+        {searchError && !searching && <p className="mt-2 text-sm font-medium text-danger">{searchError}</p>}
+        <div aria-busy={searching || undefined}>{searching ? <SearchSkeleton /> : search && <LeverSearchResults r={search} onApply={applyProposal} />}</div>
+      </div>
       <form onSubmit={submit} className="mt-4 space-y-3">
         <fieldset>
           <legend className="text-base font-semibold text-heading">1. Que se passe-t-il si… ?</legend>
@@ -560,6 +749,8 @@ export function WhatIfPanel({
               setResult(null);
               setComputedFor(null);
               setError(null);
+              setSearch(null);
+              setSearchError(null);
             }}
           >
             Réinitialiser la simulation

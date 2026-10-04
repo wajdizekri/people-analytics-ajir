@@ -109,7 +109,7 @@ export function applyLevers(ds: Dataset, id: number, t: string, levers: Levers):
   return { salary, grade: gradeChange, overtimeRemovedH: removedMin / 60, trainingHours: levers.trainingHours, notes };
 }
 
-function place(model: LoadedModel, population: FeatureVector[], id: number, values: number[], capacityRate: number, mediumLift: number): Placement {
+export function place(model: LoadedModel, population: FeatureVector[], id: number, values: number[], capacityRate: number, mediumLift: number): Placement {
   const rows = rankAndLevel(model, [...population, { employeeId: id, values, partial: false }], capacityRate, mediumLift);
   const r = rows.find((x) => x.employeeId === id)!;
   return { score: r.score, level: r.level, rank: r.rank, lift: r.lift, population: rows.length };
@@ -119,40 +119,62 @@ function byGroup(model: LoadedModel, values: number[]): Map<string, number> {
   return new Map(explain(model, values).map((g) => [g.group, g.contribution]));
 }
 
-// Recalcule les variables du salarié avec et sans leviers (mêmes fonctions que le batch), puis score et niveau
-// dans la population du mois (snapshots des autres salariés). Rien n'est écrit en base.
-export function simulate(
-  sqlite: Database.Database,
-  model: LoadedModel,
-  employeeId: number,
-  asOf: string,
-  levers: Levers,
-  opts: { capacityRate: number; mediumLift: number; chargeRate: number },
-): WhatIfResult {
+// Copie des seules sources qu'applyLevers modifie pour ce salarié (carrière, paie, formations, pointages) : la base reste intacte.
+export function forkDataset(ds: Dataset, employeeId: number): Dataset {
+  const copy = <T>(m: Map<number, T>, clone: (v: T) => T) => {
+    const out = new Map(m);
+    const v = m.get(employeeId);
+    if (v !== undefined) out.set(employeeId, clone(v));
+    return out;
+  };
+  return {
+    ...ds,
+    careers: copy(ds.careers, (l) => [...l]),
+    payroll: copy(ds.payroll, (l) => [...l]),
+    trainings: copy(ds.trainings, (l) => [...l]),
+    attendance: copy(ds.attendance, (a) => ({ ...a, ot: [...a.ot] })),
+  };
+}
+
+export type SimulationOptions = { capacityRate: number; mediumLift: number; chargeRate: number };
+// Sources du salarié, ses variables sans levier et la population du mois (snapshots des autres salariés)
+export type SimulationBase = { ds: Dataset; before: number[]; population: FeatureVector[] };
+
+export function loadSimulationBase(sqlite: Database.Database, model: LoadedModel, employeeId: number, asOf: string): SimulationBase {
   const ds = loadEmployeeDataset(sqlite, employeeId, asOf);
   const [before] = computeMonth(ds, asOf, [employeeId]);
   if (!before) throw new WhatIfError("Collaborateur non évalué à cette date (hors du calcul des risques) : simulation impossible.");
-  const applied = applyLevers(ds, employeeId, asOf, levers);
-  const [after] = computeMonth(ds, asOf, [employeeId]);
-
   const population = readSnapshots(sqlite, asOf, model.fsv).filter((r) => r.employeeId !== employeeId);
   if (!population.length) throw new WhatIfError("Variables du mois indisponibles : simulation impossible.");
+  return { ds, before: before.values, population };
+}
 
-  const gb = byGroup(model, before.values);
+// Applique les leviers à une copie des sources, recalcule les variables (mêmes fonctions que le batch), puis score et niveau
+// dans la population du mois. La base n'est pas modifiée : la recherche de leviers la réutilise pour chaque combinaison.
+export function simulateFrom(model: LoadedModel, base: SimulationBase, employeeId: number, asOf: string, levers: Levers, opts: SimulationOptions): WhatIfResult {
+  const ds = forkDataset(base.ds, employeeId);
+  const applied = applyLevers(ds, employeeId, asOf, levers);
+  const [after] = computeMonth(ds, asOf, [employeeId]);
+  const before = base.before;
+
+  const gb = byGroup(model, before);
   const ga = byGroup(model, after.values);
   const groups = GROUP_CODES.filter((g) => gb.has(g) || ga.has(g)).map((g) => ({ group: g, before: gb.get(g) ?? 0, after: ga.get(g) ?? 0 }));
-  const changes = FEATURE_NAMES.flatMap((feature, i) =>
-    before.values[i] !== after.values[i] ? [{ feature, before: before.values[i], after: after.values[i] }] : [],
-  );
+  const changes = FEATURE_NAMES.flatMap((feature, i) => (before[i] !== after.values[i] ? [{ feature, before: before[i], after: after.values[i] }] : []));
   const monthlySalaryDelta = applied.salary ? applied.salary.after - applied.salary.before : 0;
 
   return {
     asOf,
-    before: place(model, population, employeeId, before.values, opts.capacityRate, opts.mediumLift),
-    after: place(model, population, employeeId, after.values, opts.capacityRate, opts.mediumLift),
+    before: place(model, base.population, employeeId, before, opts.capacityRate, opts.mediumLift),
+    after: place(model, base.population, employeeId, after.values, opts.capacityRate, opts.mediumLift),
     groups,
     changes,
     applied,
     cost: { monthlySalaryDelta, annual: monthlySalaryDelta * 12 * (1 + opts.chargeRate), chargeRate: opts.chargeRate },
   };
+}
+
+// Rien n'est écrit en base.
+export function simulate(sqlite: Database.Database, model: LoadedModel, employeeId: number, asOf: string, levers: Levers, opts: SimulationOptions): WhatIfResult {
+  return simulateFrom(model, loadSimulationBase(sqlite, model, employeeId, asOf), employeeId, asOf, levers, opts);
 }

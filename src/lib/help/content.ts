@@ -489,6 +489,12 @@ export const FAQ: Faq[] = [
     a: `Dans Paramètres. Exemple : passer de 0,02 à 0,03 porte le plafond de 20 à 30 collaborateurs au niveau Élevé pour 1${NB}000 évalués. La nouvelle valeur s'applique au prochain calcul mensuel ; la modification est tracée dans le journal d'audit.`,
     roles: ["ADMIN"],
   },
+  {
+    topic: "priorites",
+    q: "Comment la simulation trouve-t-elle les leviers les plus efficaces ?",
+    a: `Elle teste une grille d'actions et garde les plus petites qui feraient baisser le niveau de risque. Exemple : une promotion seule, ou 15${NB}% de salaire avec 20 heures supplémentaires de moins par mois. Ce sont des pistes à discuter lors d'un échange, pas une décision ni un effet garanti.`,
+    roles: ["RH"],
+  },
 ];
 
 // ---------- Droits par rôle ----------
