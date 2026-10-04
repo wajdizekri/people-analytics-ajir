@@ -31,6 +31,7 @@ const REQUEST_STATUS: Record<string, string> = { OUVERTE: "Ouverte", TRAITEE: "T
 const ACTION_LABEL: Record<string, string> = {
   "employee.view": "Consultation de la fiche",
   "whatif.run": "Simulation what-if",
+  "whatif.search": "Recherche des leviers les plus efficaces (what-if)",
   "recommendation.decide": "Décision sur une recommandation",
   "recommendation.feedback": "Avis sur une recommandation",
   "alert.update": "Traitement d'une alerte",
