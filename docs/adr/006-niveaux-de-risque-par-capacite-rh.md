@@ -29,7 +29,7 @@ Chaque mois, sur la population scorée (n salariés), triée par score décroiss
 
 ## Conséquences
 
-- Le nombre d'ÉLEVÉ est borné et prévisible (20 sur 987 scorés dans la base de démonstration au 31/08/2026) ; il peut être inférieur à k en cas d'ex-æquo à la frontière.
+- Le nombre d'ÉLEVÉ est borné et prévisible (19 sur 987 scorés dans la base de démonstration au 31/08/2026, run n° 73) ; il peut être inférieur à k en cas d'ex-æquo à la frontière.
 - La répartition FAIBLE/MOYEN/ÉLEVÉ est en partie fixée par construction ; le tableau de bord la montre par département avec la part non évaluée, et le lift moyen (RH, modèle LOGREG seulement).
 - Le paramètre s'applique au **prochain** calcul ; un changement est audité (`settings.update`).
 - Le what-if réutilise exactement `rankAndLevel` pour replacer le salarié simulé dans la population du mois.

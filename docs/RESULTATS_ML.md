@@ -357,7 +357,7 @@ légitimes, mais toute règle future sur ces variables doit être relue sous cet
   jusqu'à 2025-03 (O/E intra-échantillon sur tout l'historique 1,09 : la calibration suit le taux de base récent).
 - Plus forts coefficients (unités d'écart-type, avant Platt) : compa-ratio −0,26, épisodes courts +0,25, départs de
   l'équipe +0,24, Bradford −0,18 (compensé par les autres variables d'absence, corrélées), taux d'absence 3 mois +0,16,
-  CDD +0,16, jours sans badge +0,16, heures de formation −0,14, mois sans promotion +0,14.
+  CDD +0,16, jours sans badge +0,15, heures de formation −0,14, mois sans promotion +0,14.
 - `metrics` (lu par l'écran Transparence) : AUC, IC, PR-AUC, Brier, bloc `eval`, `calibration` (O/E, pente, déciles),
   `lift` (capacité et courbe), `decision_curve`, `fairness` (sexe, tranche d'âge, information mutuelle),
   `comparison` (B0, LightGBM, ablations, oracle, différences appariées), `per_origin`, `golden`. Ce sont les métriques de

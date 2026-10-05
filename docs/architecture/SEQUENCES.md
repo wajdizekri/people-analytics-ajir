@@ -123,7 +123,12 @@ sequenceDiagram
   IMP->>IMP: score = moyenne par fichier (lignes OK / lignes) × (1 - actifs sans paie / actifs)
   IMP->>DB: transaction : UPDATE import_batch (OK, BLOQUE ou ECHEC, report_json), alerte DONNEES si rejets (dedup import:id), audit import.run
   IMP-->>W: résultat du lot
-  W->>DB: job TERMINE
+  alt lot OK ou BLOQUE
+    W->>DB: rebuildAfterImport : buildCalendar (plage des faits importés + 1 an) puis refreshAggregates
+    W->>DB: job TERMINE
+  else lot ECHEC
+    W->>DB: job ECHEC avec le motif, alerte SYSTEME, rien reconstruit
+  end
 
   RH->>B: ouvre Santé des données
   B->>DI: getDataHealth(ctx) et getImportDetail(ctx, id)
@@ -135,8 +140,8 @@ Alternatives :
 
 - **Score sous `quality_threshold`** (0,95 par défaut) : statut `BLOQUE`, alerte DONNEES CRITIQUE ; `requestScoring`, `requestRecompute` (409 `SCORING_BLOQUE`) et `scoreMonth` refusent de calculer. Les lignes valides sont néanmoins déjà écrites dans les tables sources (l'import n'est pas transactionnel de bout en bout : c'est le calcul qui est bloqué, pas l'écriture).
 - **Fichier obligatoire absent ou en-tête invalide** : exception, statut `ECHEC`.
-- **Import en ligne de commande** ([scripts/import.ts](../../scripts/import.ts)) : même `runImport`, suivi de `buildCalendar` et `refreshAggregates`. Le job `IMPORT` du worker n'enchaîne ni le calendrier ni les agrégats ; ceux-ci sont recalculés par le batch mensuel.
-- **Worker arrêté pendant l'import** : le job est remis en file par `recoverStale` ; la ligne `import_batch` interrompue reste `EN_COURS` (aucune reprise n'est prévue pour cette table).
+- **Import en ligne de commande** ([scripts/import.ts](../../scripts/import.ts)) : même `runImport`, suivi de `buildCalendar` et `refreshAggregates`, comme le job `IMPORT` du worker (`rebuildAfterImport`, [src/lib/jobs/handlers.ts](../../src/lib/jobs/handlers.ts)), qui ne reconstruit rien si le lot est en `ECHEC`.
+- **Worker arrêté pendant l'import** : `recoverStale` ([src/lib/jobs/index.ts](../../src/lib/jobs/index.ts)) passe en `ECHEC` (audité, « Import interrompu ») le lot `import_batch` resté `EN_COURS` pour ce job, puis remet le job en file une fois (seconde interruption : job `ECHEC`). Couvert par [tests/features/import-job.test.ts](../../tests/features/import-job.test.ts).
 
 ## 3. Batch mensuel : variables → scoring → publication → alertes
 

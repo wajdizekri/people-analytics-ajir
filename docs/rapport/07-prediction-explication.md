@@ -276,7 +276,7 @@ Les plus forts coefficients du modèle exporté (en unités d'écart-type, avant
 - départs dans l'équipe : +0,24, ce qui rejoint la contagion décrite par Felps et al. (2009) ;
 - taux d'absence sur 3 mois : +0,16 ;
 - contrat à durée déterminée : +0,16 ;
-- jours sans pointage : +0,16 ;
+- jours sans pointage : +0,15 ;
 - heures de formation : −0,14 ;
 - mois sans promotion : +0,14.
 

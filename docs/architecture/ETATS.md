@@ -131,12 +131,13 @@ stateDiagram-v2
   EN_COURS --> OK : score qualité supérieur ou égal au seuil
   EN_COURS --> BLOQUE : score qualité sous le seuil (scoring suspendu)
   EN_COURS --> ECHEC : fichier obligatoire absent, en-tête invalide, exception
+  EN_COURS --> ECHEC : worker arrêté pendant l'import (recoverStale)
   OK --> [*]
   BLOQUE --> [*] : levé par un import ultérieur conforme
   ECHEC --> [*]
 ```
 
-Point d'attention : si le worker est tué pendant un import, le job est repris mais la ligne `import_batch` interrompue reste `EN_COURS` (aucune reprise pour cette table) ; *Santé des données* peut alors afficher un import « en cours » fantôme.
+Si le worker est tué pendant un import, `recoverStale` ([src/lib/jobs/index.ts](../../src/lib/jobs/index.ts)) passe le lot `import_batch` resté `EN_COURS` pour ce job en `ECHEC` (audité, « Import interrompu »), puis remet le job en file une fois ; aucun import « en cours » fantôme ne reste dans *Santé des données* ([tests/features/import-job.test.ts](../../tests/features/import-job.test.ts)).
 
 ## Descriptions textuelles des cas d'utilisation illustrés
 
