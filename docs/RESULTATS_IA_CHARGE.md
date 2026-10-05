@@ -170,9 +170,11 @@ Lecture :
 - Parité : `predictGroup` (TS) reproduit les 200 prévisions avec un écart max de 3,6e-15 ; `loadPanel` + `groupRows`
   (TS) recalculent les 486 vecteurs de variables depuis `data/dev-ai-load.db` avec un écart max de 3,6e-15 (tolérance
   1e-9, `tests/ai/workload/parity.test.ts`, bloc base activé par `WORKLOAD_PARITY_DB`).
-- Enregistré et promu CHAMPION sur `data/dev-ai-load.db` uniquement (`npm run topic-model -- register CHARGE_TRAVAIL
-  models/workload/workload-ridge-v1-20260930` puis `promote`). La promotion sur `data/app.db` reste une décision de
-  l'intégrateur.
+- Enregistré et promu CHAMPION d'abord sur `data/dev-ai-load.db` (`npm run topic-model -- register CHARGE_TRAVAIL
+  models/workload/workload-ridge-v1-20260930` puis `promote`), puis CHAMPION de `data/app.db` (état vérifié le
+  04/10/2026). La version calibrée `workload-ridge-v2-20261004` est livrée dans `models/` mais pas enregistrée.
+- Au chargement, seule la structure du bundle est contrôlée (`validateBundle`) ; la parité est vérifiée par
+  `tests/ai/workload/parity.test.ts`, pas rejouée à l'exécution (contrairement au risque de départ).
 
 ## 7. Intégration
 

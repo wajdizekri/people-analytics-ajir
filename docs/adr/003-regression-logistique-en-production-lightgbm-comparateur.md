@@ -30,4 +30,5 @@ Trois modèles, trois rôles :
 - Les explications affichées sont exactes pour le modèle affiché (additivité en log-odds), regroupées en 6 groupes ; la RH reçoit une phrase chiffrée (« Salaire à 90 % de la médiane du poste »), le manager la catégorie seule.
 - Même scorer, même classement, même explication pour B0 et LOGREG : seul l'affichage change (points ou probabilité).
 - La régression logistique ne capte pas d'interaction non déclarée ; LightGBM sert précisément à mesurer ce manque dans l'étude (Q1).
-- État au 29/09/2026 : le champion de la base de démonstration est `b0-v1` (AUC 0,58 sur le backtest selon [docs/DEMO.md](../DEMO.md)) ; le bundle LOGREG est produit par la chaîne `ml/train` livrée en parallèle. Le schéma prévoit `kind = "LGBM"` sans scorer associé.
+- État au 29/09/2026 : le champion de la base de démonstration était `b0-v1` (AUC 0,58 sur le backtest selon [docs/DEMO.md](../DEMO.md)).
+- État au 04/10/2026 : `logreg-v1-20260930` est CHAMPION de `data/app.db` (promu le 30/09/2026) ; `b0-v1` est RETIRE et reste le repli de démarrage à froid (moins de 30 démissions observées, `src/lib/scoring/cold-start.ts`). Le schéma prévoit `kind = "LGBM"` sans scorer associé.

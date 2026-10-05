@@ -50,7 +50,9 @@ seulement si le backtest temporel du client montre une AUC non inférieure à B0
 
 Même principe que `train/` : lecture seule de la base (`mode=ro`), protocole à origines glissantes sans fuite
 (visibilité à la date de saisie), comparaison à des baselines simples, bundle JSON `models/<sujet>/<version>/`
-(`model.json` + `golden.json`) rejoué par l'inférence TypeScript de `src/lib/ai/<sujet>/` à 1e-9 près, enregistrement par
+(`model.json` + `golden.json`) rejoué par l'inférence TypeScript de `src/lib/ai/<sujet>/` à 1e-9 près (dans les tests
+`tests/ai/<sujet>/parity.test.ts` ; à l'exécution, seule la formation rejoue son golden, les autres sujets contrôlent la
+structure du bundle), enregistrement par
 `npm run topic-model -- register <SUJET> <dossier>` puis `promote <version>` (registre `topic_model`, un champion par
 sujet). En production, l'étape du batch (`runAiSteps`) recalcule les prévisions et les recommandations chaque mois ;
 Python n'est jamais exécuté. Données simulées : les chiffres valident la méthode, pas une précision chez un client.

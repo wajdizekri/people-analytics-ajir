@@ -364,8 +364,9 @@ légitimes, mais toute règle future sur ces variables doit être relue sous cet
   la recette de production rejouée aux 6 origines, pas celles du modèle final (sans données postérieures pour
   l'évaluer).
 - Parité : `npx tsx scripts/model.ts register` puis `verify` reproduisent le golden avec un écart maximal de
-  1,1e-16 (tolérance 1e-9), sur une base vierge et sur `data/app.db`. Le modèle est enregistré **CANDIDAT** ; la
-  promotion (`model.ts promote`) reste une décision humaine de l'intégrateur.
+  1,1e-16 (tolérance 1e-9), sur une base vierge et sur `data/app.db`. Le modèle a d'abord été enregistré **CANDIDAT** ;
+  il a été promu **CHAMPION** de `data/app.db` le 30/09/2026 (`model.ts promote`, `b0-v1` passe RETIRE et reste le
+  repli de démarrage à froid).
 
 ## 8. Limites et menaces à la validité
 

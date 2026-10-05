@@ -115,8 +115,11 @@ planifiée hors santé avec eux (ses effets portent sur la maladie et les congé
   8,9 × 10⁻¹⁶ sur les variables et 8,7 × 10⁻¹⁹ sur prévision et bornes (seuil 10⁻⁹). Sur la copie de la base, les
   séries recalculées en TypeScript donnent les mêmes 163 unités éligibles, les mêmes jours ouvrés et les mêmes jours
   d'absence (écart < 10⁻⁹), et les mêmes prévisions.
-- Enregistré et promu sur `data/dev-ai-abs.db` (`npm run topic-model -- register ABSENTEISME … ; promote
-  abs-ridge-v1-20260930`). `data/app.db` n'a pas été modifiée.
+- Enregistré et promu d'abord sur `data/dev-ai-abs.db` (`npm run topic-model -- register ABSENTEISME … ; promote
+  abs-ridge-v1-20260930`), puis CHAMPION de `data/app.db` (état vérifié le 04/10/2026). La version calibrée
+  `abs-ridge-v2-20261004` (fourchettes conformes, mêmes coefficients) est livrée dans `models/` mais pas enregistrée.
+- Au chargement, seule la structure du bundle est contrôlée (`validateBundle`) ; la parité avec `golden.json` est
+  vérifiée par `tests/ai/absenteeism/parity.test.ts`, pas rejouée à l'exécution (contrairement au risque de départ).
 - Étape du batch (`runStep`) au 2026-08-31 : 489 prévisions (entreprise, 8 départements, 154 équipes × 3 horizons) en
   environ 0,35 à 1 s ; relancée, elle ne crée aucun doublon.
 

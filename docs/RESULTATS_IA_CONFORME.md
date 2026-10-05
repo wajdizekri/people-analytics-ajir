@@ -161,7 +161,8 @@ Exécutés le 04/10/2026 dans le worktree `wt/conforme` :
   quantiles symétriques = bornes v1, repli par portée), parité golden des 4 versions et des quantiles Python ↔ TypeScript,
   phrase de couverture (cible atteinte, « sous la cible », pas d'arrondi jusqu'à la cible, rien pour un modèle v1), rendu
   de `/charge` (RH et manager) et `/previsions` (dont le scénario simulé). `tests/ai` passe avec les versions v2, qui
-  sont désormais les plus récentes dans `models/`.
+  sont désormais les plus récentes dans `models/`. État au 04/10/2026 : elles ne sont pas enregistrées dans
+  `data/app.db` (champions v1, donc pas de phrase de couverture affichée) ; promotion à décider (§ 6).
 - `npx eslint` sur les fichiers modifiés : 0 erreur. `npx tsc --noEmit` : seules les 2 erreurs `LayoutProps` connues
   (types générés par Next absents du worktree) ; une 3e erreur dans `tests/ia-conforme/parity.test.ts` (accès possiblement
   indéfini) a été corrigée ensuite.
