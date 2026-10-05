@@ -19,6 +19,7 @@ export const NAV: { section: string; items: Item[] }[] = [
     section: "Vue d'ensemble",
     items: [
       { href: "/dashboard", label: "Tableau de bord", roles: PILOTAGE },
+      { href: "/powerbi", label: "Power BI", roles: PILOTAGE },
       { href: "/synthese", label: "Synthèse du mois", roles: PILOTAGE },
       { href: "/alerts", label: "Alertes", roles: PILOTAGE },
     ],
@@ -50,6 +51,7 @@ export const NAV: { section: string; items: Item[] }[] = [
       { href: "/alerts", label: "Alertes", roles: ["ADMIN"] },
       { href: "/admin/users", label: "Utilisateurs et accès", roles: ["ADMIN"] },
       { href: "/admin/settings", label: "Paramètres", roles: ["ADMIN"] },
+      { href: "/powerbi", label: "Power BI", roles: ["ADMIN"] },
       { href: "/admin/audit", label: "Journal d'audit", roles: ["ADMIN"] },
     ],
   },
@@ -76,6 +78,7 @@ export const NAV: { section: string; items: Item[] }[] = [
 const ICONS: Record<string, string> = {
   "/dashboard":
     "M4 3h5a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z M15 3h5a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z M15 12h5a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z M4 16h5a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z",
+  "/powerbi": "M3 21h18 M6 21v-7a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v7 M11 21V9a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v12 M16 21V4a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v17",
   "/synthese": "M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2 M8 12l2 2 4-4 M8 17h8",
   "/alerts": "M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0",
   "/employees": "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M22 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75",

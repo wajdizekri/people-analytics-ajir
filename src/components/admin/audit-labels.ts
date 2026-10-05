@@ -127,6 +127,8 @@ const VIEWS: Record<string, string> = {
   settings: "les paramètres",
   audit: "le journal d'audit",
   admin: "la console d'administration",
+  powerbi: "le rapport Power BI",
+  "powerbi.config": "les liens des rapports Power BI",
 };
 
 function phrase(e: AuditEntry, users: Map<string, string>): Phrase {
@@ -177,6 +179,13 @@ function phrase(e: AuditEntry, users: Map<string, string>): Phrase {
         return k === "smig_schedule" ? `${label} modifié` : `${label} : ${show(c.from)} → ${show(c.to)}`;
       });
       return { verb: V.modifier, object: "les paramètres", extra: parts.join(" ; ") || undefined };
+    }
+    case "powerbi.config.update": {
+      const labels: Record<string, string> = { RH: "rapport RH", MANAGER: "rapport manager", ADMIN: "rapport administrateur" };
+      const verbs: Record<string, string> = { AJOUT: "ajouté", MODIFICATION: "modifié", RETRAIT: "retiré" };
+      const changes = (d.changes ?? {}) as Record<string, string>;
+      const parts = Object.entries(changes).map(([role, c]) => `${labels[role] ?? role} ${verbs[c] ?? c}`);
+      return { verb: V.modifier, object: "les liens des rapports Power BI", extra: parts.join(" ; ") || undefined };
     }
     case "alert.update":
       return {

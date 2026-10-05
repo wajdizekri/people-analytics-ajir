@@ -74,7 +74,7 @@ const EXPECTED: Record<Role, { sections: string[]; items: [string, string][] }> 
   RH: {
     sections: ["Vue d'ensemble", "Collaborateurs", "Analyses", "Données et modèle", "Aide et compte"],
     items: [
-      ["/dashboard", "Tableau de bord"], ["/synthese", "Synthèse du mois"], ["/alerts", "Alertes"],
+      ["/dashboard", "Tableau de bord"], ["/powerbi", "Power BI"], ["/synthese", "Synthèse du mois"], ["/alerts", "Alertes"],
       ["/employees", "Collaborateurs"], ["/equipes", "Équipes"], ["/organigramme", "Organigramme"], ["/recommendations", "Recommandations"], ["/interventions", "Interventions"],
       ["/absenteeism", "Absentéisme"], ["/formations", "Formations"], ["/charge", "Charge de travail"], ["/retention", "Rétention"], ["/previsions", "Prévisions effectifs"],
       ["/data-health", "Santé des données"], ["/transparency", "Transparence du modèle"], ["/derive", "Dérive des données"], ["/backtesting", "Vérification a posteriori"], ["/confidentialite", "Droit d'accès"],
@@ -84,7 +84,7 @@ const EXPECTED: Record<Role, { sections: string[]; items: [string, string][] }> 
   MANAGER: {
     sections: ["Vue d'ensemble", "Collaborateurs", "Analyses", "Aide et compte"],
     items: [
-      ["/dashboard", "Tableau de bord"], ["/synthese", "Synthèse du mois"], ["/alerts", "Alertes"],
+      ["/dashboard", "Tableau de bord"], ["/powerbi", "Power BI"], ["/synthese", "Synthèse du mois"], ["/alerts", "Alertes"],
       ["/employees", "Mon équipe"], ["/equipes", "Mes équipes"], ["/organigramme", "Organigramme"],
       ["/absenteeism", "Absentéisme"], ["/formations", "Formations"], ["/charge", "Charge de travail"], ["/retention", "Rétention"],
       ["/aide", "Aide"], ["/compte", "Mon compte"],
@@ -93,7 +93,7 @@ const EXPECTED: Record<Role, { sections: string[]; items: [string, string][] }> 
   ADMIN: {
     sections: ["Administration", "Données et modèle", "Aide et compte"],
     items: [
-      ["/admin", "Console"], ["/alerts", "Alertes"], ["/admin/users", "Utilisateurs et accès"], ["/admin/settings", "Paramètres"], ["/admin/audit", "Journal d'audit"],
+      ["/admin", "Console"], ["/alerts", "Alertes"], ["/admin/users", "Utilisateurs et accès"], ["/admin/settings", "Paramètres"], ["/powerbi", "Power BI"], ["/admin/audit", "Journal d'audit"],
       ["/data-health", "Santé des données"], ["/transparency", "Transparence du modèle"], ["/derive", "Dérive des données"],
       ["/aide", "Aide"], ["/compte", "Mon compte"],
     ],

@@ -260,7 +260,7 @@ describe("menu et gabarit", () => {
       expect(list).toContain("Alertes");
       for (const l of list) expect(l.length, l).toBeLessThanOrEqual(26);
     }
-    expect(items("MANAGER")).toEqual(["Tableau de bord", "Synthèse du mois", "Alertes", "Mon équipe", "Mes équipes", "Organigramme", "Absentéisme", "Formations", "Charge de travail", "Rétention", "Aide", "Mon compte"]);
+    expect(items("MANAGER")).toEqual(["Tableau de bord", "Power BI", "Synthèse du mois", "Alertes", "Mon équipe", "Mes équipes", "Organigramme", "Absentéisme", "Formations", "Charge de travail", "Rétention", "Aide", "Mon compte"]);
     expect(items("ADMIN")[0]).toBe("Console");
     expect(items("ADMIN")).not.toContain("Tableau de bord");
   });

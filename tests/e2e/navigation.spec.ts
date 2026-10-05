@@ -4,15 +4,15 @@ import { test, expect, USERS, expectForbidden, outOfScopeEmployeeId, storageStat
 // visible : entrées exigées pour le rôle ; hidden : entrées interdites (le menu peut en compter d'autres)
 const MENU: Record<RoleKey, { visible: string[]; hidden: string[] }> = {
   admin: {
-    visible: ["Console", "Utilisateurs et accès", "Paramètres", "Journal d'audit", "Santé des données", "Transparence du modèle", "Dérive des données", "Alertes", "Mon compte"],
+    visible: ["Console", "Utilisateurs et accès", "Paramètres", "Power BI", "Journal d'audit", "Santé des données", "Transparence du modèle", "Dérive des données", "Alertes", "Mon compte"],
     hidden: ["Tableau de bord", "Synthèse du mois", "Collaborateurs", "Mon équipe", "Mes équipes", "Équipes", "Absentéisme", "Recommandations", "Interventions", "Vérification a posteriori", "Formations", "Charge de travail", "Prévisions effectifs", "Droit d'accès", "Organigramme", "Rétention"],
   },
   rh: {
-    visible: ["Tableau de bord", "Synthèse du mois", "Collaborateurs", "Équipes", "Absentéisme", "Recommandations", "Interventions", "Santé des données", "Transparence du modèle", "Dérive des données", "Vérification a posteriori", "Organigramme", "Rétention", "Alertes", "Mon compte"],
+    visible: ["Tableau de bord", "Power BI", "Synthèse du mois", "Collaborateurs", "Équipes", "Absentéisme", "Recommandations", "Interventions", "Santé des données", "Transparence du modèle", "Dérive des données", "Vérification a posteriori", "Organigramme", "Rétention", "Alertes", "Mon compte"],
     hidden: ["Console", "Utilisateurs et accès", "Paramètres", "Journal d'audit", "Mon équipe"],
   },
   manager: {
-    visible: ["Tableau de bord", "Synthèse du mois", "Mon équipe", "Mes équipes", "Organigramme", "Absentéisme", "Rétention", "Alertes", "Mon compte"],
+    visible: ["Tableau de bord", "Power BI", "Synthèse du mois", "Mon équipe", "Mes équipes", "Organigramme", "Absentéisme", "Rétention", "Alertes", "Mon compte"],
     hidden: ["Collaborateurs", "Recommandations", "Interventions", "Santé des données", "Transparence du modèle", "Dérive des données", "Vérification a posteriori", "Prévisions effectifs", "Droit d'accès", "Console", "Utilisateurs et accès", "Paramètres", "Journal d'audit"],
   },
 };

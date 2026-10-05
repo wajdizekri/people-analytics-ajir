@@ -49,12 +49,25 @@ people-analytics.client.local {
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "same-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-		Cross-Origin-Opener-Policy "same-origin"
 		# Next.js (App Router, sans nonce) injecte des scripts en ligne ; ECharts et React des styles en ligne.
 		# Si AJIR doit afficher le module dans une iframe, ajouter son origine à frame-ancestors et retirer X-Frame-Options.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+		# frame-src : rapports Power BI de la page /powerbi ; ajouter ici l'origine d'un Power BI Report Server sur site
+		# (même valeur que POWERBI_REPORT_SERVER_ORIGIN).
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' https://app.powerbi.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 		-Server
 		-X-Powered-By
+	}
+
+	# COOP « same-origin » partout, sauf /powerbi : la connexion Microsoft du rapport s'ouvre dans une fenêtre surgissante
+	@powerbi path /powerbi
+	@horsPowerbi not path /powerbi
+	header @powerbi {
+		defer
+		Cross-Origin-Opener-Policy "same-origin-allow-popups"
+	}
+	header @horsPowerbi {
+		defer
+		Cross-Origin-Opener-Policy "same-origin"
 	}
 
 	# Next.js écoute sur la boucle locale uniquement. Caddy transmet Host, X-Forwarded-For/-Proto/-Host

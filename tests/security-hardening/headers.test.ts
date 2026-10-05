@@ -5,7 +5,7 @@ import nextConfig from "../../next.config";
 async function headersFor(env: "production" | "development"): Promise<{ source: string; h: Record<string, string> }> {
   vi.stubEnv("NODE_ENV", env);
   const rules = await nextConfig.headers!();
-  expect(rules).toHaveLength(1);
+  expect(rules.map((r) => r.source)).toEqual(["/:path*", "/powerbi"]);
   return { source: rules[0].source, h: Object.fromEntries(rules[0].headers.map((x) => [x.key, x.value])) };
 }
 
@@ -47,8 +47,23 @@ describe("en-têtes de sécurité", () => {
     expect(d["base-uri"]).toEqual(["'self'"]);
     expect(d["form-action"]).toEqual(["'self'"]);
     expect(d["object-src"]).toEqual(["'none'"]);
-    const all = Object.values(d).flat();
+    expect(d["frame-src"]).toEqual(["'self'", "https://app.powerbi.com"]);
+    const all = Object.entries(d)
+      .filter(([k]) => k !== "frame-src")
+      .flatMap(([, v]) => v);
     expect(all.some((s) => s === "*" || /^https?:/.test(s))).toBe(false);
+  });
+
+  it("Power BI : Report Server sur site ajouté à frame-src s'il est déclaré en https, ignoré sinon ; COOP assoupli sur /powerbi seulement", async () => {
+    vi.stubEnv("POWERBI_REPORT_SERVER_ORIGIN", "https://bi.ajir.local:8443/");
+    expect(csp((await headersFor("production")).h["Content-Security-Policy"])["frame-src"]).toEqual(["'self'", "https://app.powerbi.com", "https://bi.ajir.local:8443"]);
+    for (const bad of ["http://bi.ajir.local", "https://bi.ajir.local/reports", "*", "https://a.b 'unsafe-inline'"]) {
+      vi.stubEnv("POWERBI_REPORT_SERVER_ORIGIN", bad);
+      expect(csp((await headersFor("production")).h["Content-Security-Policy"])["frame-src"], bad).toEqual(["'self'", "https://app.powerbi.com"]);
+    }
+    const rules = await nextConfig.headers!();
+    const pbi = rules.find((r) => r.source === "/powerbi")!;
+    expect(pbi.headers).toEqual([{ key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" }]);
   });
 
   it("ECharts reste compatible : rendu canvas (aucune origine externe), styles en ligne des infobulles, export d'image en data:", async () => {
