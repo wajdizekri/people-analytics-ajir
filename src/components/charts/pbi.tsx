@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useId, type ReactNode } from "react";
+import { Fragment, useId, type ReactNode } from "react";
 import type { EChartsOption } from "echarts";
 import { EChart } from "./echart";
 import type { ChartSpec, ChartTable } from "./builders";
@@ -167,12 +167,14 @@ export function VisualCard({
   const Heading = headingLevel === 3 ? "h3" : "h2";
   const headingId = useId();
   const sub = subtitle ?? chartSubtitle({ measure, unit, scope, period });
+  // Un tableau d'éléments transmis à un composant client est contrôlé comme une liste : clé obligatoire.
+  const details = [sub, footnote].filter(shown).map((d, i) => <Fragment key={i}>{d}</Fragment>);
   const heading = (
     <div className="flex min-w-0 items-start gap-1">
       <Heading id={headingId} className="min-w-0 break-words text-base font-semibold leading-snug text-heading">
         {title}
       </Heading>
-      <DetailTip label={title} details={[sub, footnote]} className="-mt-px" />
+      <DetailTip label={title} details={details} className="-mt-px" />
     </div>
   );
   return (
