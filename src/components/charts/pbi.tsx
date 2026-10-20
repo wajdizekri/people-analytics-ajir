@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Fragment, useId, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import type { EChartsOption } from "echarts";
 import { EChart } from "./echart";
 import type { ChartSpec, ChartTable } from "./builders";
 import { CHART_INK, NBSP, SEMANTIC, axisName, cssChartColor, escapeHtml, formatShort, formatValue, frNumber, type Tone, type ValueFormat } from "./theme";
 import { cardCls } from "@/components/ui/classes";
 import { DetailTip } from "@/components/help/info-tip";
+import { detailItems } from "@/components/ui";
 
 // Kit visuel « Power BI » : conteneurs de visuels, cartes KPI à sparkline et options ECharts de base.
 // Options sérialisables uniquement (aucune fonction) : construites côté serveur, rendues par le wrapper client
@@ -167,14 +168,12 @@ export function VisualCard({
   const Heading = headingLevel === 3 ? "h3" : "h2";
   const headingId = useId();
   const sub = subtitle ?? chartSubtitle({ measure, unit, scope, period });
-  // Un tableau d'éléments transmis à un composant client est contrôlé comme une liste : clé obligatoire.
-  const details = [sub, footnote].filter(shown).map((d, i) => <Fragment key={i}>{d}</Fragment>);
   const heading = (
     <div className="flex min-w-0 items-start gap-1">
       <Heading id={headingId} className="min-w-0 break-words text-base font-semibold leading-snug text-heading">
         {title}
       </Heading>
-      <DetailTip label={title} details={details} className="-mt-px" />
+      <DetailTip label={title} details={detailItems([sub, footnote])} className="-mt-px" />
     </div>
   );
   return (
@@ -392,7 +391,7 @@ export function KpiCard({
     <div className="relative h-full">
       {card}
       <span className="absolute right-2 top-2.5">
-        <DetailTip label={label} tip={tip} details={[period, hint]} align="end" />
+        <DetailTip label={label} tip={tip} details={detailItems([period, hint])} align="end" />
       </span>
     </div>
   );

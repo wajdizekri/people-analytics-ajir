@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { DetailTip } from "@/components/help/info-tip";
 import { Icon, type IconName } from "./icons";
 
@@ -198,6 +198,9 @@ function TileDeltaLine({ delta }: { delta: TileDelta }) {
 
 const shown = (n: ReactNode) => n != null && n !== false && n !== "";
 
+// Un tableau d'éléments transmis à DetailTip (composant client) est contrôlé comme une liste : clé obligatoire.
+export const detailItems = (nodes: ReactNode[]) => nodes.filter(shown).map((d, i) => <Fragment key={i}>{d}</Fragment>);
+
 // Tuile d'indicateur simple ; même lecture que KpiCard : libellé, valeur + unité, variation facultative (delta).
 // Période et aide sont lues dans la bulle « ? » du coin (ajoutées à `tip` s'il est fourni).
 export function KpiTile({
@@ -263,7 +266,7 @@ export function KpiTile({
     <div className="relative h-full">
       {card}
       <span className="absolute right-2 top-2.5">
-        <DetailTip label={label} tip={tip} details={[period, hint]} align="end" />
+        <DetailTip label={label} tip={tip} details={detailItems([period, hint])} align="end" />
       </span>
     </div>
   );
